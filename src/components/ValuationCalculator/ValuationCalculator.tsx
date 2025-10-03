@@ -1,0 +1,108 @@
+import { useEffect, useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import PlotForm from './PlotForm';
+import PlotWithStructureForm from './PlotWithStructureForm';
+import { District, Circle, Village } from '@/types/masterData';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { getParameterDetails, type Parameter } from "@/services/parameterService";
+
+interface ValuationCalculatorProps {
+  initialLocationData?: { district?: District; circle?: Circle; village?: Village };
+}
+
+const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) => {
+  const [marketValue, setMarketValue] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<'plot' | 'plot-with-structure' | null>('plot'); // Set 'plot' as initial default
+
+
+
+
+
+  const calculateMarketValue = (value: number) => {
+    setMarketValue(value);
+    // Auto-redirect to Stamp Duty with prefilled market value
+    // try {
+    //   window.dispatchEvent(new CustomEvent('navigate-to-tab', {
+    //     detail: {
+    //       tab: 'stamp-duty-calculator',
+    //       stampDutyData: { marketValue: value }
+    //     }
+    //   }));
+    // } catch (e) {
+    //   // no-op
+    // }
+  };
+
+  const handleTypeChange = (type: 'plot' | 'plot-with-structure') => {
+    setSelectedType(type);
+    setMarketValue(null); // Reset market value when switching types
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <Card className="bg-background shadow-sm">
+        <CardHeader className="pb-4">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">
+            Choose Option to Calculate Property Value as per Guideline Rate
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <Button
+              variant={selectedType === 'plot' ? "default" : "secondary"}
+              onClick={() => handleTypeChange('plot')}
+              className="flex items-center justify-center gap-2 h-12 rounded-lg shadow-md transition-all duration-200"
+            >
+              PLOT
+            </Button>
+            <Button
+              variant={selectedType === 'plot-with-structure' ? "default" : "secondary"}
+              onClick={() => handleTypeChange('plot-with-structure')}
+              className="flex items-center justify-center gap-2 h-12 rounded-lg shadow-md transition-all duration-200"
+            >
+              PLOT WITH STRUCTURE
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pt-2">
+          {selectedType === 'plot' && <PlotForm onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
+          {selectedType === 'plot-with-structure' && <PlotWithStructureForm onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
+
+
+
+          {/* Show Market Value Button */}
+          <div className="flex justify-center mt-6">
+            <Button 
+              onClick={() => {
+                // Trigger calculation with mock value - replace with actual calculation logic
+                const mockValue = Math.floor(Math.random() * 1000000) + 500000;
+                calculateMarketValue(mockValue);
+              }}
+              className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+            >
+              Show Market Value
+            </Button>
+          </div>
+          
+        </CardContent>
+
+        {marketValue !== null && (
+          <div className="mt-4 mx-6 mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-lg text-center">
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              <h3 className="text-xl font-bold text-green-800">Property Valuation Result</h3>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-inner">
+              <p className="text-sm text-gray-600 mb-2">Total Market Value</p>
+              <p className="text-3xl font-bold text-green-700">₹ {marketValue.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 mt-2">Based on current guideline rates and property specifications</p>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default ValuationCalculator;

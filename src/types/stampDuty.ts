@@ -1,0 +1,48 @@
+import { AreaType } from '@/types/valuation';
+
+export interface StampDutyCalculationInput {
+  marketValue?: number;
+  considerationValue?: number;
+  instrumentType: string;
+  gender?: string;
+  areaType?: AreaType;
+  districtCode?: string;
+  circleCode?: string;
+  sroCode?: string;
+  additionalParams?: Record<string, unknown>;
+}
+
+export interface StampDutyBreakdown {
+  stampDuty: number;
+  registrationFee: number;
+  cesses?: Record<string, number>;
+  rebates?: Record<string, number>;
+  surcharges?: Record<string, number>;
+  totalPayable: number;
+}
+
+export interface StampDutyCalculationResult extends StampDutyBreakdown {
+  basis: 'MARKET_VALUE' | 'CONSIDERATION_VALUE';
+  effectiveRateVersion?: string;
+}
+
+export interface StampDutyRateFilter {
+  instrumentType?: string;
+  areaType?: AreaType;
+  districtCode?: string;
+  sroCode?: string;
+  gender?: string;
+}
+
+export interface StampDutyRateItem {
+  instrumentType: string;
+  areaType?: AreaType;
+  districtCode?: string;
+  sroCode?: string;
+  gender?: string;
+  rate: number;
+  feeFormula?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  version?: string;
+}
