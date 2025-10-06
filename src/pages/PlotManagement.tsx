@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import QuickNavigationTabs from '@/components/QuickNavigationTabs';
 
 const PlotManagement = () => {
   const [activeTab, setActiveTab] = useState('search');
@@ -21,6 +22,8 @@ const PlotManagement = () => {
           <h1 className="text-4xl font-bold text-foreground mb-2">Plot Management</h1>
           <p className="text-muted-foreground">Search, bifurcate, and merge land plots with cadastral map integration</p>
         </div>
+
+        <QuickNavigationTabs />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-muted/50 p-2 h-auto">

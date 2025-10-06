@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import RQADashboard from '@/components/rqa/RQADashboard';
 import { Button } from '@/components/ui/button';
+import QuickNavigationTabs from '@/components/QuickNavigationTabs';
 
 const ReportsAnalytics = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -19,6 +20,8 @@ const ReportsAnalytics = () => {
           <h1 className="text-4xl font-bold text-foreground mb-2">Reports, Queries & Analysis</h1>
           <p className="text-muted-foreground">Comprehensive reporting and analytical insights for land valuation data</p>
         </div>
+
+        <QuickNavigationTabs />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-muted/50 p-2 h-auto">
