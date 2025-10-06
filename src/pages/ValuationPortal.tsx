@@ -7,7 +7,6 @@ import Footer from '@/components/Footer';
 import ValuationCalculator from '@/components/ValuationCalculator/ValuationCalculator';
 import StampDutyForm from '@/components/StampDutyForm/StampDutyForm';
 import PropertyValuationUI from '@/components/PropertyValuationUI';
-import QuickNavigationTabs from '@/components/QuickNavigationTabs';
 
 const ValuationPortal = () => {
   const [activeTab, setActiveTab] = useState('map-valuation');
@@ -21,8 +20,6 @@ const ValuationPortal = () => {
           <h1 className="text-4xl font-bold text-foreground mb-2">Property Valuation Portal</h1>
           <p className="text-muted-foreground">Calculate property values and stamp duties for land and buildings</p>
         </div>
-
-        <QuickNavigationTabs />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-muted/50 p-2 h-auto">
