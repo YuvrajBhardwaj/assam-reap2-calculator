@@ -1,4 +1,5 @@
 import { Facebook, Twitter, Instagram, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
@@ -27,11 +28,16 @@ const Footer = () => {
         </div>
 
         <div className="mt-6 border-t border-maroon-700 pt-4 text-center text-xs">
+          <div className="flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-6 mb-4">
+            <Link to="/about-us" className="hover:underline">About Us</Link>
+            <Link to="/contact" className="hover:underline">Contact</Link>
+            <Link to="/notifications" className="hover:underline">Public/Land Notifications</Link>
+            <Link to="/related-links" className="hover:underline">Related Links</Link>
+          </div>
           <div className="flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-6">
-            <a href="#" className="hover:underline">E-NOTHRIAM.ASSAM.GOV.IN</a>
-            <a href="#" className="hover:underline">OFFICES</a>
-            <a href="#" className="hover:underline">DIGITAL INDIA</a>
-            <a href="#" className="hover:underline">HELP</a>
+            <a href="https://nothriam.assam.gov.in" target="_blank" rel="noopener noreferrer" className="hover:underline">E-NOTHRIAM.ASSAM.GOV.IN</a>
+            <a href="https://digitalindia.gov.in" target="_blank" rel="noopener noreferrer" className="hover:underline">DIGITAL INDIA</a>
+            <Link to="/contact" className="hover:underline">HELP</Link>
           </div>
         </div>
       </div>
