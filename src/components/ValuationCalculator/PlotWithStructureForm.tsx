@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import PlotForm from './PlotForm';
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
+import PlotForm, { PlotFormRef } from './PlotForm';
 import {
   Card,
   CardHeader,
@@ -16,6 +16,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { calculatePlotBaseValue } from '@/services/masterDataService';
+import { useToast } from '@/hooks/use-toast';
+import { ComprehensiveValuationRequest } from '@/types/valuation';
 
 // Define structure types and conditions for better maintainability
 const structureTypes = [
@@ -42,11 +45,15 @@ interface StructureData {
   structureAge: string;
 }
 
+export interface PlotWithStructureFormRef {
+  handleCalculate: () => void;
+}
+
 import { District, Circle, Village } from '@/types/masterData';
 
 
 interface PlotWithStructureFormProps {
-  onCalculate?: (value: number) => void;
+  onCalculate?: (value: number, payload: ComprehensiveValuationRequest) => void;
   hideCalculateButton?: boolean;
   initialLocationData?: {
     district?: District;
@@ -55,7 +62,7 @@ interface PlotWithStructureFormProps {
   };
 }
 
-const PlotWithStructureForm = ({ onCalculate, hideCalculateButton, initialLocationData }: PlotWithStructureFormProps) => {
+const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStructureFormProps>(({ onCalculate, hideCalculateButton, initialLocationData }, ref) => {
   const [structureData, setStructureData] = useState<StructureData>({
     structureType: '',
     constructionYear: '',
@@ -64,6 +71,31 @@ const PlotWithStructureForm = ({ onCalculate, hideCalculateButton, initialLocati
     structureCondition: '',
     structureAge: '',
   });
+
+  const [plotFormData, setPlotFormData] = useState<any>({
+    areaDetails: { bigha: 0, katha: 0, lessa: 0 },
+    selectedDistrictCode: '',
+    selectedCircleCode: '',
+    selectedMouzaCode: '',
+    lotCode: '',
+    plotNo: '',
+    currentLandCategoryGenId: '',
+    landUseChange: false,
+    newLandCategoryGenId: '',
+    areaType: 'RURAL',
+    locationMethod: 'manual',
+    onRoad: false,
+    cornerPlot: false,
+    litigatedPlot: false,
+    hasTenant: false,
+    roadWidth: '',
+    distanceFromRoad: '',
+    selectedParameterIds: [],
+  }); // Initialize with default values
+
+  const { toast } = useToast();
+
+  const plotFormRef = useRef<PlotFormRef>(null);
 
   const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
   const [selectedCircleCode, setSelectedCircleCode] = useState('');
@@ -86,10 +118,76 @@ const PlotWithStructureForm = ({ onCalculate, hideCalculateButton, initialLocati
     setStructureData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleCalculate = async () => {
+    if (!plotFormData) {
+      toast({ title: 'Error', description: 'Plot details are not yet loaded.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const payload: ComprehensiveValuationRequest = {
+        jurisdictionInformation: {
+          districtCode: plotFormData.selectedDistrictCode,
+          circleCode: plotFormData.selectedCircleCode,
+          mouzaCode: plotFormData.selectedMouzaCode,
+          lotCode: plotFormData.lotCode,
+          plotNo: plotFormData.plotNo
+        },
+        landTypeDetails: {
+          currentLandCategoryGenId: plotFormData.currentLandCategoryGenId,
+          landUseChange: plotFormData.landUseChange,
+          newLandCategoryGenId: plotFormData.newLandCategoryGenId,
+          areaType: plotFormData.areaType,
+          areaDetails: {
+            bigha: plotFormData.areaDetails.bigha,
+            katha: plotFormData.areaDetails.katha,
+            lessa: plotFormData.areaDetails.lessa
+          }
+        },
+        plotLandDetails: {
+          locationMethod: plotFormData.locationMethod,
+          onRoad: plotFormData.onRoad,
+          cornerPlot: plotFormData.cornerPlot,
+          litigatedPlot: plotFormData.litigatedPlot,
+          hasTenant: plotFormData.hasTenant,
+          roadWidth: plotFormData.roadWidth,
+          distanceFromRoad: plotFormData.distanceFromRoad,
+          selectedParameterIds: plotFormData.selectedParameterIds
+        },
+        structureDetails: {
+          structureType: structureData.structureType,
+          constructionYear: parseFloat(structureData.constructionYear) || 0,
+          totalFloors: parseFloat(structureData.totalFloors) || 0,
+          builtUpArea: parseFloat(structureData.builtUpArea) || 0,
+          structureCondition: structureData.structureCondition,
+          structureAge: parseFloat(structureData.structureAge) || 0
+        }
+      };
+
+      // Call the new comprehensive valuation API
+      const result = await calculatePlotBaseValue(payload);
+
+      if (onCalculate) onCalculate(result.totalValue, payload);
+      toast({ title: 'Market Value Calculated', description: `Total Value: ₹${result.totalValue.toLocaleString()}` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Failed to calculate', description: err?.message || 'Unknown error', variant: 'destructive' });
+    }
+  };
+
+  useImperativeHandle(ref, () => ({
+    handleCalculate,
+  }));
+
   return (
     <div className="space-y-6">
       {/* Reuse the refined PlotForm */}
-      <PlotForm onCalculate={onCalculate} hideCalculateButton={true} initialLocationData={initialLocationData} />
+      <PlotForm
+        ref={plotFormRef}
+        hideCalculateButton={true}
+        initialLocationData={initialLocationData}
+        onDataChange={setPlotFormData} // Pass setPlotFormData to update the state
+      />
 
       {/* Structure Details Section */}
       <Card className="border-t-4 border-blue-500 bg-blue-50">
@@ -215,17 +313,13 @@ const PlotWithStructureForm = ({ onCalculate, hideCalculateButton, initialLocati
 
       {!hideCalculateButton && (
         <div className="flex justify-end">
-          <Button onClick={() => {
-            // Replace this with actual calculation logic
-            const mockValue = Math.floor(Math.random() * 1000000) + 500000;
-            onCalculate && onCalculate(mockValue);
-          }}>
+          <Button onClick={handleCalculate}>
             Show Market Value
           </Button>
         </div>
       )}
     </div>
   );
-};
+});
 
 export default PlotWithStructureForm;

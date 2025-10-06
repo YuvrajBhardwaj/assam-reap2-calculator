@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import PlotForm from './PlotForm';
-import PlotWithStructureForm from './PlotWithStructureForm';
+import PlotForm, { PlotFormRef } from './PlotForm';
+import PlotWithStructureForm, { PlotWithStructureFormRef } from './PlotWithStructureForm';
 import { District, Circle, Village } from '@/types/masterData';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,8 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
   const [marketValue, setMarketValue] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<'plot' | 'plot-with-structure' | null>('plot'); // Set 'plot' as initial default
 
+  const plotFormRef = useRef<PlotFormRef>(null);
+  const plotWithStructureFormRef = useRef<PlotWithStructureFormRef>(null);
 
 
 
@@ -38,6 +40,14 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
   const handleTypeChange = (type: 'plot' | 'plot-with-structure') => {
     setSelectedType(type);
     setMarketValue(null); // Reset market value when switching types
+  };
+
+  const handleShowMarketValue = () => {
+    if (selectedType === 'plot' && plotFormRef.current) {
+      plotFormRef.current.handleCalculate();
+    } else if (selectedType === 'plot-with-structure' && plotWithStructureFormRef.current) {
+      plotWithStructureFormRef.current.handleCalculate();
+    }
   };
 
   return (
@@ -66,19 +76,15 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
         </CardHeader>
         
         <CardContent className="pt-2">
-          {selectedType === 'plot' && <PlotForm onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
-          {selectedType === 'plot-with-structure' && <PlotWithStructureForm onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
+          {selectedType === 'plot' && <PlotForm ref={plotFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
+          {selectedType === 'plot-with-structure' && <PlotWithStructureForm ref={plotWithStructureFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
 
 
 
           {/* Show Market Value Button */}
           <div className="flex justify-center mt-6">
             <Button 
-              onClick={() => {
-                // Trigger calculation with mock value - replace with actual calculation logic
-                const mockValue = Math.floor(Math.random() * 1000000) + 500000;
-                calculateMarketValue(mockValue);
-              }}
+              onClick={handleShowMarketValue}
               className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
             >
               Show Market Value

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories } from '@/services/locationService';
 import type { District, Circle, Mouza, LandClass, Lot } from '@/types/masterData';
 
@@ -33,6 +33,7 @@ import { fetchLots } from '@/services/masterDataService';
 import { calculatePlotBaseValue } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { getParameterDetails, type Parameter } from "@/services/parameterService";
+import { ComprehensiveValuationRequest } from '@/types/valuation';
 
 interface DistrictDetails {
   id: number;
@@ -48,12 +49,16 @@ interface PlotFormProps {
     mouza?: Mouza;
     village?: any; // For backward compatibility
   };
+  // New: allow parent to receive live form data
+  onDataChange?: (data: any) => void;
 }
 
-
+export interface PlotFormRef {
+  handleCalculate: () => void;
+}
 
 // Placeholder data
-const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: PlotFormProps) => {
+const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange }, ref) => {
 
   const [showPreviousTransactions, setShowPreviousTransactions] = useState(false);
 
@@ -104,6 +109,60 @@ const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: Plo
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
   const [daagFactorInfo, setDaagFactorInfo] = useState<import('@/types/masterData').CircleLotFactorResponse | null>(null);
 
+  // Effect to call onDataChange whenever relevant state changes
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange({
+        selectedDistrictCode,
+        selectedCircleCode,
+        selectedMouzaCode,
+        selectedLotCode,
+        plotNo,
+        currentLandUse,
+        landUseChange,
+        newLandUse,
+        currentLandType,
+        areaType,
+        areaDetails: {
+          bigha: parseFloat(areaBigha) || 0,
+          katha: parseFloat(areaKatha) || 0,
+          lessa: parseFloat(areaLessa) || 0,
+        },
+        locationMethod,
+        onRoad,
+        cornerPlot,
+        litigatedPlot,
+        hasTenant,
+        roadWidth,
+        distanceFromRoad,
+        selectedSubclauses,
+      });
+    }
+  }, [
+    onDataChange,
+    selectedDistrictCode,
+    selectedCircleCode,
+    selectedMouzaCode,
+    selectedLotCode,
+    plotNo,
+    currentLandUse,
+    landUseChange,
+    newLandUse,
+    currentLandType,
+    areaType,
+    areaBigha,
+    areaKatha,
+    areaLessa,
+    locationMethod,
+    onRoad,
+    cornerPlot,
+    litigatedPlot,
+    hasTenant,
+    roadWidth,
+    distanceFromRoad,
+    selectedSubclauses,
+  ]);
+
   // Section completion states
   const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotCode && plotNo && currentLandUse;
   const isLandTypeComplete = currentLandType && areaBigha;
@@ -113,21 +172,44 @@ const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: Plo
 
   const handleCalculate = async () => {
     try {
-      // No request object needed, directly pass parameters
-      // No validatePlotBaseValueRequest call, as it's not from masterDataService
-
       setIsCalculating(true);
-      const result = await calculatePlotBaseValue(
-        selectedDistrictCode,
-        selectedCircleCode,
-        selectedLotCode,
-        currentLandType, // Assuming currentLandType is the landCategoryGenId
-        areaType,
-        plotNo || undefined
-      );
-      setMarketValue(result.plotBaseValue);
-      if (onCalculate) onCalculate(result.plotBaseValue);
-      toast({ title: 'Market Value Calculated', description: `Base Value: ₹${result.plotBaseValue.toLocaleString()}` });
+
+      const payload: ComprehensiveValuationRequest = {
+        jurisdictionInformation: {
+          districtCode: selectedDistrictCode,
+          circleCode: selectedCircleCode,
+          mouzaCode: selectedMouzaCode,
+          lotCode: selectedLotCode,
+          plotNo: plotNo || undefined
+        },
+        landTypeDetails: {
+          currentLandCategoryGenId: currentLandType,
+          landUseChange: landUseChange,
+          newLandCategoryGenId: landUseChange ? newLandUse : undefined,
+          areaType: areaType,
+          areaDetails: {
+            bigha: parseFloat(areaBigha) || 0,
+            katha: parseFloat(areaKatha) || 0,
+            lessa: parseFloat(areaLessa) || 0
+          }
+        },
+        plotLandDetails: {
+          locationMethod: locationMethod as 'manual' | 'gis',
+          onRoad: onRoad,
+          cornerPlot: cornerPlot,
+          litigatedPlot: litigatedPlot,
+          hasTenant: hasTenant,
+          roadWidth: onRoad ? parseFloat(roadWidth) : undefined,
+          distanceFromRoad: !onRoad ? parseFloat(distanceFromRoad) : undefined,
+          selectedParameterIds: selectedSubclauses.length > 0 ? selectedSubclauses : undefined
+        }
+      };
+
+      const result = await calculatePlotBaseValue(payload as ComprehensiveValuationRequest);
+
+      setMarketValue(result.totalValue);
+      if (onCalculate) onCalculate(result.totalValue);
+      toast({ title: 'Market Value Calculated', description: `Base Value: ₹${result.totalValue.toLocaleString()}` });
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Failed to calculate', description: err?.message || 'Unknown error', variant: 'destructive' });
@@ -135,6 +217,10 @@ const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: Plo
       setIsCalculating(false);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    handleCalculate,
+  }));
 
   // New: handler to lookup daag-based geographical factor
   const handleDaagLookup = async () => {
@@ -657,6 +743,6 @@ const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: Plo
       )}
     </div>
   );
-};
+});
 
 export default PlotForm;

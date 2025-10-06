@@ -208,3 +208,42 @@ export interface FormulaSimulationResult {
   breakdown?: Record<string, number>;
   usedFormula?: { id?: UUID; version?: number };
 }
+
+export interface ComprehensiveValuationRequest {
+  jurisdictionInformation: {
+    districtCode: string;
+    circleCode: string;
+    mouzaCode: string;
+    lotCode: string;
+    plotNo?: string;
+  };
+  landTypeDetails: {
+    currentLandCategoryGenId: string;
+    landUseChange: boolean;
+    newLandCategoryGenId?: string;
+    areaType: 'RURAL' | 'URBAN';
+    areaDetails: {
+      bigha: number;
+      katha: number;
+      lessa: number;
+    };
+  };
+  plotLandDetails: {
+    locationMethod: 'manual' | 'gis';
+    onRoad: boolean;
+    cornerPlot: boolean;
+    litigatedPlot: boolean;
+    hasTenant: boolean;
+    roadWidth?: number;
+    distanceFromRoad?: number | null;
+    selectedParameterIds?: string[];
+  };
+  structureDetails?: {
+    structureType: string;
+    constructionYear: number;
+    totalFloors: number;
+    builtUpArea: number;
+    structureCondition: string;
+    structureAge: number;
+  };
+}

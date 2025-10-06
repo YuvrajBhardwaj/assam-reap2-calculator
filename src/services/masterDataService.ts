@@ -20,6 +20,7 @@ import {
   CircleLotFactorRequest,
   CircleLotFactorResponse,
 } from '@/types/masterData';
+import { ComprehensiveValuationRequest } from '@/types/valuation';
 
 // Generic CRUD operations for all entities
 interface ChangeRequest {
@@ -131,6 +132,8 @@ export async function updateMouza(id: string, updates: any): Promise<Mouza> {
 export async function deactivateMouza(id: string): Promise<void> {
   await masterDataApi.post(`/delete/mouza?mouzaCode=${id}`);
 }
+
+
 
 // ===== LOT MANAGEMENT =====
 export async function fetchLots(districtCode?: string, circleCode?: string, mouzaCode?: string): Promise<Lot[]> {
@@ -534,14 +537,12 @@ export async function getConversionFactorHistory(landCategoryGenId: string, area
 }
 
 // ===== CALCULATIONS =====
-export async function calculatePlotBaseValue(districtCode: string, circleCode: string, lotCode: string, landCategoryGenId: string, areaType: 'RURAL' | 'URBAN', daagNumber?: string): Promise<{
-  districtBase: number;
-  geographicalFactor: number;
-  conversionFactor: number;
-  plotBaseValue: number;
-  calculation: string;
-}> {
-  const res = await coreApi.post('/valuation/calculate', { districtCode, circleCode, lotCode, landCategoryGenId, areaType, daagNumber });
+
+
+// ===== VALUATION SERVICES =====
+
+export async function calculatePlotBaseValue(payload: ComprehensiveValuationRequest): Promise<any> {
+  const res = await masterDataApi.post('/valuation/calculate', payload);
   return res.data;
 }
 
