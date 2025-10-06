@@ -151,11 +151,3 @@ export interface CircleLotFactorResponse {
   source: 'EXISTING' | 'DERIVED_AVERAGE';
   parents?: Array<{ circleCode: string; lotCode: string; factor: number }>;
 }
-
-export interface AuditEvent {
-  entityType: string;
-  entityId: string;
-  action: string;
-  performedBy: string;
-  details?: Record<string, unknown>;
-}

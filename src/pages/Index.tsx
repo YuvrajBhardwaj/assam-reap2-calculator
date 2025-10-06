@@ -34,8 +34,6 @@ import RQADashboard from '@/components/rqa/RQADashboard';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
 import RoleSwitcher from '@/components/RoleSwitcher';
 
-import { UserManagement } from '@/components/admin/UserManagement';
-
 const Index = () => {
   const navigate = useNavigate();
   const { userRole, isAuthenticated, simpleLogin, logout } = useAuth();
@@ -207,17 +205,7 @@ const Index = () => {
                   <ChartBar className="h-4 w-4" />
                   <span>Workflow</span>
                 </TabsTrigger>
-                <TabsTrigger value="user-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'user-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <Database className="h-4 w-4" />
-                  <span>User Management</span>
-                </TabsTrigger>
               </>
-            )}
-            {isDepartmentUser && !isAdmin && (
-              <TabsTrigger value="workflow" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                <ChartBar className="h-4 w-4" />
-                <span>Workflow</span>
-              </TabsTrigger>
             )}
           </TabsList>
 
@@ -286,15 +274,11 @@ const Index = () => {
                   </div>
                 </div>
               </TabsContent>
-              <TabsContent value="user-management" className="space-y-4">
-                <UserManagement />
+
+              <TabsContent value="workflow" className="space-y-4">
+                <WorkflowDashboard />
               </TabsContent>
             </>
-          )}
-          {(isAdmin || isDepartmentUser) && (
-            <TabsContent value="workflow" className="space-y-4">
-              <WorkflowDashboard />
-            </TabsContent>
           )}
         </Tabs>
       </main>

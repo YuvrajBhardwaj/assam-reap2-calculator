@@ -17,7 +17,6 @@ import {
   LandClassMapping,
   LandSubClassMapping,
   AuditLog,
-  AuditEvent,
   CircleLotFactorRequest,
   CircleLotFactorResponse,
 } from '@/types/masterData';
@@ -31,10 +30,6 @@ interface ChangeRequest {
   reason: string;
   justification?: string;
   impactAnalysis?: string;
-}
-
-export async function logAuditEvent(event: AuditEvent): Promise<void> {
-  await coreApi.post('/audit/log', event);
 }
 
 // ===== DISTRICT MANAGEMENT =====
