@@ -134,8 +134,6 @@ const Header = () => {
     { to: '/reports', label: 'Reports & Analytics' },
     { to: '/admin', label: 'Admin', requiresAuth: true, roles: ['admin'] },
     { to: '/department-dashboard', label: 'Department', requiresAuth: true, roles: ['department', 'admin'] },
-    { to: '/about-us', label: 'About Us' },
-    { to: '/contact', label: 'Contact' },
   ];
 
   return (
