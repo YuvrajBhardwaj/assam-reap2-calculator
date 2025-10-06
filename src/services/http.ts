@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 // Centralized base URLs (override via Vite env vars)
-export const CORE_API_BASE_URL = import.meta.env?.VITE_CORE_API_BASE_URL || 'http://192.168.1.2:8082/areap2';
-export const MASTER_DATA_API_BASE_URL = import.meta.env?.VITE_MASTER_DATA_API_BASE_URL || 'http://192.168.1.2:8081/masterData';
+export const CORE_API_BASE_URL = import.meta.env?.VITE_CORE_API_BASE_URL || 'http://192.168.1.3:8082/areap2';
+export const MASTER_DATA_API_BASE_URL = import.meta.env?.VITE_MASTER_DATA_API_BASE_URL || 'http://192.168.1.3:8081/masterData';
 
 const attachAuth = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
   // Support both keys to avoid breaking existing storage

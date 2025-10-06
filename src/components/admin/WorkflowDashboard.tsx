@@ -287,241 +287,243 @@ const WorkflowDashboard = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
-          {(isAdmin || isDepartment) && (
-            <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
-          )}
-          <TabsTrigger value="users">User Management</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="workflows">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Search by applicant, property, or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-80"
-                  />
-                </div>
-                
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="on-hold">On Hold</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priority</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Workflow Table */}
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Property</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead>Days Elapsed</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredData.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">{item.id}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            {item.type}
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.applicant}</TableCell>
-                        <TableCell>{item.property}</TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell>{item.submittedDate}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadge(item.status)}>
-                            {item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('-', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getPriorityBadge(item.priority)}>
-                            {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.assignedTo}</TableCell>
-                        <TableCell>
-                          <span className={item.daysElapsed > 7 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
-                            {item.daysElapsed} days
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setSelectedWorkflow(item)}>
-                              View
-                            </Button>
-                            {item.status === 'pending' && (
-                              <Button variant="default" size="sm" className="bg-blue-600">
-                                Process
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {filteredData.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No workflow items found matching your criteria.
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="workflows" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
+              {(isAdmin || isDepartment) && (
+                <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {(isAdmin || isDepartment) && (
-          <TabsContent value="approval">
-            <Card>
-              <CardHeader>
-                <CardTitle>Approval Inbox</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ApprovalInbox />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
+              {isAdmin && (
+                <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="workflows">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Workflow Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <Search className="w-4 h-4 text-gray-500" />
+                      <Input
+                        placeholder="Search by applicant, property, or location..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-80"
+                      />
+                    </div>
+                    
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="on-hold">On Hold</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-        {isAdmin && (
-          <TabsContent value="audit-logs">
-            <Card>
-              <CardHeader>
-                <CardTitle>Audit Logs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-4 mb-4">
-                  <Input
-                    placeholder="Entity Type (e.g., District, Circle, Parameter)"
-                    className="w-64"
-                    value={filters.entityType}
-                    onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
-                  />
-                  <Input
-                    type="date"
-                    className="w-48"
-                    value={filters.fromDate}
-                    onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
-                  />
-                  <Input
-                    type="date"
-                    className="w-48"
-                    value={filters.toDate}
-                    onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Performed By (loginId)"
-                    className="w-56"
-                    value={filters.performedBy}
-                    onChange={(e) => setFilters({ ...filters, performedBy: e.target.value })}
-                  />
-                  <Button onClick={loadLogs} disabled={logsLoading} variant="outline">
-                    {logsLoading ? 'Loading...' : 'Search'}
-                  </Button>
-                  <Button
-                    onClick={() => { setFilters({ entityType: '', fromDate: '', toDate: '', performedBy: '' }); setLogs([]); }}
-                    variant="ghost"
-                  >
-                    Reset
-                  </Button>
-                </div>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Filter by priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priority</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Entity Type</TableHead>
-                        <TableHead>Entity ID</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Performed By</TableHead>
-                        <TableHead>Details</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {logs.map((log) => (
-                        <TableRow key={log.id} className="hover:bg-gray-50">
-                          <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
-                          <TableCell>{log.entityType}</TableCell>
-                          <TableCell>{log.entityId}</TableCell>
-                          <TableCell>
-                            <Badge className="bg-gray-100 text-gray-800">{log.action}</Badge>
-                          </TableCell>
-                          <TableCell>{log.performedBy}</TableCell>
-                          <TableCell>
-                            <span className="text-xs text-gray-600 break-all">
-                              {log.details ? JSON.stringify(log.details) : '-'}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {!logs.length && (
+                  {/* Workflow Table */}
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center text-gray-500 py-6">
-                            {logsLoading ? 'Loading logs...' : 'No logs to display'}
-                          </TableCell>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Applicant</TableHead>
+                          <TableHead>Property</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Days Elapsed</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-        
-        <TabsContent value="users">
+                      </TableHeader>
+                      <TableBody>
+                        {filteredData.map((item) => (
+                          <TableRow key={item.id} className="hover:bg-gray-50">
+                            <TableCell className="font-medium">{item.id}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(item.status)}
+                                {item.type}
+                              </div>
+                            </TableCell>
+                            <TableCell>{item.applicant}</TableCell>
+                            <TableCell>{item.property}</TableCell>
+                            <TableCell>{item.location}</TableCell>
+                            <TableCell>{item.submittedDate}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusBadge(item.status)}>
+                                {item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('-', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getPriorityBadge(item.priority)}>
+                                {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{item.assignedTo}</TableCell>
+                            <TableCell>
+                              <span className={item.daysElapsed > 7 ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                                {item.daysElapsed} days
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => setSelectedWorkflow(item)}>
+                                  View
+                                </Button>
+                                {item.status === 'pending' && (
+                                  <Button variant="default" size="sm" className="bg-blue-600">
+                                    Process
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {filteredData.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No workflow items found matching your criteria.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            {(isAdmin || isDepartment) && (
+              <TabsContent value="approval">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Approval Inbox</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ApprovalInbox />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
+            {isAdmin && (
+              <TabsContent value="audit-logs">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Audit Logs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-4 mb-4">
+                      <Input
+                        placeholder="Entity Type (e.g., District, Circle, Parameter)"
+                        className="w-full sm:w-64"
+                        value={filters.entityType}
+                        onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
+                      />
+                      <Input
+                        type="date"
+                        className="w-full sm:w-48"
+                        value={filters.fromDate}
+                        onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+                      />
+                      <Input
+                        type="date"
+                        className="w-full sm:w-48"
+                        value={filters.toDate}
+                        onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Performed By (loginId)"
+                        className="w-full sm:w-56"
+                        value={filters.performedBy}
+                        onChange={(e) => setFilters({ ...filters, performedBy: e.target.value })}
+                      />
+                      <Button onClick={loadLogs} disabled={logsLoading} variant="outline">
+                        {logsLoading ? 'Loading...' : 'Search'}
+                      </Button>
+                      <Button
+                        onClick={() => { setFilters({ entityType: '', fromDate: '', toDate: '', performedBy: '' }); setLogs([]); }}
+                        variant="ghost"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Entity Type</TableHead>
+                            <TableHead>Entity ID</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Performed By</TableHead>
+                            <TableHead>Details</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {logs.map((log) => (
+                            <TableRow key={log.id} className="hover:bg-gray-50">
+                              <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                              <TableCell>{log.entityType}</TableCell>
+                              <TableCell>{log.entityId}</TableCell>
+                              <TableCell>
+                                <Badge className="bg-gray-100 text-gray-800">{log.action}</Badge>
+                              </TableCell>
+                              <TableCell>{log.performedBy}</TableCell>
+                              <TableCell>
+                                <span className="text-xs text-gray-600 break-all">
+                                  {log.details ? JSON.stringify(log.details) : '-'}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {!logs.length && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-gray-500 py-6">
+                                {logsLoading ? 'Loading logs...' : 'No logs to display'}
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+        <div className="lg:col-span-1">
           <UserManagement />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 };

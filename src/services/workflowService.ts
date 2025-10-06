@@ -22,3 +22,8 @@ export async function approveTask(taskId: string, comment?: string): Promise<voi
 export async function rejectTask(taskId: string, reason: string): Promise<void> {
   await coreApi.post(`/workflow/tasks/${encodeURIComponent(taskId)}/reject`, { reason });
 }
+
+export async function fetchDepartmentTasks(): Promise<WorkflowTask[]> {
+  const res = await coreApi.get('/workflow/department-tasks'); // Assuming a new endpoint for department tasks
+  return res.data;
+}

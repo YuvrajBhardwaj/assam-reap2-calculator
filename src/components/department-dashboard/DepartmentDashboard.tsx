@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import DepartmentWorkflowDashboard from './DepartmentWorkflowDashboard';
 import { 
   CheckCircle, 
   BarChart3, 
@@ -215,7 +216,8 @@ const DepartmentDashboard = () => {
   const mainModules = [
     { id: 'approvals', label: 'Approvals', icon: CheckCircle, color: 'bg-teal-500' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'bg-gray-500' },
-    { id: 'property', label: 'Property Verification', icon: Building, color: 'bg-gray-500' }
+    { id: 'property', label: 'Property Verification', icon: Building, color: 'bg-gray-500' },
+    { id: 'workflow-management', label: 'Workflow Management', icon: FileText, color: 'bg-purple-500' }
   ];
 
   const subModules = [
@@ -422,11 +424,22 @@ const DepartmentDashboard = () => {
                         )}
                       </TableRow>
                     ))}
+                    {!requestsData.length && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No requests found.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {activeMainTab === 'workflow-management' && (userRole === 'sr_manager' || userRole === 'jr_manager' || userRole === 'manager' || userRole === 'admin' || userRole === 'department') && (
+          <DepartmentWorkflowDashboard />
         )}
 
         {/* Analytics Module */}

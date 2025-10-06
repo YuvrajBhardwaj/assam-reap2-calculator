@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { ApiService, LoginRequest } from '../services/adminService';
 
-type UserRole = 'user' | 'admin' | 'department';
+type UserRole = 'user' | 'admin' | 'department' | 'sr_manager' | 'jr_manager' | 'manager';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -47,6 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       let role: UserRole = 'user';
       if (response.loginId.toLowerCase().includes('admin') || response.loginId === 'admin') {
         role = 'admin';
+      } else if (response.loginId.toLowerCase().includes('srmanager')) {
+        role = 'sr_manager';
+      } else if (response.loginId.toLowerCase().includes('jrmanager')) {
+        role = 'jr_manager';
+      } else if (response.loginId.toLowerCase().includes('manager')) {
+        role = 'manager';
       } else if (response.loginId.toLowerCase().includes('dept') || response.loginId === 'deptuser') {
         role = 'department';
       }
