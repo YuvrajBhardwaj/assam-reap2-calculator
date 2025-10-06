@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
+
+
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { fetchLots } from '@/services/masterDataService';
@@ -52,7 +54,9 @@ interface PlotFormProps {
 
 // Placeholder data
 const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: PlotFormProps) => {
-  const { userRole } = useAuth();
+
+  const [showPreviousTransactions, setShowPreviousTransactions] = useState(false);
+
   const { toast } = useToast();
 
   const [landCategories, setLandCategories] = useState<LandClass[]>([]);
@@ -597,19 +601,45 @@ const PlotForm = ({ onCalculate, hideCalculateButton, initialLocationData }: Plo
       </Card>
 
       {/* Admin Section - Previous Transactions */}
-      {userRole === 'admin' && (
-        <Card className="border-2 border-destructive/20 shadow-lg bg-gradient-to-br from-background to-destructive/5">
-          <CardHeader className="bg-gradient-to-r from-destructive/5 to-destructive/10 rounded-t-lg">
-            <CardTitle className="text-xl font-bold text-destructive-foreground flex items-center gap-2">
-              <div className="w-2 h-2 bg-destructive rounded-full"></div>
-              Previous Transactions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline">Download Past Transactions</Button>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-2 border-primary/20 shadow-lg bg-gradient-to-br from-background to-primary/5">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
+          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full"></div>
+            Previous Transactions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" onClick={() => setShowPreviousTransactions(!showPreviousTransactions)}>
+            {showPreviousTransactions ? 'Hide Previous Transactions' : 'Show Previous Transactions'}
+          </Button>
+
+          {showPreviousTransactions && (
+            <div className="mt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Area</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>01/01/2023</TableCell>
+                    <TableCell>₹10,00,000</TableCell>
+                    <TableCell>1 Bigha</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>01/07/2023</TableCell>
+                    <TableCell>₹12,00,000</TableCell>
+                    <TableCell>1.2 Bigha</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Calculate Button - Only show when not explicitly hidden */}
       {!hideCalculateButton && (
