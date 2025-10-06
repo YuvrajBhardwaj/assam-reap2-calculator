@@ -128,7 +128,7 @@ const LeafletMapComponent = ({
         mapInstance.removeLayer(selectedPointMarkerRef.current);
         selectedPointMarkerRef.current = null;
       }
-      selectedPointMarkerRef.current = L.marker([lat, lng])
+      selectedPointMarkerRef.current = L.marker([lat, lng], { icon: blueMarkerIcon })
         .addTo(mapInstance)
         .bindPopup('Selected Location')
         .openPopup();
