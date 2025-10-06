@@ -129,10 +129,13 @@ const Header = () => {
 
   const navLinks = [
     { to: '/', label: 'Home', action: () => window.dispatchEvent(new CustomEvent('landing')) },
+    { to: '/valuation', label: 'Valuation Portal' },
+    { to: '/plots', label: 'Plot Management' },
+    { to: '/reports', label: 'Reports & Analytics' },
+    { to: '/admin', label: 'Admin', requiresAuth: true, roles: ['admin'] },
+    { to: '/department-dashboard', label: 'Department', requiresAuth: true, roles: ['department', 'admin'] },
     { to: '/about-us', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
-    { to: '/public-land-notifications', label: 'Public/Land Notifications' },
-    { to: '/related-links-to-land', label: 'Related Links to Land Revenue and Registration' },
   ];
 
   return (
@@ -168,20 +171,27 @@ const Header = () => {
             className={`${menuOpen ? 'flex' : 'hidden'
               } md:flex flex-col md:flex-row items-center absolute md:static top-full left-0 w-full md:w-auto bg-maroon-800 md:bg-transparent p-4 md:p-0 space-y-4 md:space-y-0 md:space-x-6 shadow-md md:shadow-none z-40`}
           >
-            {navLinks.map((link, index) => (
-              <div key={index} className="relative group w-full md:w-auto">
-                <Link
-                  to={link.to}
-                  className="block text-sm hover:text-[#1E8C98] transition-colors py-2 md:py-0 w-full text-center md:text-left"
-                  onClick={() => {
-                    link.action?.();
-                    setMenuOpen(false);
-                  }}
-                >
-                  {link.label}
-                </Link>
-              </div>
-            ))}
+            {navLinks.map((link, index) => {
+              // Hide links that require auth if user is not authenticated
+              if (link.requiresAuth && !isAuthenticated) return null;
+              // Hide links that require specific roles if user doesn't have them
+              if (link.roles && !link.roles.includes(userRole)) return null;
+              
+              return (
+                <div key={index} className="relative group w-full md:w-auto">
+                  <Link
+                    to={link.to}
+                    className="block text-sm hover:text-[#1E8C98] transition-colors py-2 md:py-0 w-full text-center md:text-left"
+                    onClick={() => {
+                      link.action?.();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                </div>
+              );
+            })}
 
             {/* Mobile-only icons */}
             <div className="flex md:hidden items-center gap-4 mt-4">
