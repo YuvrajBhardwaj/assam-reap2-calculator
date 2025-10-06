@@ -84,11 +84,15 @@ const Header = () => {
     try {
       await login({ loginId: username, password });
       setLoginDialogOpen(false);
+      setUsername('');
+      setPassword('');
+      setCaptchaInput('');
       toast({
         title: 'Login Successful',
         description: 'Welcome back.',
       });
     } catch (error) {
+      generateCaptcha();
       toast({
         variant: 'destructive',
         title: 'Login Failed',
@@ -97,10 +101,6 @@ const Header = () => {
     } finally {
       setIsLoading(false);
     }
-
-    setUsername('');
-    setPassword('');
-    setCaptchaInput('');
   };
 
   const handleLogout = () => {
