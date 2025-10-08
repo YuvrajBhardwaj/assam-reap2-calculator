@@ -6,7 +6,7 @@ export interface WorkflowTask {
   entityKey: string;
   submittedBy: string;
   submittedAt: string;
-  status: 'PENDING' | 'WIP' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'WIP' | 'APPROVED' | 'REJECTED' | 'REFERRED_BACK';
   payloadSummary?: string;
 }
 
@@ -26,4 +26,8 @@ export async function rejectTask(taskId: string, reason: string): Promise<void> 
 export async function fetchDepartmentTasks(): Promise<WorkflowTask[]> {
   const res = await coreApi.get('/workflow/department-tasks'); // Assuming a new endpoint for department tasks
   return res.data;
+}
+
+export async function referBackTask(taskId: string, comment: string): Promise<void> {
+  await coreApi.post(`/workflow/tasks/${encodeURIComponent(taskId)}/refer-back`, { comment });
 }

@@ -33,6 +33,9 @@ import ApprovalInbox from '@/components/admin/ApprovalInbox';
 import RQADashboard from '@/components/rqa/RQADashboard';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
 import RoleSwitcher from '@/components/RoleSwitcher';
+import DepartmentWorkflowDashboard from '@/components/department-dashboard/DepartmentWorkflowDashboard';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -186,10 +189,16 @@ const Index = () => {
               <span>Services related to Certified Copies</span>
             </TabsTrigger>
             {isDepartmentUser && (
-              <TabsTrigger value="department-dashboard" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'department-dashboard' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                <Database className="h-4 w-4" />
-                <span>Department Dashboard</span>
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="department-dashboard" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'department-dashboard' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                  <Database className="h-4 w-4" />
+                  <span>Department Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="workflow-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                  <ChartBar className="h-4 w-4" />
+                  <span>Workflow Management</span>
+                </TabsTrigger>
+              </>
             )}
             {isAdmin && (
               <>
@@ -204,6 +213,9 @@ const Index = () => {
                 <TabsTrigger value="workflow" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
                   <ChartBar className="h-4 w-4" />
                   <span>Workflow</span>
+                </TabsTrigger>
+                <TabsTrigger value="user-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'user-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                  <span>User Management</span>
                 </TabsTrigger>
               </>
             )}
@@ -235,9 +247,14 @@ const Index = () => {
           </TabsContent>
 
           {isDepartmentUser && (
-            <TabsContent value="department-dashboard" className="space-y-4">
-              <DepartmentDashboard />
-            </TabsContent>
+            <>
+              <TabsContent value="department-dashboard" className="space-y-4">
+                <DepartmentDashboard />
+              </TabsContent>
+              <TabsContent value="workflow-management" className="space-y-4">
+                <DepartmentWorkflowDashboard />
+              </TabsContent>
+            </>
           )}
 
           {isAdmin && (
@@ -277,6 +294,21 @@ const Index = () => {
 
               <TabsContent value="workflow" className="space-y-4">
                 <WorkflowDashboard />
+              </TabsContent>
+
+              <TabsContent value="user-management" className="space-y-4">
+                <Tabs defaultValue="add-user" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="add-user">Add New User</TabsTrigger>
+                    <TabsTrigger value="user-history">User History Log</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="add-user" className="space-y-4">
+                    {activeTab === "user-management" && <UserManagement />}
+                  </TabsContent>
+                  <TabsContent value="user-history" className="space-y-4">
+                    {activeTab === "user-management" && <UserHistoryLog />}
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             </>
           )}

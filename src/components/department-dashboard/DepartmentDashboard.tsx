@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import DepartmentWorkflowDashboard from './DepartmentWorkflowDashboard';
 import { 
   CheckCircle, 
   BarChart3, 
@@ -217,7 +216,6 @@ const DepartmentDashboard = () => {
     { id: 'approvals', label: 'Approvals', icon: CheckCircle, color: 'bg-teal-500' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'bg-gray-500' },
     { id: 'property', label: 'Property Verification', icon: Building, color: 'bg-gray-500' },
-    { id: 'workflow-management', label: 'Workflow Management', icon: FileText, color: 'bg-purple-500' }
   ];
 
   const subModules = [
@@ -438,9 +436,7 @@ const DepartmentDashboard = () => {
           </div>
         )}
 
-        {activeMainTab === 'workflow-management' && (userRole === 'sr_manager' || userRole === 'jr_manager' || userRole === 'manager' || userRole === 'admin' || userRole === 'department') && (
-          <DepartmentWorkflowDashboard />
-        )}
+        
 
         {/* Analytics Module */}
         {activeMainTab === 'analytics' && (
