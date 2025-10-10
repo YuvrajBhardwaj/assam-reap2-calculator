@@ -33,9 +33,9 @@ import ApprovalInbox from '@/components/admin/ApprovalInbox';
 import RQADashboard from '@/components/rqa/RQADashboard';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
 import RoleSwitcher from '@/components/RoleSwitcher';
-import DepartmentWorkflowDashboard from '@/components/department-dashboard/DepartmentWorkflowDashboard';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
+import DepartmentMasterDataDashboard from '@/components/department-dashboard/DepartmentMasterDataDashboard';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -194,9 +194,9 @@ const Index = () => {
                   <Database className="h-4 w-4" />
                   <span>Department Dashboard</span>
                 </TabsTrigger>
-                <TabsTrigger value="workflow-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger value="workflow-dept" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow-dept' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
                   <ChartBar className="h-4 w-4" />
-                  <span>Workflow Management</span>
+                  <span>Workflow</span>
                 </TabsTrigger>
               </>
             )}
@@ -251,8 +251,8 @@ const Index = () => {
               <TabsContent value="department-dashboard" className="space-y-4">
                 <DepartmentDashboard />
               </TabsContent>
-              <TabsContent value="workflow-management" className="space-y-4">
-                <DepartmentWorkflowDashboard />
+              <TabsContent value="workflow-dept" className="space-y-4">
+                <DepartmentMasterDataDashboard />
               </TabsContent>
             </>
           )}
