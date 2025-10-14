@@ -24,9 +24,7 @@ const landClassService: CRUDService<LandClass> = {
   search: async (query, filters) => {
     const allLandClasses = await getAllLandCategories();
     return allLandClasses.filter(landClass =>
-      landClass.name.toLowerCase().includes(query.toLowerCase()) ||
-      landClass.code.toLowerCase().includes(query.toLowerCase()) ||
-      landClass.category?.toLowerCase().includes(query.toLowerCase())
+      landClass.landCategoryName.toLowerCase().includes(query.toLowerCase())
     );
   },
   validate: async (item) => {
@@ -41,10 +39,8 @@ const landClassService: CRUDService<LandClass> = {
     } else if (item.code.length < 1 || item.code.length > 10) {
       errors.push('code: Land class code must be between 1 and 10 characters');
     }
-    
-    if (!item.category?.trim()) {
-      errors.push('category: Category is required');
-    }
+      
+
     
     // Check for duplicate codes (excluding current item during edit)
     try {
@@ -70,47 +66,21 @@ const landClassService: CRUDService<LandClass> = {
 // Table columns configuration
 const columns: TableColumn<LandClass>[] = [
   {
-    key: 'code',
-    label: 'Class Code',
+    key: 'landCategoryGenId',
+    label: 'Gen ID',
     sortable: true,
     searchable: true
   },
   {
-    key: 'name',
+    key: 'landCategoryName',
     label: 'Class Name',
     sortable: true,
     searchable: true
   },
+
+
   {
-    key: 'category',
-    label: 'Category',
-    sortable: true,
-    searchable: true
-  },
-  {
-    key: 'description',
-    label: 'Description',
-    render: (value: string) => value ? (value.length > 50 ? `${value.substring(0, 50)}...` : value) : '-'
-  },
-  {
-    key: 'baseRate',
-    label: 'Base Rate (₹/sq ft)',
-    render: (value: number) => value ? `₹${value.toLocaleString()}` : '-',
-    sortable: true
-  },
-  {
-    key: 'isActive',
-    label: 'Status',
-    render: (value: boolean) => (
-      <span className={`px-2 py-1 rounded-full text-xs ${
-        value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-      }`}>
-        {value ? 'Active' : 'Inactive'}
-      </span>
-    )
-  },
-  {
-    key: 'createdAt',
+    key: 'createdDtm',
     label: 'Created Date',
     render: (value: string) => value ? new Date(value).toLocaleDateString() : '-',
     sortable: true
@@ -121,7 +91,7 @@ const columns: TableColumn<LandClass>[] = [
     sortable: true
   },
   {
-    key: 'updatedAt',
+    key: 'updatedDtm',
     label: 'Updated Date',
     render: (value: string) => value ? new Date(value).toLocaleDateString() : '-',
     sortable: true
@@ -136,20 +106,20 @@ const columns: TableColumn<LandClass>[] = [
 // Form fields configuration
 const formFields: FormField<LandClass>[] = [
   {
-    key: 'code',
-    label: 'Land Class Code',
-    type: 'text',
+    key: 'landCategoryGenId',
+    label: 'Land Category Gen ID',
+    type: 'number',
     required: true,
-    placeholder: 'Enter class code (e.g., A, B, C1)',
-    validation: (value: string) => {
-      if (!value || value.length < 1 || value.length > 10) {
-        return 'Code must be between 1 and 10 characters';
+    placeholder: 'Enter Land Category Gen ID',
+    validation: (value: number) => {
+      if (!value) {
+        return 'Land Category Gen ID is required';
       }
       return null;
     }
   },
   {
-    key: 'name',
+    key: 'landCategoryName',
     label: 'Land Class Name',
     type: 'text',
     required: true,
@@ -161,42 +131,7 @@ const formFields: FormField<LandClass>[] = [
       return null;
     }
   },
-  {
-    key: 'category',
-    label: 'Category',
-    type: 'select',
-    required: true,
-    options: [
-      { value: 'Agricultural', label: 'Agricultural' },
-      { value: 'Residential', label: 'Residential' },
-      { value: 'Commercial', label: 'Commercial' },
-      { value: 'Industrial', label: 'Industrial' },
-      { value: 'Institutional', label: 'Institutional' },
-      { value: 'Government', label: 'Government' },
-      { value: 'Forest', label: 'Forest' },
-      { value: 'Water Body', label: 'Water Body' },
-      { value: 'Waste Land', label: 'Waste Land' },
-      { value: 'Other', label: 'Other' }
-    ]
-  },
-  {
-    key: 'description',
-    label: 'Description',
-    type: 'textarea',
-    placeholder: 'Enter detailed description of the land class'
-  },
-  {
-    key: 'baseRate',
-    label: 'Base Rate (₹/sq ft)',
-    type: 'number',
-    placeholder: 'Enter base rate per square foot',
-    validation: (value: number) => {
-      if (value && value < 0) {
-        return 'Base rate must be positive';
-      }
-      return null;
-    }
-  }
+
 ];
 
 interface LandClassCRUDProps {

@@ -76,12 +76,15 @@ export interface Village extends BaseEntity {
 export interface Zone extends BaseEntity {}
 
 export interface LandClass extends BaseEntity {
-  type: 'AGRICULTURAL' | 'RESIDENTIAL' | 'COMMERCIAL' | 'INDUSTRIAL' | 'OTHERS';
-  category?: string;
-  description?: string;
-  baseRate?: number;
-  createdBy?: string;
-  updatedBy?: string;
+  landCategoryGenId: number;
+  landCategoryName: string;
+  active: boolean;
+  createdBy: string;
+  createdDtm: string;
+  updatedBy: string;
+  updatedDtm: string;
+  status?: any;
+  statusCode?: any;
 }
 
 export interface LandSubClass extends BaseEntity {

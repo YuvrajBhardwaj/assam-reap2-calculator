@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -7,157 +6,140 @@ import ValuationCalculator from '@/components/ValuationCalculator/ValuationCalcu
 import PropertyValuationUI from '@/components/PropertyValuationUI';
 import LandingPage from '@/components/LandingPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import {
   Building,
   Calculator,
   Database,
   ChartBar,
-  MapPin,
-  Home
 } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import WorkflowDashboard from '@/components/admin/WorkflowDashboard';
 import StampDutyForm from '@/components/StampDutyForm/StampDutyForm';
 import ZonalView from '@/components/ZonalView/ZonalView';
-import MasterDataTable from '@/components/admin/MasterDataTable';
-import LandTypeRequests from '@/components/admin/LandTypeRequests';
-import { useEffect } from 'react';
-import CertifiedCopiesServices from '@/components/CertifiedCopiesServices';
-import ParametersSection from '@/components/admin/ParametersSection';
-import LandTypeSection from '@/components/admin/LandTypeSection';
-import DepartmentDashboard from '@/components/department-dashboard/DepartmentDashboard';
-import { Helmet } from "react-helmet-async";
-import ParameterManager from '@/components/admin/ParameterManager';
-import ApprovalInbox from '@/components/admin/ApprovalInbox';
-import RQADashboard from '@/components/rqa/RQADashboard';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
+import CertifiedCopiesServices from '@/components/CertifiedCopiesServices';
+import DepartmentDashboard from '@/components/department-dashboard/DepartmentDashboard';
+import DepartmentMasterDataDashboard from '@/components/department-dashboard/DepartmentMasterDataDashboard';
+import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
-import DepartmentMasterDataDashboard from '@/components/department-dashboard/DepartmentMasterDataDashboard';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { userRole, isAuthenticated, simpleLogin, logout } = useAuth();
+  const { userRole } = useAuth();
   const [activeTab, setActiveTab] = useState("landing");
-  const [initialLocationData, setInitialLocationData] = useState<any>(null); // New state for location data
-  const [selectedMasterBox, setSelectedMasterBox] = useState<'jurisdiction' | 'parameters' | 'land-type' | 'approvals' | 'rqa'>('jurisdiction');
+  const [initialLocationData, setInitialLocationData] = useState<any>(null);
   const [prefilledStampDuty, setPrefilledStampDuty] = useState<{ marketValue?: number } | null>(null);
 
-  useEffect(() => {
-    const handleHomeEvent = () => setActiveTab("landing");
-    const handleTabNavigation = (event: CustomEvent) => {
-      const { tab, locationData, stampDutyData } = event.detail || {};
-      if (tab) setActiveTab(tab);
+  // ✅ Role flags
+  const isAdmin = userRole === 'ROLE_ADMIN' || 'admin';
+  const isDepartmentUser = userRole === 'ROLE_NormalUser';
+  const isJuniorManager = userRole === 'ROLE_JuniorManager';
+  const isManager = userRole === 'ROLE_Manager';
+  const isSeniorManager = userRole === 'ROLE_SeniorManager';
 
-      // If locationData is provided, update initialLocationData so the calculator receives it via props
-      if (locationData) {
-        const mapped = {
-          district: locationData.district
-            ? { code: locationData.district.code, name: locationData.district.name || '' }
-            : undefined,
-          circle: locationData.circle
-            ? { code: locationData.circle.code, name: locationData.circle.name || '' }
-            : undefined,
-          // Support both `village` and `mouza` payloads
-          village: locationData.village
-            ? { code: locationData.village.code, name: locationData.village.name || '' }
-            : locationData.mouza
-            ? { code: locationData.mouza.code, name: locationData.mouza.name || '' }
-            : undefined,
-        } as any;
-        setInitialLocationData(mapped);
-      }
-
-      // If stamp duty data present, store for StampDutyForm prefill
-      if (stampDutyData && typeof stampDutyData.marketValue === 'number') {
-        setPrefilledStampDuty({ marketValue: stampDutyData.marketValue });
-      }
-    };
-    
-    // Check for initial district, circle, mouza parameters
-    const searchParams = new URLSearchParams(window.location.search);
-    const districtCode = searchParams.get('district');
-    const circleCode = searchParams.get('circle');
-    const mouzaCode = searchParams.get('mouza');
-
-    // Activate valuation-calculator if district and circle are present (mouza is optional)
-    if (districtCode && circleCode) {
-      const locationData = {
-        district: { code: districtCode, name: '' },
-        circle: { code: circleCode, name: '' },
-        village: mouzaCode ? { code: mouzaCode, name: '' } : undefined // Set village only if mouzaCode exists
-      };
-      setInitialLocationData(locationData);
-      setActiveTab('valuation-calculator');
-      // Dispatch the custom event to trigger updates in ValuationCalculator
-      window.dispatchEvent(new CustomEvent('navigate-to-tab', {
-        detail: { tab: 'valuation-calculator', locationData: locationData }
-      }));
-    } else {
-      const initialTab = searchParams.get('tab');
-      if (initialTab) setActiveTab(initialTab);
-    }
-    
-    window.addEventListener("landing", handleHomeEvent);
-    window.addEventListener("navigate-to-tab", handleTabNavigation as EventListener);
-    
-    return () => {
-      window.removeEventListener("landing", handleHomeEvent);
-      window.removeEventListener("navigate-to-tab", handleTabNavigation as EventListener);
-    };
-  }, []);
-
-  const handleMasterBoxChange = (box: 'jurisdiction' | 'parameters' | 'land-type' | 'approvals' | 'rqa') => {
-    setSelectedMasterBox(box);
+  // ✅ Role-based tab access map
+  const roleAccessMap: Record<string, string[]> = {
+    admin: [
+      "property-valuation",
+      "valuation-calculator",
+      "stamp-duty-calculator",
+      "zonal-value-database",
+      "certified-copies",
+      "master-data",
+      "reports",
+      "workflow",
+      "user-management",
+    ],
+    department: [
+      "property-valuation",
+      "valuation-calculator",
+      "stamp-duty-calculator",
+      "zonal-value-database",
+      "certified-copies",
+      "department-dashboard",
+      "workflow-dept",
+    ],
+    manager: [
+      "property-valuation",
+      "valuation-calculator",
+      "stamp-duty-calculator",
+      "zonal-value-database",
+      "certified-copies",
+      "department-dashboard",
+      "workflow-dept",
+    ],
   };
-  const isAdmin = userRole === 'admin';
-  const isDepartmentUser = userRole === 'department';
 
+  const getAllowedTabs = () => {
+    if (isAdmin) return roleAccessMap.admin;
+    if (isDepartmentUser) return roleAccessMap.department;
+    if (isJuniorManager || isManager || isSeniorManager) return roleAccessMap.manager;
+    return ["landing"];
+  };
+
+  // ✅ Handle role-based tab change
   const handleTabChange = (value: string) => {
-    console.log("Tab changed to:", value);
-
-    // Restrict access for non-admin users
-    if (!isAdmin && !isDepartmentUser && !["landing", "property-valuation", "valuation-calculator", "zonal-value-database", "certified-copies", "stamp-duty-calculator"].includes(value)) {
-      console.log("Access denied: User role insufficient");
-      return;
-    }
-    
-    if (isDepartmentUser && value === "department-dashboard") {
-      setActiveTab(value);
+    const allowedTabs = getAllowedTabs();
+    if (!allowedTabs.includes(value)) {
+      console.warn("Access denied: User role insufficient");
       return;
     }
 
     setActiveTab(value);
 
-    // Clear initialLocationData if not on the valuation-calculator tab
     if (value !== "valuation-calculator") {
       setInitialLocationData(null);
-      // Clear URL query parameters and reset to base URL
       window.history.pushState({}, '', '/');
     }
   };
 
-  const handleGetStarted = () => {
-    setActiveTab("property-valuation");
-  };
-
+  // ✅ Handle navigation from Landing Page sections
   const handleNavigateToSection = (section: string) => {
-    // Check access before navigating
-    if (!isAdmin && !isDepartmentUser && !["landing", "property-valuation", "valuation-calculator", "stamp-duty-calculator", "zonal-value-database", "certified-copies"].includes(section)) {
-      console.log("Access denied: User role insufficient");
+    const allowedTabs = getAllowedTabs();
+    if (!allowedTabs.includes(section)) {
+      console.warn("Access denied: User role insufficient");
       return;
     }
-    
-    // Allow department users to access department dashboard
-    if (isDepartmentUser && section === "department-dashboard") {
-      setActiveTab(section);
-      return;
-    }
-    
     setActiveTab(section);
   };
+
+  const handleGetStarted = () => setActiveTab("property-valuation");
+
+  // ✅ Handle deep linking via query params
+  useEffect(() => {
+    const handleTabNavigation = (event: CustomEvent) => {
+      const { tab, locationData, stampDutyData } = event.detail || {};
+      if (tab) setActiveTab(tab);
+      if (locationData) setInitialLocationData(locationData);
+      if (stampDutyData && typeof stampDutyData.marketValue === 'number') {
+        setPrefilledStampDuty({ marketValue: stampDutyData.marketValue });
+      }
+    };
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const districtCode = searchParams.get('district');
+    const circleCode = searchParams.get('circle');
+    const mouzaCode = searchParams.get('mouza');
+
+    if (districtCode && circleCode) {
+      const locationData = {
+        district: { code: districtCode, name: '' },
+        circle: { code: circleCode, name: '' },
+        village: mouzaCode ? { code: mouzaCode, name: '' } : undefined,
+      };
+      setInitialLocationData(locationData);
+      setActiveTab('valuation-calculator');
+      window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: { tab: 'valuation-calculator', locationData } }));
+    } else {
+      const initialTab = searchParams.get('tab');
+      if (initialTab) setActiveTab(initialTab);
+    }
+
+    window.addEventListener("navigate-to-tab", handleTabNavigation as EventListener);
+    return () => window.removeEventListener("navigate-to-tab", handleTabNavigation as EventListener);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-assam-gray">
@@ -166,53 +148,53 @@ const Index = () => {
         <meta name="description" content="Calculate property valuation and stamp duty for Assam. Access zonal values, zonal database, and digital land records." />
         <link rel="canonical" href="/" />
       </Helmet>
+
       <Header />
+
       <main className="flex-1 container mx-auto px-4 py-6">
         <RoleSwitcher />
 
         <Tabs defaultValue="landing" value={activeTab} onValueChange={handleTabChange} className="w-full">
+          
+          {/* ✅ Restored your original styling */}
           <TabsList className="flex flex-nowrap gap-x-2 mb-8 rounded-lg p-1 justify-start overflow-x-auto sm:overflow-x-visible">
             <TabsTrigger value="property-valuation" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'property-valuation' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-              <Building className="h-4 w-4" />
-              <span>Property Valuation</span>
+              <Building className="h-4 w-4" /> <span>Property Valuation</span>
             </TabsTrigger>
+
             <TabsTrigger value="stamp-duty-calculator" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'stamp-duty-calculator' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-              <Calculator className="h-4 w-4" />
-              <span>Stamp Duty Calculation</span>
+              <Calculator className="h-4 w-4" /> <span>Stamp Duty</span>
             </TabsTrigger>
+
             <TabsTrigger value="zonal-value-database" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'zonal-value-database' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-              <Database className="h-4 w-4" />
-              <span>View Zonal Values</span>
+              <Database className="h-4 w-4" /> <span>Zonal Values</span>
             </TabsTrigger>
+
             <TabsTrigger value="certified-copies" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'certified-copies' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-              <Database className="h-4 w-4" />
-              <span>Services related to Certified Copies</span>
+              <Database className="h-4 w-4" /> <span>Certified Copies & Related Links</span>
             </TabsTrigger>
+
             {isDepartmentUser && (
               <>
                 <TabsTrigger value="department-dashboard" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'department-dashboard' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <Database className="h-4 w-4" />
-                  <span>Department Dashboard</span>
+                  <Database className="h-4 w-4" /> <span>Department Dashboard</span>
                 </TabsTrigger>
                 <TabsTrigger value="workflow-dept" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow-dept' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <ChartBar className="h-4 w-4" />
-                  <span>Workflow</span>
+                  <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
               </>
             )}
+
             {isAdmin && (
               <>
                 <TabsTrigger value="master-data" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'master-data' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <Database className="h-4 w-4" />
-                  <span>Master Data</span>
+                  <Database className="h-4 w-4" /> <span>Master Data</span>
                 </TabsTrigger>
                 <TabsTrigger value="reports" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'reports' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <ChartBar className="h-4 w-4" />
-                  <span>Reports</span>
+                  <ChartBar className="h-4 w-4" /> <span>Reports</span>
                 </TabsTrigger>
                 <TabsTrigger value="workflow" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-                  <ChartBar className="h-4 w-4" />
-                  <span>Workflow</span>
+                  <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
                 <TabsTrigger value="user-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'user-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
                   <span>User Management</span>
@@ -221,17 +203,17 @@ const Index = () => {
             )}
           </TabsList>
 
+          {/* ✅ Tab Content */}
           <TabsContent value="landing" className="space-y-4">
             <LandingPage onGetStarted={handleGetStarted} onNavigateToSection={handleNavigateToSection} />
           </TabsContent>
 
           <TabsContent value="property-valuation" className="space-y-4">
             <PropertyValuationUI />
-            
           </TabsContent>
 
           <TabsContent value="valuation-calculator" className="space-y-4">
-            <ValuationCalculator initialLocationData={initialLocationData} /> {/* Pass initialLocationData */}
+            <ValuationCalculator initialLocationData={initialLocationData} />
           </TabsContent>
 
           <TabsContent value="stamp-duty-calculator" className="space-y-4">
@@ -314,10 +296,10 @@ const Index = () => {
           )}
         </Tabs>
       </main>
+
       <Footer />
     </div>
   );
 };
 
 export default Index;
-

@@ -135,18 +135,18 @@ export async function getAllLandCategories(): Promise<LandClass[]> {
     const items = normalizeArray<any>(res);
     return items.map((lc: any) => ({
       id: (lc.landCategoryGenId ?? lc.id ?? '').toString(),
-      code: lc.landCategoryCode ?? lc.code ?? '',
+      code: lc.landCategoryGenId?.toString() ?? lc.code ?? '',
       name: lc.landCategoryName ?? lc.name ?? '',
-      landCategoryName: lc.landCategoryName ?? lc.name ?? '',
       isActive: lc.active ?? lc.isActive ?? true,
-      type: lc.type ?? 'OTHERS',
-      category: lc.category ?? '',
-      description: lc.description ?? '',
-      baseRate: lc.baseRate ?? 0,
-      createdAt: lc.createdDtm ?? lc.createdAt ?? '',
-      updatedAt: lc.updatedDtm ?? lc.updatedAt ?? '',
-      createdBy: lc.createdBy ?? '',
-      updatedBy: lc.updatedBy ?? '',
+      landCategoryGenId: lc.landCategoryGenId,
+      landCategoryName: lc.landCategoryName,
+      active: lc.active,
+      createdBy: lc.createdBy,
+      createdDtm: lc.createdDtm,
+      updatedBy: lc.updatedBy,
+      updatedDtm: lc.updatedDtm,
+      status: lc.status,
+      statusCode: lc.statusCode,
     }));
   } catch (err) {
     console.error('Failed to fetch land categories', err);
