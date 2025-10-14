@@ -8,6 +8,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   jwt: string;
   loginId: string;
+  roles: string[];
 }
 
 export interface AddUserRequest {

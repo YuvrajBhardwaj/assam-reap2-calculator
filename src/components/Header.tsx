@@ -202,7 +202,7 @@ const Header = () => {
                 onClick={handleNotificationClick}
               >
                 <Bell className="h-5 w-5" />
-                {isAuthenticated && userRole === 'admin' && (
+                {isAuthenticated && userRole === 'ROLE_ADMIN' && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                     3
                   </span>
@@ -244,7 +244,7 @@ const Header = () => {
               onClick={handleNotificationClick}
             >
               <Bell className="h-5 w-5" />
-              {isAuthenticated && userRole === 'admin' && (
+              {isAuthenticated && userRole === 'ROLE_ADMIN' && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                   3
                 </span>
@@ -253,7 +253,17 @@ const Header = () => {
             {isAuthenticated ? (
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium hidden sm:inline">
-                  {userRole === 'admin' ? 'Admin' : userRole === 'department' ? 'Department' : 'User'}
+                  {userRole === 'ROLE_ADMIN'
+                    ? 'Admin'
+                    : userRole === 'ROLE_NormalUser'
+                      ? 'Normal User'
+                      : userRole === 'ROLE_JuniorManager'
+                        ? 'Junior Manager'
+                        : userRole === 'ROLE_Manager'
+                          ? 'Manager'
+                          : userRole === 'ROLE_SeniorManager'
+                            ? 'Senior Manager'
+                            : 'User'}
                 </span>
                 <button
                   onClick={handleLogout}
@@ -412,7 +422,7 @@ const Header = () => {
             Notifications
           </DialogTitle>
           <div className="space-y-4">
-            {isAuthenticated && userRole === 'admin' ? (
+            {isAuthenticated && userRole === 'ROLE_ADMIN' ? (
               <>
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-semibold text-blue-800 mb-1">Welcome Admin!</h4>

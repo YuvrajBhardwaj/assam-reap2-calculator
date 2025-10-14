@@ -74,8 +74,7 @@ const WorkflowAdminDashboard = () => {
   const { userRole } = useAuth();
 
   // Roles
-  const isAdmin = userRole === "admin";
-  const isDepartment = userRole === "department";
+  const isAdmin = userRole === "ROLE_ADMIN";
 
   // Audit Logs State
   const [logs, setLogs] = useState<AuditLog[]>([]);

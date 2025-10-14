@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { ApiService, LoginRequest } from '../services/adminService';
 
-type UserRole = 'user' | 'admin' | 'department' | 'sr_manager' | 'jr_manager' | 'manager';
+type UserRole = 'ROLE_NormalUser' | 'ROLE_ADMIN' | 'ROLE_JuniorManager' | 'ROLE_Manager' | 'ROLE_SeniorManager' | 'user';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -43,18 +43,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(response.jwt);
       setLoginId(response.loginId);
       
-      // Determine role based on loginId or response
-      let role: UserRole = 'user';
-      if (response.loginId.toLowerCase().includes('admin') || response.loginId === 'admin') {
-        role = 'admin';
-      } else if (response.loginId.toLowerCase().includes('srmanager')) {
-        role = 'sr_manager';
-      } else if (response.loginId.toLowerCase().includes('jrmanager')) {
-        role = 'jr_manager';
-      } else if (response.loginId.toLowerCase().includes('manager')) {
-        role = 'manager';
-      } else if (response.loginId.toLowerCase().includes('dept') || response.loginId === 'deptuser') {
-        role = 'department';
+      // Determine role based on the roles array in the response
+      let role: UserRole = 'user'; // Default role
+      if (response.roles && response.roles.length > 0) {
+        // Assuming the first role in the array is the primary role for display
+        // You might want to implement more complex logic if a user can have multiple roles
+        const primaryRole = response.roles[0];
+        if (['ROLE_NormalUser', 'ROLE_ADMIN', 'ROLE_JuniorManager', 'ROLE_Manager', 'ROLE_SeniorManager'].includes(primaryRole)) {
+          role = primaryRole as UserRole;
+        }
       }
       
       setUserRole(role);

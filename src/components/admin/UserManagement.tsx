@@ -20,8 +20,22 @@ export const UserManagement = () => {
     departmentCode: '',
     zoneCode: '',
     designation: '',
-    roleCodes: ['10001']
+    roleCodes: []
   });
+
+  const roles = [
+    { code: 'ROLE_JR_MANAGER', name: 'Jr Manager' },
+    { code: 'ROLE_MANAGER', name: 'Manager' },
+    { code: 'ROLE_SENIOR_MANAGER', name: 'Senior Manager' },
+    { code: 'ROLE_ADMIN', name: 'Admin' },
+  ];
+
+  const handleRoleChange = (selectedRoles: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      roleCodes: selectedRoles,
+    }));
+  };
 
   const handleInputChange = (field: keyof AddUserRequest, value: string) => {
     setFormData(prev => ({
@@ -153,6 +167,40 @@ export const UserManagement = () => {
                 placeholder="Enter designation"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="roleCode">Role</Label>
+              <Select
+                onValueChange={(value) => handleRoleChange([value])}
+                value={formData.roleCodes[0] || ''}
+              >
+                <SelectTrigger id="roleCode">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10001">Admin</SelectItem>
+                  <SelectItem value="10002">User</SelectItem>
+                  {/* Add more roles as needed */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="roleCodes">Roles</Label>
+              <Select
+                onValueChange={(value) => handleRoleChange([value])}
+                value={formData.roleCodes[0] || ''}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.code} value={role.code}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Button type="submit" disabled={isLoading} className="w-full">
