@@ -211,14 +211,6 @@ export default function DistrictCRUD({
   const customActions = [
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
   return (
     <GenericDataTable
       title="District"
@@ -235,8 +227,10 @@ export default function DistrictCRUD({
       enableFilters={true}
       enableExport={true}
       onItemSelect={onDistrictSelect}
+      getItemName={(item: District) => item.name}
       customActions={customActions}
       pageSize={15}
+      loading={loading}
     />
   );
 }

@@ -286,30 +286,25 @@ export default function CircleCRUD({
 
       {/* Circles Table */}
       {currentDistrictCode ? (
-        loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-          </div>
-        ) : (
-          <GenericDataTable
-            title={`Circles in ${districts.find(d => d.code === currentDistrictCode)?.name || currentDistrictCode}`}
-            data={circles}
-            columns={columns}
-            service={circleService}
-            formFields={formFields}
-            requiresApproval={requiresApproval}
-            canCreate={true}
-            canEdit={true}
-            canDeactivate={true}
-            canViewHistory={true}
-            enableSearch={true}
-            enableFilters={true}
-            enableExport={true}
-            onItemSelect={onCircleSelect}
-            customActions={customActions}
-            pageSize={15}
-          />
-        )
+        <GenericDataTable
+          title={`Circles in ${districts.find(d => d.code === currentDistrictCode)?.name || currentDistrictCode}`}
+          data={circles}
+          columns={columns}
+          service={circleService}
+          formFields={formFields}
+          requiresApproval={requiresApproval}
+          canCreate={true}
+          canEdit={true}
+          canDeactivate={true}
+          canViewHistory={true}
+          enableSearch={true}
+          enableFilters={true}
+          enableExport={true}
+          onItemSelect={onCircleSelect}
+          customActions={customActions}
+          pageSize={15}
+          loading={loading}
+        />
       ) : (
         <Card>
           <CardContent className="flex items-center justify-center h-64">

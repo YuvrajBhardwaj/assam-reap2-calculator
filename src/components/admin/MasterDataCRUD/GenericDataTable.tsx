@@ -63,6 +63,7 @@ export interface GenericDataTableProps<T extends BaseEntity> {
   data: T[];
   columns: TableColumn<T>[];
   service: CRUDService<T>;
+  getItemName?: (item: T) => string;
 
   // Form configuration
   formFields: FormField<T>[];
@@ -91,6 +92,7 @@ export interface GenericDataTableProps<T extends BaseEntity> {
     onClick: (item: T) => void;
     variant?: 'default' | 'secondary' | 'destructive';
   }[];
+  loading?: boolean;
 }
 
 export interface FormField<T> {
@@ -114,6 +116,7 @@ export default function GenericDataTable<T extends BaseEntity>({
   columns,
   service,
   formFields,
+  getItemName,
   canCreate = true,
   canEdit = true,
   canDeactivate = true,
@@ -125,13 +128,13 @@ export default function GenericDataTable<T extends BaseEntity>({
   enableExport = true,
   onItemSelect,
   onBulkAction,
-  customActions = []
+  customActions = [],
+  loading = false // Default to false if not provided
 }: GenericDataTableProps<T>) {
 
   // State management
   const [data, setData] = useState<T[]>(initialData);
   const [filteredData, setFilteredData] = useState<T[]>(Array.isArray(initialData) ? initialData : []);
-  const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -150,6 +153,7 @@ export default function GenericDataTable<T extends BaseEntity>({
   const [historyData, setHistoryData] = useState<AuditLog[]>([]);
   const [actionReason, setActionReason] = useState('');
   const [pendingAction, setPendingAction] = useState<{ type: string; item?: T; items?: T[] } | null>(null);
+  const [deactivatingItemName, setDeactivatingItemName] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -209,7 +213,6 @@ export default function GenericDataTable<T extends BaseEntity>({
 
   // CRUD operations
   const handleRefresh = async () => {
-    setLoading(true);
     try {
       const refreshedData = await service.fetchAll();
       setData(refreshedData);
@@ -223,8 +226,6 @@ export default function GenericDataTable<T extends BaseEntity>({
         description: "Failed to refresh data.",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -355,7 +356,6 @@ export default function GenericDataTable<T extends BaseEntity>({
     if (!service.getHistory) return;
 
     try {
-      setLoading(true);
       const history = await service.getHistory(item.id);
       setHistoryData(history);
       setIsHistoryDialogOpen(true);
@@ -365,8 +365,6 @@ export default function GenericDataTable<T extends BaseEntity>({
         description: "Failed to load history.",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -409,23 +407,23 @@ export default function GenericDataTable<T extends BaseEntity>({
         );
 
       case 'textarea':
-  return (
-    <div key={field.key as string} className="space-y-2">
-      <Label htmlFor={field.key as string}>
-        {field.label}
-        {field.required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      <Textarea
-        id={field.key as string}
-        value={value as string}
-        onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
-        placeholder={field.placeholder}
-        disabled={field.disabled}
-        className={error ? "border-red-500" : ""}
-      />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-    </div>
-  );
+        return (
+          <div key={field.key as string} className="space-y-2">
+            <Label htmlFor={field.key as string}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Textarea
+              id={field.key as string}
+              value={value as string}
+              onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
+              placeholder={field.placeholder}
+              disabled={field.disabled}
+              className={error ? "border-red-500" : ""}
+            />
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+          </div>
+        );
 
       case 'checkbox': {
     return (
@@ -499,6 +497,7 @@ const renderActionButtons = (item: T) => (
         className="text-red-600"
         onClick={() => {
           setPendingAction({ type: 'deactivate', item });
+          setDeactivatingItemName(getItemName ? getItemName(item) : (item.name || item.id));
           setIsConfirmDialogOpen(true);
         }}
       >
@@ -520,8 +519,10 @@ const renderActionButtons = (item: T) => (
   </div>
 );
 
-return (
-  <Card>
+
+
+  return (
+    <Card>
     <CardHeader>
       <div className="flex items-center justify-between">
         <CardTitle>{title}</CardTitle>
@@ -783,10 +784,12 @@ return (
         <DialogHeader>
           <DialogTitle>Confirm Action</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <p>Are you sure you want to {pendingAction?.type === 'deactivate' ? 'deactivate' : 'perform this action on'} this {title.toLowerCase()}?</p>
-
-          <div className="space-y-2">
+        <div className="space-y-4"><p>
+            Are you sure you want to
+            {pendingAction?.type === 'deactivate'
+              ? ` deactivate ${deactivatingItemName} ${title.toLowerCase()}`
+              : ` perform this action on this ${title.toLowerCase()}`}?
+          </p><div className="space-y-2">
             <Label htmlFor="confirm-reason">
               Reason <span className="text-red-500">*</span>
             </Label>

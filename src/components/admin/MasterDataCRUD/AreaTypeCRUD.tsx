@@ -96,10 +96,6 @@ export default function AreaTypeCRUD() {
     }
   ];
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <GenericDataTable
       title="Area Type Management"
@@ -108,6 +104,7 @@ export default function AreaTypeCRUD() {
       service={areaTypeService}
       formFields={formFields}
       canEdit={false} // No update endpoint specified
+      loading={loading}
     />
   );
 }

@@ -125,14 +125,6 @@ export default function LandSubClassCRUD({ requiresApproval = false }: LandSubCl
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
     <GenericDataTable
       title="Land Sub-Class Management"
@@ -148,6 +140,7 @@ export default function LandSubClassCRUD({ requiresApproval = false }: LandSubCl
       enableSearch={true}
       enableFilters={true}
       enableExport={true}
+      loading={loading}
       customActions={[
         {
           label: 'Reassign Parent Class',

@@ -24,19 +24,31 @@ export default function LandClassMapping() {
   const [selectedVillage, setSelectedVillage] = useState<string>('');
 
   const [mappings, setMappings] = useState<LandClassMapping[]>([]);
+  const [loading, setLoading] = useState(true); // Add loading state
   const { toast } = useToast();
 
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true); // Set loading to true before fetching
         const [classes, dists] = await Promise.all([getAllLandCategories(), getAllDistricts()]);
         setLandClasses(classes);
         setDistricts(dists);
       } catch (e) {
         toast({ title: 'Error', description: 'Failed to load initial data', variant: 'destructive' });
+      } finally {
+        setLoading(false); // Set loading to false after fetching (or on error)
       }
     })();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     (async () => {
