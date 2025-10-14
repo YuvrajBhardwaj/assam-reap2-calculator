@@ -210,7 +210,7 @@ export default function LandClassMapping() {
                     </TableCell>
                     <TableCell>{lc.code}</TableCell>
                     <TableCell>{lc.name}</TableCell>
-                    <TableCell>{lc.category || '-'}</TableCell>
+                    <TableCell>{lc.landCategoryName || '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
