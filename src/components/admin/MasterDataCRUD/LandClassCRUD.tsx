@@ -106,20 +106,20 @@ const columns: TableColumn<LandClass>[] = [
 // Form fields configuration
 const formFields: FormField<LandClass>[] = [
   {
-    key: 'landCategoryGenId',
-    label: 'Land Category Gen ID',
-    type: 'number',
+    key: 'code',
+    label: 'Land Class Code',
+    type: 'text',
     required: true,
-    placeholder: 'Enter Land Category Gen ID',
-    validation: (value: number) => {
-      if (!value) {
-        return 'Land Category Gen ID is required';
+    placeholder: 'Enter class code (e.g., A, B, C1)',
+    validation: (value: string) => {
+      if (!value || value.length < 1) {
+        return 'Land Class Code is required';
       }
       return null;
     }
   },
   {
-    key: 'landCategoryName',
+    key: 'name',
     label: 'Land Class Name',
     type: 'text',
     required: true,
@@ -131,7 +131,40 @@ const formFields: FormField<LandClass>[] = [
       return null;
     }
   },
-
+  {
+    key: 'landCategoryGenId',
+    label: 'Category',
+    type: 'select',
+    required: true,
+    placeholder: 'Select category',
+    options: [], // This will be populated dynamically
+    validation: (value: number) => {
+      if (!value) {
+        return 'Category is required';
+      }
+      return null;
+    }
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    type: 'textarea',
+    required: false,
+    placeholder: 'Enter detailed description of the land class',
+  },
+  {
+    key: 'baseRate',
+    label: 'Base Rate (₹/sq ft)',
+    type: 'number',
+    required: false,
+    placeholder: 'Enter base rate per square foot',
+    validation: (value: number) => {
+      if (value && value < 0) {
+        return 'Base rate cannot be negative';
+      }
+      return null;
+    }
+  },
 ];
 
 interface LandClassCRUDProps {

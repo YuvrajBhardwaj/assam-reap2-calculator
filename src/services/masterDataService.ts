@@ -261,7 +261,16 @@ export async function deactivateZone(id: string): Promise<void> {
 
 // ===== LAND CLASS MANAGEMENT =====
 export async function createLandClass(landClass: Omit<LandClass, 'id'>): Promise<LandClass> {
-  const res = await masterDataApi.post('/add/landCategory', { landCategoryName: landClass.name });
+  const res = await masterDataApi.post('/add/landCategory', {
+    landCategoryGenId: landClass.landCategoryGenId,
+    landCategoryName: landClass.landCategoryName,
+    code: landClass.code,
+    name: landClass.name,
+    description: landClass.description,
+    baseRate: landClass.baseRate,
+    reason: landClass.reasonForRequest,
+    isActive: landClass.isActive,
+  });
   return res.data;
 }
 

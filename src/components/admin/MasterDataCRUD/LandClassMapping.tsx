@@ -8,6 +8,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { LandClass, type LandClassMapping } from '@/types/masterData';
 import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircle } from '@/services/locationService';
 import * as masterDataService from '@/services/masterDataService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function LandClassMapping() {
   const [landClasses, setLandClasses] = useState<LandClass[]>([]);
@@ -26,6 +29,15 @@ export default function LandClassMapping() {
   const [mappings, setMappings] = useState<LandClassMapping[]>([]);
   const [loading, setLoading] = useState(true); // Add loading state
   const { toast } = useToast();
+
+  const [isAddLandClassDialogOpen, setIsAddLandClassDialogOpen] = useState(false);
+  const [newLandClassCode, setNewLandClassCode] = useState('');
+  const [newLandClassName, setNewLandClassName] = useState('');
+  const [newLandCategoryGenId, setNewLandCategoryGenId] = useState('');
+  const [newLandClassDescription, setNewLandClassDescription] = useState('');
+  const [newLandClassBaseRate, setNewLandClassBaseRate] = useState<number | string>('');
+  const [newLandClassReason, setNewLandClassReason] = useState('');
+  const [newLandCategoryName, setNewLandCategoryName] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -145,6 +157,36 @@ export default function LandClassMapping() {
     }
   };
 
+  const addNewLandClass = async () => {
+    if (!newLandClassCode || !newLandClassName || !newLandCategoryGenId || !newLandClassReason) {
+      toast({ title: 'Error', description: 'Please fill in all required fields.', variant: 'destructive' });
+      return;
+    }
+    try {
+      await masterDataService.createLandClass({
+        code: newLandClassCode,
+        name: newLandClassName,
+        landCategoryGenId: parseInt(newLandCategoryGenId), // Convert to number
+        landCategoryName: newLandCategoryName,
+        description: newLandClassDescription,
+        baseRate: typeof newLandClassBaseRate === 'number' ? newLandClassBaseRate : parseFloat(newLandClassBaseRate),
+        reasonForRequest: newLandClassReason,
+        isActive: true,
+      });
+      toast({ title: 'Success', description: 'Land Class added successfully.' });
+      setIsAddLandClassDialogOpen(false);
+      setNewLandClassCode('');
+      setNewLandClassName('');
+      setNewLandCategoryGenId('');
+      setNewLandClassDescription('');
+      setNewLandClassBaseRate('');
+      setNewLandClassReason('');
+      await loadMappings(); // Refresh the list of land classes
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to add land class.', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -220,6 +262,10 @@ export default function LandClassMapping() {
             </div>
           </div>
 
+          <div className="mt-4">
+            <Button onClick={() => setIsAddLandClassDialogOpen(true)}>Add New Land Class</Button>
+          </div>
+
           <div>
             <h3 className="text-sm font-medium mb-2">Existing Mappings</h3>
             <Table>
@@ -251,6 +297,105 @@ export default function LandClassMapping() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isAddLandClassDialogOpen} onOpenChange={setIsAddLandClassDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Land Class Management</DialogTitle>
+            <DialogDescription>
+              Fill in the details for the new land class.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="landClassCode" className="text-right">
+                Land Class Code
+              </Label>
+              <Input
+                id="landClassCode"
+                value={newLandClassCode}
+                onChange={(e) => setNewLandClassCode(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter class code (e.g., A, B, C1)"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="landClassName" className="text-right">
+                Land Class Name
+              </Label>
+              <Input
+                id="landClassName"
+                value={newLandClassName}
+                onChange={(e) => setNewLandClassName(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter class name"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select value={newLandCategoryGenId} onValueChange={(value) => {
+                setNewLandCategoryGenId(value);
+                const selectedLandClass = landClasses.find(lc => lc.id === value);
+                setNewLandCategoryName(selectedLandClass ? selectedLandClass.name : '');
+              }}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {landClasses.map(lc => (
+                    <SelectItem key={lc.id as string} value={lc.id as string}>
+                      {lc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Input
+                id="description"
+                value={newLandClassDescription}
+                onChange={(e) => setNewLandClassDescription(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter detailed description of the land class"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="baseRate" className="text-right">
+                Base Rate (₹/sq ft)
+              </Label>
+              <Input
+                id="baseRate"
+                type="number"
+                value={newLandClassBaseRate}
+                onChange={(e) => setNewLandClassBaseRate(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter base rate per square foot"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="reasonForRequest" className="text-right">
+                Reason for Request
+              </Label>
+              <Input
+                id="reasonForRequest"
+                value={newLandClassReason}
+                onChange={(e) => setNewLandClassReason(e.target.value)}
+                className="col-span-3"
+                placeholder="Please provide a reason for this request..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddLandClassDialogOpen(false)}>Cancel</Button>
+            <Button onClick={addNewLandClass}>Submit Request</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

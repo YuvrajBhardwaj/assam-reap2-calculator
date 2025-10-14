@@ -78,13 +78,15 @@ export interface Zone extends BaseEntity {}
 export interface LandClass extends BaseEntity {
   landCategoryGenId: number;
   landCategoryName: string;
-  active: boolean;
-  createdBy: string;
-  createdDtm: string;
-  updatedBy: string;
-  updatedDtm: string;
+  createdBy?: string;
+  createdDtm?: string;
+  updatedBy?: string;
+  updatedDtm?: string;
   status?: any;
   statusCode?: any;
+  reasonForRequest?: string;
+  description?: string;
+  baseRate?: number;
 }
 
 export interface LandSubClass extends BaseEntity {
