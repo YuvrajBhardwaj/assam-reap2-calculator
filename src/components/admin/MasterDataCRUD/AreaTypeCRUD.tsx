@@ -11,6 +11,7 @@ interface AreaType extends BaseEntity {
 }
 
 export default function AreaTypeCRUD() {
+  console.log("AreaTypeCRUD component rendering");
   const [areaTypes, setAreaTypes] = useState<AreaType[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -22,7 +23,8 @@ export default function AreaTypeCRUD() {
   const loadAreaTypes = async () => {
     try {
       setLoading(true);
-      const data = await masterDataService.fetchAreaTypes();
+      const response = await masterDataService.fetchAreaTypes();
+      const data = response.data;
       // We need to map the data to our AreaType interface
       const mappedData = data.map(item => ({
         id: item.areaTypesGenId.toString(),
@@ -44,10 +46,13 @@ export default function AreaTypeCRUD() {
     }
   };
 
+  useEffect(() => {
+    console.log("Area Types State (after update):", areaTypes);
+  }, [areaTypes]);
   const areaTypeService: CRUDService<AreaType> = {
     fetchAll: async () => {
-      const data = await masterDataService.fetchAreaTypes();
-      return data.map(item => ({
+      const response = await masterDataService.fetchAreaTypes();
+      return response.data.map(item => ({
         id: item.areaTypesGenId.toString(),
         name: item.areaType,
         code: item.areaTypesGenId.toString(),

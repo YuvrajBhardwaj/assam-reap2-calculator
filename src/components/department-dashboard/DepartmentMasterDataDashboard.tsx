@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Database, MapPin, Home } from 'lucide-react';
+import { Database, MapPin, Home, Layers, Building, Calculator } from 'lucide-react';
 
 // Reuse existing admin CRUD components for department users' view
 import DistrictCRUD from "@/components/admin/MasterDataCRUD/DistrictCRUD";
@@ -10,6 +10,10 @@ import CircleCRUD from "@/components/admin/MasterDataCRUD/CircleCRUD";
 import MouzaCRUD from "@/components/admin/MasterDataCRUD/MouzaCRUD";
 import VillageCRUD from "@/components/admin/MasterDataCRUD/VillageCRUD";
 import LotCRUD from "@/components/admin/MasterDataCRUD/LotCRUD";
+import LandClassCRUD from "@/components/admin/MasterDataCRUD/LandClassCRUD";
+import AreaTypeCRUD from "@/components/admin/MasterDataCRUD/AreaTypeCRUD";
+import SROCascadingCRUD from "@/components/admin/MasterDataCRUD/SROCascadingCRUD";
+import ParameterCRUD from "@/components/admin/MasterDataCRUD/ParameterCRUD";
 
 interface DepartmentMasterDataDashboardProps {
   className?: string;
@@ -28,15 +32,19 @@ const dummyStatusByEntity = {
   mouzas: { pending: 4, approved: 10, rejected: 2 },
   villages: { pending: 7, approved: 15, rejected: 3 },
   lots: { pending: 2, approved: 6, rejected: 0 },
+  landclass: { pending: 1, approved: 9, rejected: 1 },
+  areatypes: { pending: 2, approved: 7, rejected: 1 },
+  sro: { pending: 0, approved: 5, rejected: 0 },
+  parameters: { pending: 3, approved: 11, rejected: 2 },
 };
 
 function StatusSummary({ entity }: { entity: keyof typeof dummyStatusByEntity }) {
   const s = dummyStatusByEntity[entity];
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <Badge className={statusColors.pending}>Pending: {s.pending}</Badge>
-      <Badge className={statusColors.approved}>Approved: {s.approved}</Badge>
-      <Badge className={statusColors.rejected}>Rejected: {s.rejected}</Badge>
+    <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
+      <Badge className={`${statusColors.pending} px-3 py-1.5 text-sm md:text-base`}>Pending: {s.pending}</Badge>
+      <Badge className={`${statusColors.approved} px-3 py-1.5 text-sm md:text-base`}>Approved: {s.approved}</Badge>
+      <Badge className={`${statusColors.rejected} px-3 py-1.5 text-sm md:text-base`}>Rejected: {s.rejected}</Badge>
     </div>
   );
 }
@@ -58,7 +66,7 @@ export default function DepartmentMasterDataDashboard({ className = "" }: Depart
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="districts" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Districts
@@ -78,6 +86,22 @@ export default function DepartmentMasterDataDashboard({ className = "" }: Depart
               <TabsTrigger value="lots" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Lots
+              </TabsTrigger>
+              <TabsTrigger value="landclass" className="flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                Land Classes
+              </TabsTrigger>
+              <TabsTrigger value="areatypes" className="flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                Area Types
+              </TabsTrigger>
+              <TabsTrigger value="sro" className="flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                SRO Hierarchy
+              </TabsTrigger>
+              <TabsTrigger value="parameters" className="flex items-center gap-2">
+                <Calculator className="w-4 h-4" />
+                Parameters
               </TabsTrigger>
             </TabsList>
 
@@ -104,6 +128,26 @@ export default function DepartmentMasterDataDashboard({ className = "" }: Depart
             <TabsContent value="lots" className="space-y-4">
               <StatusSummary entity="lots" />
               <LotCRUD />
+            </TabsContent>
+
+            <TabsContent value="landclass" className="space-y-4">
+              <StatusSummary entity="landclass" />
+              <LandClassCRUD requiresApproval={true} />
+            </TabsContent>
+
+            <TabsContent value="areatypes" className="space-y-4">
+              <StatusSummary entity="areatypes" />
+              <AreaTypeCRUD />
+            </TabsContent>
+
+            <TabsContent value="sro" className="space-y-4">
+              <StatusSummary entity="sro" />
+              <SROCascadingCRUD />
+            </TabsContent>
+
+            <TabsContent value="parameters" className="space-y-4">
+              <StatusSummary entity="parameters" />
+              <ParameterCRUD />
             </TabsContent>
           </Tabs>
         </CardContent>

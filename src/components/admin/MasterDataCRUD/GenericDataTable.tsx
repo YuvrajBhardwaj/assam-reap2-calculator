@@ -204,6 +204,8 @@ export default function GenericDataTable<T extends BaseEntity>({
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+  console.log("GenericDataTable received data:", data);
+  console.log("Filtered Data:", filteredData);
 
   // CRUD operations
   const handleRefresh = async () => {

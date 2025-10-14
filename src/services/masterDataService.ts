@@ -286,7 +286,7 @@ export async function getLandClassHistory(id: string): Promise<AuditLog[]> {
 }
 
 // ===== AREA TYPE MANAGEMENT =====
-export async function fetchAreaTypes(): Promise<any[]> {
+export async function fetchAreaTypes(): Promise<{ data: any[] }> {
   const res = await masterDataApi.get('/getAreaType');
   return res.data;
 }
