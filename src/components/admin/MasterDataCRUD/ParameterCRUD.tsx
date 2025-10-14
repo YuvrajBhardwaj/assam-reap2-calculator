@@ -42,8 +42,9 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
   const [activeTab, setActiveTab] = useState('parameters');
   const { toast } = useToast();
   const { userRole } = useAuth();
-  const isAdmin = userRole === 'admin';
-  const isDepartment = userRole === 'department';
+  const isAdmin = userRole === 'ROLE_ADMIN';
+  const isDepartment = userRole === 'ROLE_JuniorManager' || userRole === 'ROLE_Manager' || userRole === 'ROLE_SeniorManager';
+  
   const canModify = isAdmin || isDepartment;
 
   // Load data on component mount
@@ -211,14 +212,16 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
         parameterCode: data.parameterCode,
         weightage: data.weightage
       } as ParameterWeightage);
-      return { ...result, id: result.parameterCode, code: result.parameterCode, name: parameters.find(p => p.code === result.parameterCode)?.name || result.parameterCode, isActive: true };
+      const parameterName = parameters.find(p => p.code === result.parameterCode)?.name || result.parameterCode;
+      return { ...result, id: result.parameterCode, code: result.parameterCode, name: parameterName, isActive: true };
     },
     update: async (id, data) => {
       const result = await masterDataService.updateParameterWeightage(id, {
         parameterCode: data.parameterCode,
         weightage: data.weightage
       } as ParameterWeightage);
-      return { ...result, id: result.parameterCode, code: result.parameterCode, name: parameters.find(p => p.code === result.parameterCode)?.name || result.parameterCode, isActive: true };
+      const parameterName = parameters.find(p => p.code === result.parameterCode)?.name || result.parameterCode;
+      return { ...result, id: result.parameterCode, code: result.parameterCode, name: parameterName, isActive: true };
     },
     deactivate: async (id) => {
       await masterDataService.deleteParameterWeightage(id);
@@ -376,9 +379,9 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
                  service={parameterCRUDService}
                  formFields={parameterFormFields}
                  onItemSelect={(parameter) => setSelectedParameter(parameter)}
-                 canCreate={canModify}
-                 canEdit={canModify}
-                 canDeactivate={canModify}
+                 canCreate={!!canModify}
+                 canEdit={!!canModify}
+                 canDeactivate={!!canModify}
                  canViewHistory={true}
                  requiresApproval={true}
                  enableSearch={true}

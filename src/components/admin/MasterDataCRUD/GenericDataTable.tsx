@@ -570,7 +570,7 @@ const renderActionButtons = (item: T) => (
                   Add {title}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl overflow-y-auto max-h-[80vh]">
                 <DialogHeader>
                   <DialogTitle>Add New {title}</DialogTitle>
                 </DialogHeader>
@@ -703,7 +703,7 @@ const renderActionButtons = (item: T) => (
 
     {/* Edit Dialog */}
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl overflow-y-auto max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Edit {title}</DialogTitle>
         </DialogHeader>
