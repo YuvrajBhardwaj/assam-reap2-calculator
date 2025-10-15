@@ -55,6 +55,11 @@ const isGuest = userRole === null;
       "reports",
       "workflow",
       "user-management",
+
+      "landing",
+      "upcoming-initiatives",
+      "important-links",
+      "news-updates",
     ],
     department: [
       "property-valuation",
@@ -64,13 +69,24 @@ const isGuest = userRole === null;
       "certified-copies",
       "department-dashboard",
       "workflow-dept",
+
+      "landing",
+      "upcoming-initiatives",
+      "important-links",
+      "news-updates",
     ],
     basicUser: [
+      
       "property-valuation",
       "valuation-calculator",
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
+
+      "landing",
+      "upcoming-initiatives",
+      "important-links",
+      "news-updates",
     ],
     guest: ["landing"],
   };
@@ -323,6 +339,28 @@ const isGuest = userRole === null;
 
           <TabsContent value="certified-copies" className="space-y-4">
             <CertifiedCopiesServices />
+          </TabsContent>
+          
+
+          <TabsContent value="upcoming-initiatives" className="space-y-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold text-maroon-700 mb-4">Upcoming Initiatives</h2>
+              <p className="text-gray-700">Details about upcoming initiatives will be displayed here.</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="important-links" className="space-y-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold text-maroon-700 mb-4">Important Links</h2>
+              <p className="text-gray-700">A collection of important links will be displayed here.</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="news-updates" className="space-y-4">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold text-maroon-700 mb-4">News & Updates</h2>
+              <p className="text-gray-700">The latest news and updates will be displayed here.</p>
+            </div>
           </TabsContent>
 
           {isDepartmentUser && (

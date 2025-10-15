@@ -124,27 +124,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       </div>
     </Marquee>
 
-    {/* Key features */}
-    <section className="bg-gradient-to-r from-maroon-700 to-maroon-800 py-10">
-      <div className="container mx-auto px-4 text-white text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6">Key Features</h2>
-        <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
-          {[
-            'Real-time Valuation',
-            'Digital Land Records',
-            'Transparent Process',
-            'Multi-language Support',
-          ].map((feature) => (
-            <div key={feature} className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
-              <span className="w-8 h-8 bg-[#f9c846] text-maroon-800 font-bold rounded-full flex items-center justify-center">
-                ✓
-              </span>
-              <span className="font-medium">{feature}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    
 
     {/* Featured services */}
     <section className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -203,13 +183,17 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </ul>
         </div>
         <div className="flex flex-wrap gap-3 mt-6">
-          {['initiatives', 'links', 'news'].map((s) => (
+          {[
+            { label: 'Initiatives', section: 'upcoming-initiatives' },
+            { label: 'Links', section: 'important-links' },
+            { label: 'News', section: 'news-updates' },
+          ].map(({ label, section }) => (
             <button
-              key={s}
-              onClick={() => onNavigateToSection(s)}
+              key={section}
+              onClick={() => onNavigateToSection(section)}
               className="bg-[#f9c846] hover:bg-[#e6b800] text-maroon-800 font-semibold px-4 py-2 rounded shadow transition"
             >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {label}
             </button>
           ))}
         </div>
@@ -235,10 +219,10 @@ const LandingPage: React.FC<LandingPageProps> = ({
       </aside>
     </section>
 
-    <RecentInitiatives />
 
     {/* Testimonials */}
-    <section className="container mx-auto px-4 py-12">
+    
+    {/* <section className="container mx-auto px-4 py-12">
       <h2 className="text-2xl font-bold mb-8 text-maroon-700">Real Stories from Users</h2>
       <ul className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {testimonials.map(({ title, image, story }) => (
@@ -252,6 +236,28 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </li>
         ))}
       </ul>
+    </section> */}
+
+    {/* Key features */}
+    <section className="bg-gradient-to-r from-maroon-700 to-maroon-800 py-10">
+      <div className="container mx-auto px-4 text-white text-center">
+        <h2 className="text-2xl md:text-3xl font-bold mb-6">Key Features</h2>
+        <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
+          {[
+            'Real-time Valuation',
+            'Digital Land Records',
+            'Transparent Process',
+            'Multi-language Support',
+          ].map((feature) => (
+            <div key={feature} className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
+              <span className="w-8 h-8 bg-[#f9c846] text-maroon-800 font-bold rounded-full flex items-center justify-center">
+                ✓
+              </span>
+              <span className="font-medium">{feature}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   </>
 );

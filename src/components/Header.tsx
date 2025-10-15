@@ -130,7 +130,7 @@ const Header = () => {
   };
 
   const navLinks = [
-    { to: '/', label: 'Home', action: () => window.dispatchEvent(new CustomEvent('landing')) },
+    { to: '/', label: 'Home', action: () => window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: { tab: 'landing' } })) },
     { to: '/about-us', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
     { to: '/public-land-notifications', label: 'Public/Land Notifications' },
