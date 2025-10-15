@@ -158,7 +158,7 @@ export const UserManagement = () => {
                 required
               />
             </div>
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="designation">Designation</Label>
               <Input
                 id="designation"
@@ -167,23 +167,8 @@ export const UserManagement = () => {
                 placeholder="Enter designation"
                 required
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="roleCode">Role</Label>
-              <Select
-                onValueChange={(value) => handleRoleChange([value])}
-                value={formData.roleCodes[0] || ''}
-              >
-                <SelectTrigger id="roleCode">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10001">Admin</SelectItem>
-                  <SelectItem value="10002">User</SelectItem>
-                  {/* Add more roles as needed */}
-                </SelectContent>
-              </Select>
-            </div>
+            </div> */}
+            
             <div className="space-y-2">
               <Label htmlFor="roleCodes">Roles</Label>
               <Select

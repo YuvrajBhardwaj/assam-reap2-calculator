@@ -167,10 +167,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
       ))}
     </section>
 
-    {/* Portal highlights + schemes */}
-    <section className="container mx-auto px-4 py-10 grid md:grid-cols-2 gap-8">
-      {/* Left */}
-      <aside className="bg-gradient-to-b from-maroon-700 to-maroon-800 rounded-lg shadow-lg p-6 text-white flex flex-col justify-between">
+    {/* <section className="container mx-auto px-4 py-10 grid md:grid-cols-2 gap-8">
+       </section>  */}
+      {/* <aside className="bg-gradient-to-b from-maroon-700 to-maroon-800 rounded-lg shadow-lg p-6 text-white flex flex-col justify-between">
         <div>
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Icon path="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6" className="w-7 h-7 text-[#f9c846]" />
@@ -197,10 +196,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </button>
           ))}
         </div>
-      </aside>
+      </aside> */}
 
-      {/* Right */}
-      <aside className="bg-white rounded-lg shadow-lg flex flex-col">
+      {/* <aside className="bg-white rounded-lg shadow-lg flex flex-col">
         <h2 className="bg-maroon-700 text-white font-semibold text-lg px-4 py-3 rounded-t">
           Notable Schemes & Programs
         </h2>
@@ -216,8 +214,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <li>Digital Land Records Modernization</li>
           <li>Citizen Services Portal</li>
         </ul>
-      </aside>
-    </section>
+      </aside> */}
+
+ 
 
 
     {/* Testimonials */}

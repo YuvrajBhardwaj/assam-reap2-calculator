@@ -20,7 +20,7 @@ import ZonalView from '@/components/ZonalView/ZonalView';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
 import CertifiedCopiesServices from '@/components/CertifiedCopiesServices';
 import DepartmentDashboard from '@/components/department-dashboard/DepartmentDashboard';
-import DepartmentMasterDataDashboard from '@/components/department-dashboard/DepartmentMasterDataDashboard';
+import DepartmentWorkflowDashboard from '@/components/department-dashboard/department-workflow/DepartmentWorkflowDashboard';
 import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
@@ -393,7 +393,7 @@ const isGuest = userRole === null;
                 <DepartmentDashboard />
               </TabsContent>
               <TabsContent value="workflow-dept" className="space-y-4">
-                <DepartmentMasterDataDashboard />
+                <DepartmentWorkflowDashboard />
               </TabsContent>
             </>
           )}

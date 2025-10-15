@@ -156,3 +156,23 @@ export interface CircleLotFactorResponse {
   source: 'EXISTING' | 'DERIVED_AVERAGE';
   parents?: Array<{ circleCode: string; lotCode: string; factor: number }>;
 }
+
+export interface MasterDataChangeRequest {
+  id: number;
+  entityType: 'Districts' | 'Circles' | 'Mouzas' | 'Villages' | 'Lots' | 'Land Classes' | 'Area Types' | 'SRO Hierarchy' | 'Parameters';
+  operation: 'create' | 'update' | 'deactivate';
+  requestedBy: string;
+  requestDate: string;
+  enteredBy?: string;
+  entryDate?: string;
+  modifiedBy?: string;
+  modifiedDate?: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Under Review';
+  currentApprover: 'Junior Manager' | 'Manager' | 'Senior Manager' | 'Role Admin' | 'N/A' | undefined;
+  approvalLevel: number;
+  reason: string;
+  payload: any;
+  daysPending: number;
+}
