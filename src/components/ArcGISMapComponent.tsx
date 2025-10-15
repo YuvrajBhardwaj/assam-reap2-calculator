@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { loadModules } from "esri-loader";
 import { toast } from "@/components/ui/use-toast";
-import { DistrictDetails, assamDistrictDetails } from "./building-types/plot";
+import { DistrictDetails, useAssamDistrictDetails } from "./building-types/plot";
 import type MapView from "@arcgis/core/views/MapView";
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import type GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer";
@@ -29,7 +29,7 @@ interface ArcGISMapComponentProps {
 
 const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
   initialLocation,
-  markerLocations = assamDistrictDetails,
+  markerLocations,
   onMarkerClick,
   selectedDistrict,
   searchText,
@@ -41,6 +41,9 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [districtGraphics, setDistrictGraphics] = useState<Graphic[]>([]);
   const [searchGraphic, setSearchGraphic] = useState<Graphic | null>(null);
+  const { districts } = useAssamDistrictDetails();
+  
+  const markers = markerLocations || districts;
 
   useEffect(() => {
     let view: MapView;
@@ -109,7 +112,7 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
 
         // Add district markers
         const addDistrictMarkers = () => {
-          markerLocations.forEach((location) => {
+          markers.forEach((location) => {
             const isSelected = selectedDistrict?.name === location.name;
 
             const point = new PointClass({
@@ -162,6 +165,7 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
             const attrs = graphicHit.graphic.attributes;
             const district: DistrictDetails = {
               name: attrs.name,
+              districtCode: attrs.districtCode || '',
               lat: attrs.lat,
               lng: attrs.lng,
               areaType: attrs.areaType,
@@ -170,7 +174,6 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
               guidelineLocation: attrs.guidelineLocation,
               circle: attrs.circle,
               village: attrs.village,
-              mouza: attrs.mouza,
             };
 
             if (onMarkerClick) {
@@ -231,7 +234,7 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
         });
 
         // Re-add district markers
-        markerLocations.forEach((location) => {
+        markers.forEach((location) => {
           const isSelected = selectedDistrict?.name === location.name;
 
           const point = new PointClass({
@@ -274,7 +277,7 @@ const ArcGISMapComponent: React.FC<ArcGISMapComponentProps> = ({
           });
         }
       });
-  }, [selectedDistrict, markerLocations]);
+  }, [selectedDistrict, markers]);
 
   // Handle search trigger
   useEffect(() => {
