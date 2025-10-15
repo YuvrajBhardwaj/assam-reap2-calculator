@@ -44,7 +44,8 @@ import ApprovalInbox from "@/components/admin/ApprovalInbox";
 import MasterDataManagement from "./MasterDataManagement";
 import { useAuth } from "@/context/AuthContext";
 import { getAuditLogs } from "@/services/masterDataService";
-import type { AuditLog } from "@/types/masterData";
+import type { AuditLog, MasterDataChangeRequest } from "@/types/masterData";
+import { toast } from "@/components/ui/use-toast";
 
 // ---------- Types ----------
 interface WorkflowItem {
@@ -72,6 +73,7 @@ interface WorkflowItem {
 }
 
 // ---------- Component ----------
+// Method: DepartmentWorkflowDashboard component
 const DepartmentWorkflowDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -92,6 +94,96 @@ const DepartmentWorkflowDashboard = () => {
     toDate: "",
     performedBy: "",
   });
+
+  // ---------- Master Data: Missing State & Helpers ----------
+  const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<string>("Districts");
+  const [showMasterDataRequestDialog, setShowMasterDataRequestDialog] = useState(false);
+  const [selectedMasterDataRequest, setSelectedMasterDataRequest] = useState<MasterDataChangeRequest | null>(null);
+  const [masterDataRequestType, setMasterDataRequestType] = useState<"create" | "update" | "deactivate">("create");
+  const [masterDataRequestReason, setMasterDataRequestReason] = useState<string>("");
+  const [masterDataChangeRequests, setMasterDataChangeRequests] = useState<MasterDataChangeRequest[]>([]);
+
+  const [actionType, setActionType] = useState<"approve" | "send-back" | "reject">("approve");
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [actionReason, setActionReason] = useState("");
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Pending":
+      case "Under Review":
+        return "bg-yellow-100 text-yellow-800";
+      case "Approved":
+        return "bg-green-100 text-green-800";
+      case "Rejected":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const handleMasterDataChangeRequest = (
+    entityType: string,
+    operation: "create" | "update" | "deactivate",
+    payload: any,
+    reason: string
+  ) => {
+    const nextId =
+      masterDataChangeRequests.length > 0
+        ? Math.max(...masterDataChangeRequests.map((r) => r.id)) + 1
+        : 1;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const newReq: MasterDataChangeRequest = {
+      id: nextId,
+      entityType: entityType as MasterDataChangeRequest["entityType"],
+      operation,
+      requestedBy: "You",
+      requestDate: today,
+      status: "Pending",
+      currentApprover: "Junior Manager",
+      approvalLevel: 1,
+      reason,
+      payload,
+      daysPending: 0,
+    };
+
+    setMasterDataChangeRequests((prev) => [newReq, ...prev]);
+    setShowMasterDataRequestDialog(false);
+    toast({ title: "Request created", description: `${entityType} - ${operation}` });
+  };
+
+  const handleMasterDataActionSelect = (
+    request: MasterDataChangeRequest,
+    action: "approve" | "send-back" | "reject"
+  ) => {
+    setSelectedMasterDataRequest(request);
+    setActionType(action);
+    setShowActionDialog(true);
+  };
+
+  const handleConfirmMasterDataAction = () => {
+    if (!selectedMasterDataRequest) return;
+
+    setMasterDataChangeRequests((prev) =>
+      prev.map((r) =>
+        r.id === selectedMasterDataRequest.id
+          ? {
+              ...r,
+              status: actionType === "approve" ? "Approved" : "Rejected",
+              approvalLevel: actionType === "approve" ? Math.min(4, r.approvalLevel + 1) : r.approvalLevel,
+            }
+          : r
+      )
+    );
+
+    setShowActionDialog(false);
+    setActionReason("");
+    toast({ title: `Action ${actionType} applied`, description: `Request #${selectedMasterDataRequest.id}` });
+  };
+
+  const handleRefreshData = () => {
+    toast({ title: "Refreshing data..." });
+  };
 
   // Fetch Audit Logs
   const loadLogs = async () => {
@@ -262,11 +354,9 @@ const DepartmentWorkflowDashboard = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: "Total", value: statusCounts.total, color: "text-blue-600", icon: FileText },
-          { label: "Pending", value: statusCounts.pending, color: "text-yellow-600", icon: Clock },
-          { label: "In Progress", value: statusCounts.inProgress, color: "text-blue-600", icon: TrendingUp },
+          { label: "Pending (Refer Back)", value: statusCounts.pending, color: "text-yellow-600", icon: Clock },
           { label: "Approved", value: statusCounts.approved, color: "text-green-600", icon: CheckCircle },
           { label: "Rejected", value: statusCounts.rejected, color: "text-red-600", icon: XCircle },
-          { label: "On Hold", value: statusCounts.onHold, color: "text-orange-600", icon: AlertTriangle },
         ].map((card, i) => (
           <Card key={i}>
             <CardContent className="p-4 flex justify-between items-center">
@@ -288,165 +378,34 @@ const DepartmentWorkflowDashboard = () => {
           <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
           <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
-          <TabsTrigger value="master-data-districts">Districts</TabsTrigger>
-          <TabsTrigger value="master-data-circles">Circles</TabsTrigger>
-          <TabsTrigger value="master-data-mouzas">Mouzas</TabsTrigger>
-          <TabsTrigger value="master-data-villages">Villages</TabsTrigger>
-          <TabsTrigger value="master-data-lots">Lots</TabsTrigger>
-          <TabsTrigger value="master-data-land-classes">Land Classes</TabsTrigger>
-          <TabsTrigger value="master-data-area-types">Area Types</TabsTrigger>
-          <TabsTrigger value="master-data-sro-hierarchy">SRO Hierarchy</TabsTrigger>
-          <TabsTrigger value="master-data-parameters">Parameters</TabsTrigger>
         </TabsList>
 
         {/* Workflows Tab */}
+        
         <TabsContent value="workflows">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <Input
-                    placeholder="Search by applicant, property, or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-80"
-                  />
-                </div>
-
-                <Select
-                  value={statusFilter}
-                  onValueChange={setStatusFilter}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="on-hold">On Hold</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={priorityFilter}
-                  onValueChange={setPriorityFilter}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Table */}
-              <div className="relative max-h-[65vh] overflow-auto border rounded-lg">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-gray-50 z-10">
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Property</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Entered By</TableHead>
-                      <TableHead>Entry Date</TableHead>
-                      <TableHead>Modified By</TableHead>
-                      <TableHead>Modified Date</TableHead>
-                      <TableHead>Approved By</TableHead>
-                      <TableHead>Approved Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredData.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.id}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            {item.type}
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.applicant}</TableCell>
-                        <TableCell>{item.property}</TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell>{item.submittedDate}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadge(item.status)}>
-                            {item.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getPriorityBadge(item.priority)}>
-                            {item.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.assignedTo}</TableCell>
-                        <TableCell
-                          className={`${
-                            item.daysElapsed > 7
-                              ? "text-red-600 font-semibold"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {item.daysElapsed}
-                        </TableCell>
-                        <TableCell>{item.enteredBy || 'N/A'}</TableCell>
-                        <TableCell>{item.entryDate ? new Date(item.entryDate).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>{item.modifiedBy || 'N/A'}</TableCell>
-                        <TableCell>{item.modifiedDate ? new Date(item.modifiedDate).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>{item.approvedBy || 'N/A'}</TableCell>
-                        <TableCell>{item.approvedDate ? new Date(item.approvedDate).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedWorkflow(item)}
-                            >
-                              View
-                            </Button>
-                            {item.status === "pending" && (
-                              <Button size="sm" className="bg-blue-600">
-                                Process
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!filteredData.length && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={11}
-                          className="text-center py-6 text-gray-500"
-                        >
-                          No matching workflows found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          <MasterDataManagement
+            userRole={userRole}
+            toast={toast}
+            selectedMasterDataEntity={selectedMasterDataEntity}
+            setSelectedMasterDataEntity={setSelectedMasterDataEntity}
+            showMasterDataRequestDialog={showMasterDataRequestDialog}
+            setShowMasterDataRequestDialog={setShowMasterDataRequestDialog}
+            selectedMasterDataRequest={selectedMasterDataRequest}
+            setSelectedMasterDataRequest={setSelectedMasterDataRequest}
+            masterDataRequestType={masterDataRequestType}
+            setMasterDataRequestType={setMasterDataRequestType}
+            masterDataRequestReason={masterDataRequestReason}
+            setMasterDataRequestReason={setMasterDataRequestReason}
+            masterDataChangeRequests={masterDataChangeRequests}
+            handleMasterDataChangeRequest={handleMasterDataChangeRequest}
+            handleMasterDataActionSelect={handleMasterDataActionSelect}
+            handleConfirmMasterDataAction={handleConfirmMasterDataAction}
+            handleRefreshData={handleRefreshData}
+            getStatusColor={getStatusColor}
+            actionType={actionType}
+            setShowActionDialog={setShowActionDialog}
+            setActionReason={setActionReason}
+          />
         </TabsContent>
 
         {/* Approval Inbox */}
@@ -571,50 +530,8 @@ const DepartmentWorkflowDashboard = () => {
           </Card>
         </TabsContent>
 
-        {/* Master Data Management Tabs */}
-        <TabsContent value="master-data-districts">
-          
-        </TabsContent>
 
-        <TabsContent value="master-data-circles">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-mouzas">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-villages">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-lots">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-land-classes">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-area-types">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-sro-hierarchy">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-parameters">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-sro-hierarchy">
-          
-        </TabsContent>
-
-        <TabsContent value="master-data-parameters">
-          
-        </TabsContent>
+        
            
       </Tabs>
     </div>

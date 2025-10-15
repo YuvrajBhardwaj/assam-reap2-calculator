@@ -211,21 +211,6 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
     }
   };
 
-  // Move renderDeptView inside the component to access selectedMasterDataEntity
-  const renderDeptView = () => {
-    switch (selectedMasterDataEntity) {
-      case 'Districts': return <DistrictsDeptTable />;
-      case 'Circles': return <CirclesDeptTable />;
-      case 'Mouzas': return <MouzasDeptTable />;
-      case 'Villages': return <VillagesDeptTable />;
-      case 'Lots': return <LotsDeptTable />;
-      case 'Land Classes': return <LandClassesDeptTable />;
-      case 'Area Types': return <AreaTypesDeptTable />;
-      case 'SRO Hierarchy': return <SROHierarchyDeptTable />;
-      default: return null;
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Entity Selection */}
@@ -243,8 +228,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
         ].map((entity) => (
           <Card
             key={entity.id}
-            className={`cursor-pointer transition-all duration-200 ${selectedMasterDataEntity === entity.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-              }`}
+            className={`cursor-pointer transition-all duration-200 ${selectedMasterDataEntity === entity.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
             onClick={() => setSelectedMasterDataEntity(entity.id)}
           >
             <CardContent className="p-3">
@@ -256,9 +240,6 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
           </Card>
         ))}
       </div>
-
-      {/* Optional: show the embedded dept view to browse current master data */}
-      <div className="mb-6">{renderDeptView()}</div>
 
       {/* Master Data Change Requests Table */}
       <Card>
