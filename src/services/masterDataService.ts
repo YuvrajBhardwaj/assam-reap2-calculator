@@ -198,12 +198,12 @@ export async function fetchLotsByDistrictAndCircle(districtCode: string, circleC
 }
 
 export async function createLot(lot: any): Promise<Lot> {
-  const res = await masterDataApi.post('/add/lot', { lotName: lot.name || lot.lotName, districtCode: lot.districtCode, circleCode: lot.circleCode, areaTypeId: lot.areaTypeId || '' });
+  const res = await masterDataApi.post('/add/lot', lot);
   return res.data;
 }
 
 export async function updateLot(id: string, updates: any): Promise<Lot> {
-  const res = await masterDataApi.post('/update/lot', { lotCode: id, lotName: updates.name || updates.lotName, districtCode: updates.districtCode, circleCode: updates.circleCode, areaTypeId: updates.areaTypeId || '' });
+  const res = await masterDataApi.post('/update/lot', { lotCode: updates.lotCode, ...updates });
   return res.data;
 }
 
@@ -307,6 +307,11 @@ export async function createAreaType(areaType: { areaType: string }): Promise<an
 
 export async function deleteAreaType(id: string): Promise<void> {
   await masterDataApi.post(`/delete/areaType?areaTypesGenId=${id}`);
+}
+
+export async function updateAreaType(id: string, data: Partial<any>): Promise<any> {
+  const res = await masterDataApi.post('/update/areaType', { areaTypesGenId: id, ...data });
+  return res.data;
 }
 
 // ===== LAND SUB-CLASS MANAGEMENT =====

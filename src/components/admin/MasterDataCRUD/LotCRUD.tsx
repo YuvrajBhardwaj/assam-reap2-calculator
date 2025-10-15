@@ -119,7 +119,7 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
     { key: 'isActive', label: 'Active' }
   ];
 
-  const formFields: FormField<Lot>[] = [
+  const formFields: FormField<Lot>[] = React.useMemo(() => [
     {
       key: 'code',
       label: 'Lot Code',
@@ -140,7 +140,15 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
       label: 'District',
       type: 'select',
       required: true,
-      options: districts.map(d => ({ value: d.code, label: d.name }))
+      options: districts.map(d => ({ value: d.code, label: d.name })),
+      onChange: async (value) => {
+        if (value) {
+          const circleData = await getCirclesByDistrict(value);
+          setCircles(circleData);
+        } else {
+          setCircles([]);
+        }
+      }
     },
     {
       key: 'circleCode',
@@ -149,7 +157,6 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
       required: true,
       options: circles.map(c => ({ value: c.code, label: c.name })),
       dependsOn: 'districtCode',
-      disabled: !selectedDistrict,
     },
     {
       key: 'areaTypeId',
@@ -158,7 +165,7 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
       required: false, // As per user spec, it can be empty
       placeholder: 'Enter Area Type ID (optional)',
     }
-  ];
+  ], [districts, circles]);
 
   const lotService: CRUDService<Lot> = {
     fetchAll: async () => {
@@ -172,21 +179,17 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
         circleCode: item.circleCode,
         areaTypeId: item.areaTypeId || "",
       };
-      const created = await masterDataService.createLot(payload as any);
-      await loadFilteredLots();
-      return created;
+      return masterDataService.createLot(payload);
     },
     update: async (id, item) => {
       const payload = {
-        lotCode: id,
+        lotCode: item.code,
         lotName: item.name,
         districtCode: item.districtCode,
         circleCode: item.circleCode,
         areaTypeId: item.areaTypeId || "",
       };
-      const updated = await masterDataService.updateLot(id, payload as any);
-      await loadFilteredLots();
-      return updated;
+      return masterDataService.updateLot(id, payload);
     },
     deactivate: async (id, _reason) => {
       await masterDataService.deactivateLot(id);
@@ -196,13 +199,7 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
       return masterDataService.requestEntityChange({
         entityType: 'Lot',
         operation,
-        payload: {
-          ...payload,
-          lotName: (payload as any).name ?? (payload as any).lotName,
-          districtCode: (payload as any).districtCode ?? selectedDistrict,
-          circleCode: (payload as any).circleCode ?? selectedCircle,
-          areaTypeId: (payload as any).areaTypeId ?? ""
-        },
+        payload,
         reason
       });
     },
@@ -290,7 +287,7 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
             columns={columns}
             service={lotService}
             formFields={formFields}
-            requiresApproval={true}
+            requiresApproval={false}
             canViewHistory={true}
           />
         </CardContent>
