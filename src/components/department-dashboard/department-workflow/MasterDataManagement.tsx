@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { AuditService } from '@/services/auditService';
+import type { WorkflowActionRequest } from '@/services/auditService';
+import { submitChangeRequest } from '@/services/masterDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +27,14 @@ import {
 } from 'lucide-react';
 
 import { MasterDataChangeRequest } from '@/types/masterData';
+import DistrictsDeptTable from './dept/DistrictsDeptTable';
+import CirclesDeptTable from './dept/CirclesDeptTable';
+import MouzasDeptTable from './dept/MouzasDeptTable';
+import VillagesDeptTable from './dept/VillagesDeptTable';
+import LotsDeptTable from './dept/LotsDeptTable';
+import LandClassesDeptTable from './dept/LandClassesDeptTable';
+import AreaTypesDeptTable from './dept/AreaTypesDeptTable';
+import SROHierarchyDeptTable from './dept/SROHierarchyDeptTable';
 
 interface MasterDataManagementProps {
   userRole: string | null;
@@ -75,6 +86,146 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
 
 
 
+  // Local state to hold fetched pending requests
+  const [requests, setRequests] = useState<MasterDataChangeRequest[]>([]);
+  // Add missing state hooks for request inputs
+  const [requestEntityId, setRequestEntityId] = useState<string>('');
+  const [requestPayloadText, setRequestPayloadText] = useState<string>('{}');
+  const { loginId } = useAuth();
+
+  useEffect(() => {
+    // seed with incoming props initially
+    setRequests(masterDataChangeRequests);
+  }, [masterDataChangeRequests]);
+
+  // Map tab labels to audit masterType param
+  const toMasterTypeParam = (entity: string) => {
+    switch (entity) {
+      case 'Districts': return 'District';
+      case 'Circles': return 'Circle';
+      case 'Mouzas': return 'Mouza';
+      case 'Villages': return 'Village';
+      case 'Lots': return 'Lot';
+      case 'Land Classes': return 'LandCategory';
+      case 'Area Types': return 'AreaType';
+      case 'SRO Hierarchy': return 'SRO';
+      case 'Parameters': return 'Parameter';
+      default: return 'District';
+    }
+  };
+
+  // Fetch pending approvals for selected tab
+  const fetchPendingRequests = async () => {
+    try {
+      const masterType = toMasterTypeParam(selectedMasterDataEntity);
+      // statusCode 22-3 per your workflow for pending on management
+      const items = await AuditService.getPendingAuditManagement(masterType, '22-3');
+      const mapped: MasterDataChangeRequest[] = (items || []).map((it: any) => ({
+        id: Number(it.id),
+        entityType: selectedMasterDataEntity as MasterDataChangeRequest['entityType'],
+        operation: (it?.payload?.operation ?? 'update') as MasterDataChangeRequest['operation'],
+        requestedBy: it.requestorName ?? '',
+        requestDate: it.requestDate ?? '',
+        status: 'Under Review',
+        currentApprover: (it.currentApprover ?? 'N/A') as MasterDataChangeRequest['currentApprover'],
+        approvalLevel: Number(it.approvalLevel ?? 1),
+        reason: it.reason ?? '',
+        payload: it.payload ?? {},
+        daysPending: Number(it.daysPending ?? 0),
+      }));
+      setRequests(mapped);
+      toast({ title: 'Pending requests refreshed' });
+    } catch (err) {
+      console.error('Pending request fetch failed', err);
+      toast({ title: 'Failed to fetch pending approvals', variant: 'destructive' });
+    }
+  };
+
+  // New: submit the change request to start the workflow
+  const handleSubmitMasterDataRequest = async () => {
+    try {
+      const entityType = toMasterTypeParam(selectedMasterDataEntity);
+      const operation = masterDataRequestType.toUpperCase() as 'CREATE' | 'UPDATE' | 'DEACTIVATE';
+
+      let payloadObj: Record<string, any> = {};
+      if (requestPayloadText.trim()) {
+        try {
+          payloadObj = JSON.parse(requestPayloadText);
+        } catch {
+          toast({ title: 'Invalid JSON in payload', variant: 'destructive' });
+          return;
+        }
+      }
+
+      const res = await submitChangeRequest({
+        entityType,
+        entityId: requestEntityId || undefined,
+        operation,
+        payload: payloadObj,
+        reason: masterDataRequestReason.trim(),
+      });
+
+      toast({ title: 'Change request submitted', description: `ID: ${res.requestId}` });
+      setShowMasterDataRequestDialog(false);
+      setRequestEntityId('');
+      setRequestPayloadText('{}');
+      setMasterDataRequestReason('');
+      fetchPendingRequests();
+    } catch (err) {
+      console.error('Submit change request failed', err);
+      toast({ title: 'Failed to submit change request', variant: 'destructive' });
+    }
+  };
+
+  // Approve/Reject via role endpoints (jm/man/sman/admin). Send Back => reject.
+  const confirmWorkflowAction = async (request: MasterDataChangeRequest, action: 'approve' | 'send-back' | 'reject') => {
+    try {
+      const masterType = toMasterTypeParam(request.entityType);
+      const roleAction: 'approve' | 'reject' = action === 'approve' ? 'approve' : 'reject';
+      const payload: WorkflowActionRequest = {
+        loginId: loginId ?? 'system',
+        id: String(request.id),
+        masterType,
+        action: roleAction,
+        statusCode: roleAction === 'approve' ? '22-1' : '22-2',
+      };
+
+      if (userRole === 'ROLE_JuniorManager') {
+        await AuditService.juniorManagerAction(payload);
+      } else if (userRole === 'ROLE_Manager') {
+        await AuditService.managerAction(payload);
+      } else if (userRole === 'ROLE_SeniorManager') {
+        await AuditService.seniorManagerAction(payload);
+      } else if (userRole === 'ROLE_ADMIN') {
+        await AuditService.adminAction(payload);
+      } else {
+        toast({ title: 'Insufficient role to act on workflow', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: `Request ${roleAction}d successfully` });
+      fetchPendingRequests();
+    } catch (err) {
+      console.error('Workflow action failed', err);
+      toast({ title: 'Failed to perform workflow action', variant: 'destructive' });
+    }
+  };
+
+  // Move renderDeptView inside the component to access selectedMasterDataEntity
+  const renderDeptView = () => {
+    switch (selectedMasterDataEntity) {
+      case 'Districts': return <DistrictsDeptTable />;
+      case 'Circles': return <CirclesDeptTable />;
+      case 'Mouzas': return <MouzasDeptTable />;
+      case 'Villages': return <VillagesDeptTable />;
+      case 'Lots': return <LotsDeptTable />;
+      case 'Land Classes': return <LandClassesDeptTable />;
+      case 'Area Types': return <AreaTypesDeptTable />;
+      case 'SRO Hierarchy': return <SROHierarchyDeptTable />;
+      default: return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Entity Selection */}
@@ -106,6 +257,9 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
         ))}
       </div>
 
+      {/* Optional: show the embedded dept view to browse current master data */}
+      <div className="mb-6">{renderDeptView()}</div>
+
       {/* Master Data Change Requests Table */}
       <Card>
         <CardHeader>
@@ -127,7 +281,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleRefreshData}
+                onClick={fetchPendingRequests}
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -153,7 +307,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {masterDataChangeRequests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).map((request) => (
+              {requests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>{request.id}</TableCell>
                   <TableCell>{request.entityType}</TableCell>
@@ -195,7 +349,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                                   size="sm"
                                   variant="default"
                                   className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-xs"
-                                  onClick={() => handleMasterDataActionSelect(request, 'approve')}
+                                  onClick={() => confirmWorkflowAction(request, 'approve')}
                                 >
                                   <Check className="w-3 h-3 mr-1" />
                                   Approve
@@ -204,7 +358,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                                   size="sm"
                                   variant="outline"
                                   className="border-orange-500 text-orange-600 hover:bg-orange-50 px-2 py-1 text-xs"
-                                  onClick={() => handleMasterDataActionSelect(request, 'send-back')}
+                                  onClick={() => confirmWorkflowAction(request, 'send-back')}
                                 >
                                   <Send className="w-3 h-3 mr-1" />
                                   Send Back
@@ -213,7 +367,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                                   size="sm"
                                   variant="destructive"
                                   className="px-2 py-1 text-xs"
-                                  onClick={() => handleMasterDataActionSelect(request, 'reject')}
+                                  onClick={() => confirmWorkflowAction(request, 'reject')}
                                 >
                                   <X className="w-3 h-3 mr-1" />
                                   Reject
@@ -228,7 +382,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                   )}
                 </TableRow>
               ))}
-              {!masterDataChangeRequests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).length && (
+              {!requests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).length && (
                 <TableRow>
                   <TableCell colSpan={10} className="h-24 text-center">
                     No change requests found for {selectedMasterDataEntity}.
@@ -279,6 +433,28 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* New: Target ID/Code to act upon (optional for Create) */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Target ID/Code (optional for Create)</label>
+              <Input
+                value={requestEntityId}
+                onChange={(e) => setRequestEntityId(e.target.value)}
+                placeholder="e.g., DIST-001 or internal ID"
+              />
+            </div>
+
+            {/* New: JSON payload to describe the change */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Change Payload (JSON)</label>
+              <Textarea
+                value={requestPayloadText}
+                onChange={(e) => setRequestPayloadText(e.target.value)}
+                placeholder='e.g., {"name":"New District Name"}'
+                className="font-mono text-xs"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">Reason for Change</label>
               <Textarea
@@ -297,7 +473,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                 Cancel
               </Button>
               <Button
-                onClick={() => handleMasterDataChangeRequest(selectedMasterDataEntity, masterDataRequestType, {}, masterDataRequestReason)}
+                onClick={handleSubmitMasterDataRequest}
                 disabled={!masterDataRequestReason.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >

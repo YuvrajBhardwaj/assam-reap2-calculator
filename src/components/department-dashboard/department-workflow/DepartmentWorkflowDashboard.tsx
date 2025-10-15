@@ -41,6 +41,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import ApprovalInbox from "@/components/admin/ApprovalInbox";
+import MasterDataManagement from "./MasterDataManagement";
 import { useAuth } from "@/context/AuthContext";
 import { getAuditLogs } from "@/services/masterDataService";
 import type { AuditLog } from "@/types/masterData";
@@ -283,10 +284,19 @@ const DepartmentWorkflowDashboard = () => {
 
       {/* Tabs Section */}
       <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="grid w-full sm:w-[500px] grid-cols-3 mb-4">
+        <TabsList className="flex w-full overflow-x-auto mb-4">
           <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
           <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="master-data-districts">Districts</TabsTrigger>
+          <TabsTrigger value="master-data-circles">Circles</TabsTrigger>
+          <TabsTrigger value="master-data-mouzas">Mouzas</TabsTrigger>
+          <TabsTrigger value="master-data-villages">Villages</TabsTrigger>
+          <TabsTrigger value="master-data-lots">Lots</TabsTrigger>
+          <TabsTrigger value="master-data-land-classes">Land Classes</TabsTrigger>
+          <TabsTrigger value="master-data-area-types">Area Types</TabsTrigger>
+          <TabsTrigger value="master-data-sro-hierarchy">SRO Hierarchy</TabsTrigger>
+          <TabsTrigger value="master-data-parameters">Parameters</TabsTrigger>
         </TabsList>
 
         {/* Workflows Tab */}
@@ -560,6 +570,52 @@ const DepartmentWorkflowDashboard = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Master Data Management Tabs */}
+        <TabsContent value="master-data-districts">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-circles">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-mouzas">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-villages">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-lots">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-land-classes">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-area-types">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-sro-hierarchy">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-parameters">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-sro-hierarchy">
+          
+        </TabsContent>
+
+        <TabsContent value="master-data-parameters">
+          
+        </TabsContent>
+           
       </Tabs>
     </div>
   );
