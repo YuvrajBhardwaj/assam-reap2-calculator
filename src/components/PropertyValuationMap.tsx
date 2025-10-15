@@ -119,6 +119,7 @@ const PropertyValuationMap = ({
             mouza={selectedDistrict.village}
             open={locationDetailsOpen}
             setOpen={setLocationDetailsOpen}
+            onDistrictChange={setSelectedDistrict}
           />
         </div>
       )}

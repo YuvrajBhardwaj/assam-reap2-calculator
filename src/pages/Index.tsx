@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ValuationCalculator from '@/components/ValuationCalculator/ValuationCalculator';
@@ -25,9 +25,12 @@ import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
+import { getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle } from "@/services/locationService";
+import { DistrictDetails } from "../components/building-types/plot";
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userRole } = useAuth();
   const [activeTab, setActiveTab] = useState("landing");
   const [initialLocationData, setInitialLocationData] = useState<any>(null);
@@ -140,31 +143,52 @@ const isGuest = userRole === null;
       }
     };
 
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search); // Use location.search here
     const initialTab = searchParams.get('tab');
 
     // Handle deep link with location
     const districtCode = searchParams.get('district');
     const circleCode = searchParams.get('circle');
+    const mouzaCode = searchParams.get('mouza');
+
     if (districtCode && circleCode) {
-      const locationData = {
-        district: { code: districtCode, name: '' },
-        circle: { code: circleCode, name: '' },
-        village: searchParams.get('mouza') ? { code: searchParams.get('mouza')!, name: '' } : undefined,
+      const fetchLocationNames = async () => {
+        const allDistricts = await getAllDistricts();
+        const district = allDistricts.find(d => d.code === districtCode);
+        let circle = undefined;
+        let mouza = undefined;
+
+        if (district) {
+          const allCircles = await getCirclesByDistrict(districtCode);
+          circle = allCircles.find(c => c.code === circleCode);
+
+          if (circle && mouzaCode) {
+            const allMouzas = await getMouzasByDistrictAndCircle(districtCode, circleCode);
+            mouza = allMouzas.find(m => m.code === mouzaCode);
+          }
+        }
+        
+        const locationData = {
+          district: district ? { code: district.code, name: district.name } : undefined,
+          circle: circle ? { code: circle.code, name: circle.name } : undefined,
+          village: mouza ? { code: mouza.code, name: mouza.name } : undefined, // Use mouza name here
+          mouza: mouza ? { code: mouza.code, name: mouza.name } : undefined, // Also pass mouza object
+        };
+        // Trigger secure navigation
+        window.dispatchEvent(
+          new CustomEvent('navigate-to-tab', {
+            detail: { tab: 'valuation-calculator', locationData },
+          })
+        );
       };
-      // Trigger secure navigation
-      window.dispatchEvent(
-        new CustomEvent('navigate-to-tab', {
-          detail: { tab: 'valuation-calculator', locationData },
-        })
-      );
+      fetchLocationNames();
     } else if (initialTab) {
       handleTabChange(initialTab);
     }
 
     window.addEventListener("navigate-to-tab", handleTabNavigation as EventListener);
     return () => window.removeEventListener("navigate-to-tab", handleTabNavigation as EventListener);
-  }, [userRole]);
+  }, [userRole, location.search]);
 
   // ✅ Render Unauthorized Tab
   const renderUnauthorized = () => (

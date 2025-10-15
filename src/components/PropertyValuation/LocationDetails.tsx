@@ -17,6 +17,7 @@ import {
   getMouzasByDistrictAndCircle,
 } from "@/services/locationService";
 import type { District, Circle, Mouza } from "@/types/masterData";
+import { DistrictDetails, useAssamDistrictDetails } from "../building-types/plot";
 import GuidelineRatesPage from "../GuidelineRatesPage";
 import { useNavigate } from "react-router-dom";
 
@@ -30,7 +31,7 @@ export interface LocationDetailsProps {
   // guidelineLocation?: string;
   circle?: string;
   mouza?: string;
-  onDistrictChange?: (districtData: District) => void;
+  onDistrictChange?: (districtData: DistrictDetails) => void;
   onCircleChange?: (circleData: Circle) => void;
   onMouzaChange?: (mouzaName: string) => void;
   open?: boolean;
@@ -60,8 +61,7 @@ const LocationDetails = ({
   const navigate = useNavigate();
 
   // state
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [loadingDistricts, setLoadingDistricts] = useState(true);
+  const { districts, loading: loadingDistricts } = useAssamDistrictDetails();
   const [errorDistricts, setErrorDistricts] = useState<string | null>(null);
 
   const [circles, setCircles] = useState<Circle[]>([]);
@@ -81,24 +81,6 @@ const LocationDetails = ({
   useEffect(() => {
     setSelectedDistrictCode(propDistrictCode);
   }, [propDistrictCode]);
-
-  // fetch districts on mount
-  useEffect(() => {
-    const fetchDistricts = async () => {
-      setLoadingDistricts(true);
-      setErrorDistricts(null);
-      try {
-        const data = await getAllDistricts();
-        setDistricts(data);
-      } catch (err) {
-        setErrorDistricts('Failed to fetch districts.');
-        console.error(err);
-      } finally {
-        setLoadingDistricts(false);
-      }
-    };
-    fetchDistricts();
-  }, []);
 
   // fetch circles when district changes
   useEffect(() => {
@@ -150,12 +132,12 @@ const LocationDetails = ({
   const handleViewZonalValues = () => setShowGuidelineDialog(true);
 
   const handleCalculatePropertyValue = () => {
-    const district = districts.find(d => d.code === selectedDistrictCode);
+    const district = districts.find(d => d.districtCode === selectedDistrictCode);
     const circle = circles.find(c => c.code === selectedCircleCode);
     const mouza = mouzas.find(m => m.code === selectedMouzaCode);
 
     const params = new URLSearchParams();
-    if (district) params.set('district', district.code);
+    if (district) params.set('district', district.districtCode);
     if (circle) params.set('circle', circle.code);
     if (mouza) params.set('mouza', mouza.code);
     window.history.pushState({}, '', `?${params.toString()}`);
@@ -165,8 +147,8 @@ const LocationDetails = ({
         detail: {
           tab: 'valuation-calculator',
           locationData: {
-            district,
-            circle,
+            district: district ? { code: district.districtCode, name: district.name } : undefined,
+            circle: circle ? { code: circle.code, name: circle.name } : undefined,
             // Send both for compatibility; consumers can map either
             village: mouza
               ? { villageCode: mouza.code, villageName: mouza.name }
@@ -226,8 +208,16 @@ const LocationDetails = ({
                     setSelectedCircleCode(undefined);
                     setSelectedMouzaCode(undefined);
                     if (onDistrictChange) {
-                      const d = districts.find(d => d.code === value);
-                      if (d) onDistrictChange(d);
+                      const d = districts.find(d => d.districtCode === value);
+                      if (d) {
+                        const districtDetails: DistrictDetails = {
+                          districtCode: d.districtCode,
+                          name: d.name,
+                          lat: d.lat, // Assuming 'lat' and 'lng' exist on District
+                          lng: d.lng, // Assuming 'lat' and 'lng' exist on District
+                        };
+                        onDistrictChange(districtDetails);
+                      }
                     }
                   }}
                   disabled={loadingDistricts}
@@ -250,7 +240,7 @@ const LocationDetails = ({
                       <SelectItem value="no-data" disabled>No districts</SelectItem>
                     ) : (
                       districts.map(d => (
-                        <SelectItem key={d.code} value={d.code}>
+                        <SelectItem key={d.districtCode} value={d.districtCode}>
                           {d.name}
                         </SelectItem>
                       ))
