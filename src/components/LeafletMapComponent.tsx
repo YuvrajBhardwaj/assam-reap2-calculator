@@ -450,7 +450,7 @@ const LeafletMapComponent = ({
           size="icon"
           aria-label={showPanel ? 'Hide map controls' : 'Show map controls'}
           variant="secondary"
-          className="rounded-full shadow border border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800"
+          className="rounded-full shadow border border-slate-300 bg-white/80 text-slate-700 hover:bg-white"
           onClick={() => setShowPanel((s) => !s)}
         >
           <Menu className="h-5 w-5" />
@@ -463,32 +463,32 @@ const LeafletMapComponent = ({
       {/* Floating layer control panel (SAMPADA-like) */}
       {showPanel && (
         <div className="absolute top-4 right-4 z-[9999] w-72 max-h-[70vh]">
-          <div className="bg-slate-900/95 text-slate-100 rounded-xl shadow-2xl border border-slate-700 backdrop-blur-md overflow-hidden">
+          <div className="bg-white/95 text-slate-900 rounded-xl shadow-2xl border border-slate-300 backdrop-blur-md overflow-hidden">
             <div className="max-h-[70vh] overflow-y-auto pr-1">
               <Accordion type="multiple" defaultValue={['basemap', 'admin', 'markers']}>
                 <AccordionItem value="basemap">
-                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-200">
+                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-700 w-full text-center mx-auto px-4">
                     Basemap
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="flex items-center justify-between py-1">
-                      <span className="text-[11px] uppercase tracking-wider text-slate-300">Satellite</span>
+                    <div className="flex items-center justify-between py-1 pl-4">
+                      <span className="text-[11px] uppercase tracking-wider text-slate-900">Satellite</span>
                       <Switch checked={basemap === 'satellite'} onCheckedChange={(v) => setBasemap(v ? 'satellite' : 'osm')} />
                     </div>
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="admin">
-                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-200">
+                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-700 w-full text-center mx-auto px-4">
                     Admin
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] uppercase tracking-wider text-slate-300">Boundary</span>
+                      <div className="flex items-center justify-between pl-4">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-900">Boundary</span>
                         <Switch checked={adminVisible} onCheckedChange={setAdminVisible} />
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <div className="space-y-1 pl-4">
+                        <div className="flex items-center justify-between text-[10px] text-slate-900">
                           <span className="uppercase tracking-wider">Opacity</span>
                           <span>{Math.round(adminOpacity * 100)}%</span>
                         </div>
@@ -498,17 +498,17 @@ const LeafletMapComponent = ({
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="roads">
-                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-200">
+                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-700 w-full text-center mx-auto px-4">
                     Roads
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] uppercase tracking-wider text-slate-300">Show Roads</span>
+                      <div className="flex items-center justify-between pl-4">
+                        <span className="text-[11px] uppercase tracking-wider text-slate-900">Show Roads</span>
                         <Switch checked={roadsVisible} onCheckedChange={setRoadsVisible} />
                       </div>
                       <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <div className="flex items-center justify-between text-[10px] text-slate-900">
                           <span className="uppercase tracking-wider">Opacity</span>
                           <span>{Math.round(roadsOpacity * 100)}%</span>
                         </div>
@@ -518,12 +518,12 @@ const LeafletMapComponent = ({
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="markers">
-                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-200">
+                  <AccordionTrigger className="uppercase tracking-wide text-xs text-slate-700 w-full text-center mx-auto px-4">
                     Markers
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="flex items-center justify-between py-1">
-                      <span className="text-[11px] uppercase tracking-wider text-slate-300">Show Markers</span>
+                    <div className="flex items-center justify-between py-1 pl-4">
+                      <span className="text-[11px] uppercase tracking-wider text-slate-900">Show Markers</span>
                       <Switch checked={markersVisible} onCheckedChange={setMarkersVisible} />
                     </div>
                   </AccordionContent>

@@ -222,7 +222,7 @@ const LocationDetails = ({
                   }}
                   disabled={loadingDistricts}
                 >
-                  <SelectTrigger className="w-full border-2 border-gray-200 focus:border-gray-400 shadow-sm rounded-lg">
+                  <SelectTrigger className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-assam-blue focus:border-transparent transition-all duration-200">
                     <SelectValue
                       placeholder={
                         loadingDistricts
@@ -264,7 +264,7 @@ const LocationDetails = ({
                   }}
                   disabled={!selectedDistrictCode || loadingCircles || circles.length === 0}
                 >
-                  <SelectTrigger className="w-full border-2 border-gray-200 focus:border-gray-400 shadow-sm rounded-lg">
+                  <SelectTrigger className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-assam-blue focus:border-transparent transition-all duration-200">
                     <SelectValue
                       placeholder={
                         loadingCircles
@@ -305,7 +305,7 @@ const LocationDetails = ({
                   }}
                   disabled={!selectedCircleCode || loadingMouzas || mouzas.length === 0}
                 >
-                  <SelectTrigger className="w-full border-2 border-gray-200 focus:border-gray-400 shadow-sm rounded-lg">
+                  <SelectTrigger className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-assam-blue focus:border-transparent transition-all duration-200">
                     <SelectValue
                       placeholder={
                         loadingMouzas
@@ -342,10 +342,10 @@ const LocationDetails = ({
 
           <CardContent className="p-4" />
           <CardFooter className="flex justify-between p-4">
-            <Button variant="outline" onClick={handleViewZonalValues}>
+            <Button variant="outline" onClick={handleViewZonalValues} className="flex-1 mr-2 border-assam-blue text-assam-blue hover:bg-assam-blue hover:text-white transition-colors duration-200">
               <Map className="mr-2 h-4 w-4" /> View Zonal Values
             </Button>
-            <Button onClick={handleCalculatePropertyValue}>
+            <Button onClick={handleCalculatePropertyValue} className="flex-1 ml-2 bg-assam-blue text-white hover:bg-blue-700 transition-colors duration-200">
               <Locate className="mr-2 h-4 w-4" /> Calculate Property Value
             </Button>
           </CardFooter>
