@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Map, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { assamDistrictDetails, DistrictDetails } from './building-types/plot';
+import { useAssamDistrictDetails, DistrictDetails } from './building-types/plot';
+
 import LocationDetails from './PropertyValuation/LocationDetails';
 import LeafletMapComponent from './LeafletMapComponent';
 import ArcGISMapComponent from './ArcGISMapComponent';
@@ -88,7 +89,7 @@ const PropertyValuationMap = ({
             /> */}
             <LeafletMapComponent
               initialLocation={selectedDistrict ? `${selectedDistrict.name}, Assam, India` : "Assam, India"}
-              markerLocations={assamDistrictDetails}
+              markerLocations={useAssamDistrictDetails().districts}
               onMarkerClick={handleDistrictSelect}
               selectedDistrict={selectedDistrict}
               searchText={mapSearchActive ? searchText : undefined}
@@ -109,10 +110,11 @@ const PropertyValuationMap = ({
         <div className="absolute left-4 top-4 z-30 w-80">
           <LocationDetails
             district={selectedDistrict.name}
-            areaType={selectedDistrict.areaType}
-            localBody={selectedDistrict.localBody}
-            ward={selectedDistrict.ward}
-            guidelineLocation={selectedDistrict.guidelineLocation}
+            districtCode={selectedDistrict.districtCode}
+            // areaType={selectedDistrict.areaType}
+            // localBody={selectedDistrict.localBody}
+            // ward={selectedDistrict.ward}
+            // guidelineLocation={selectedDistrict.guidelineLocation}
             circle={selectedDistrict.circle}
             mouza={selectedDistrict.village}
             open={locationDetailsOpen}

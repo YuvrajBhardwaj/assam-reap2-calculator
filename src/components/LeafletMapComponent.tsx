@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { findDistrictDetails } from './building-types/plot';
+import { useAssamDistrictDetails } from './building-types/plot';
 
 // Fix default marker icons
 // @ts-ignore
@@ -54,6 +54,7 @@ const LeafletMapComponent = ({
   selectedCoordinates,
 }: LeafletMapComponentProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const { districts } = useAssamDistrictDetails();
   const [map, setMap] = useState<L.Map | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const searchMarkerRef = useRef<L.Marker | null>(null); // Ref to keep track of the search marker
@@ -164,14 +165,15 @@ const LeafletMapComponent = ({
             const dName = feature.properties?.DISTRICT || feature.properties?.district || 'District';
             layer.bindTooltip(dName, { sticky: true });
             layer.on('click', () => {
-              const details = findDistrictDetails(dName);
-              if (details) {
-                mapInstance.flyTo([details.lat, details.lng], 17, { animate: true, duration: 0.75 });
-                if (onMarkerClick) onMarkerClick(details);
+              const found = districts.find((d) => d.name.toLowerCase() === dName.toLowerCase());
+              if (found) {
+                mapInstance.flyTo([found.lat, found.lng], 17, { animate: true, duration: 0.75 });
+                if (onMarkerClick) onMarkerClick(found);
                 toast({ title: 'District Selected', description: dName });
               }
             });
-          },
+          }
+
         });
         if (adminVisible) adminLayer.addTo(mapInstance);
         layersRef.current.overlays.admin = adminLayer;
