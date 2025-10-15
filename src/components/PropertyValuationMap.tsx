@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Map, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useAssamDistrictDetails, DistrictDetails } from './building-types/plot';
 
 import LocationDetails from './PropertyValuation/LocationDetails';
@@ -22,6 +22,7 @@ const PropertyValuationMap = ({
   searchText = "",
   isMapSearchActive = false,
 }: PropertyValuationMapProps) => {
+  const { districts, loading } = useAssamDistrictDetails();
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictDetails | null>(null);
   const [resetMapTrigger, setResetMapTrigger] = useState(0);
   const [locationDetailsOpen, setLocationDetailsOpen] = useState(false);
@@ -89,7 +90,7 @@ const PropertyValuationMap = ({
             /> */}
             <LeafletMapComponent
               initialLocation={selectedDistrict ? `${selectedDistrict.name}, Assam, India` : "Assam, India"}
-              markerLocations={useAssamDistrictDetails().districts}
+              markerLocations={districts}
               onMarkerClick={handleDistrictSelect}
               selectedDistrict={selectedDistrict}
               searchText={mapSearchActive ? searchText : undefined}

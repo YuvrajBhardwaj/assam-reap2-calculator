@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { loadModules } from "esri-loader";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { DistrictDetails, useAssamDistrictDetails } from "./building-types/plot";
 import type MapView from "@arcgis/core/views/MapView";
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
