@@ -23,10 +23,11 @@ import { useNavigate } from "react-router-dom";
 export interface LocationDetailsProps {
   district?: string;
   districtCode?: string;
-  areaType?: string;
-  localBody?: string;
-  ward?: string;
-  guidelineLocation?: string;
+  // Remove these ↓
+  // areaType?: string;
+  // localBody?: string;
+  // ward?: string;
+  // guidelineLocation?: string;
   circle?: string;
   mouza?: string;
   onDistrictChange?: (districtData: District) => void;
@@ -39,10 +40,10 @@ export interface LocationDetailsProps {
 const LocationDetails = ({
   district: propDistrict = "Select a district",
   districtCode: propDistrictCode,
-  areaType = "-",
-  localBody = "-",
-  ward = "-",
-  guidelineLocation = "-",
+  // areaType = "-",
+  // localBody = "-",
+  // ward = "-",
+  // guidelineLocation = "-",
   circle: propCircle = "-",
   mouza: propMouza = "-",
   onDistrictChange,
@@ -342,10 +343,10 @@ const LocationDetails = ({
               </div>
 
               {/* Read-only fields */}
-              <div className="flex gap-2"><span className="font-semibold w-32">Area Type:</span><span>{areaType}</span></div>
+              {/* <div className="flex gap-2"><span className="font-semibold w-32">Area Type:</span><span>{areaType}</span></div>
               <div className="flex gap-2"><span className="font-semibold w-32">Local Body:</span><span>{localBody}</span></div>
               <div className="flex gap-2"><span className="font-semibold w-32">Ward:</span><span>{ward}</span></div>
-              <div className="flex gap-2"><span className="font-semibold w-32">Guideline Location:</span><span>{guidelineLocation}</span></div>
+              <div className="flex gap-2"><span className="font-semibold w-32">Guideline Location:</span><span>{guidelineLocation}</span></div> */}
             </div>
           </CardHeader>
 
