@@ -45,7 +45,7 @@ import MasterDataManagement from "./MasterDataManagement";
 import { useAuth } from "@/context/AuthContext";
 import { getAuditLogs } from "@/services/masterDataService";
 import type { AuditLog, MasterDataChangeRequest } from "@/types/masterData";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 // ---------- Types ----------
 interface WorkflowItem {
@@ -376,13 +376,127 @@ const DepartmentWorkflowDashboard = () => {
       <Tabs defaultValue="workflows" className="w-full">
         <TabsList className="flex w-full overflow-x-auto mb-4">
           <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
+          <TabsTrigger value="master-data">Master Data Management</TabsTrigger>
           <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
         </TabsList>
 
         {/* Workflows Tab */}
-        
         <TabsContent value="workflows">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Active Workflows</CardTitle>
+                <div className="flex gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="on-hold">On Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Priority</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search by applicant, property, or location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Applicant</TableHead>
+                      <TableHead>Property</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Days</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.id}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(item.status)}
+                            <span className="text-sm">{item.type}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{item.applicant}</TableCell>
+                        <TableCell>{item.property}</TableCell>
+                        <TableCell>{item.location}</TableCell>
+                        <TableCell>{item.submittedDate}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusBadge(item.status)}>
+                            {item.status.replace("-", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityBadge(item.priority)}>
+                            {item.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{item.assignedTo}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-gray-500" />
+                            <span>{item.daysElapsed}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedWorkflow(item)}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Master Data Management Tab */}
+        <TabsContent value="master-data">
           <MasterDataManagement
             userRole={userRole}
             toast={toast}
