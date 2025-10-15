@@ -195,14 +195,14 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
       await masterDataService.deactivateLot(id);
       await loadFilteredLots();
     },
-    requestChange: async (operation, payload, reason) => {
-      return masterDataService.requestEntityChange({
-        entityType: 'Lot',
-        operation,
-        payload,
-        reason
-      });
-    },
+    // requestChange: async (operation, payload, reason) => {
+    //   return masterDataService.requestEntityChange({
+    //     entityType: 'Lot',
+    //     operation,
+    //     payload,
+    //     reason
+    //   });
+    // },
     getHistory: async (id) => masterDataService.getEntityHistory('Lot', id),
     validate: async (item) => {
       const errors: string[] = [];

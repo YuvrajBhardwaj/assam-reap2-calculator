@@ -56,14 +56,14 @@ export default function CircleCRUD({
     },
     deactivate: masterDataService.deactivateCircle,
     reactivate: masterDataService.reactivateCircle,
-    requestChange: async (operation, payload, reason) => {
-      return masterDataService.submitChangeRequest({
-        entityType: 'Circle',
-        operation,
-        payload: { ...payload, districtCode: currentDistrictCode },
-        reason
-      });
-    },
+    // requestChange: async (operation, payload, reason) => {
+    //   return masterDataService.submitChangeRequest({
+    //     entityType: 'Circle',
+    //     operation,
+    //     payload: { ...payload, districtCode: currentDistrictCode },
+    //     reason
+    //   });
+    // },
     getHistory: masterDataService.getCircleHistory,
     search: async (query, filters) => {
       if (!currentDistrictCode) return [];

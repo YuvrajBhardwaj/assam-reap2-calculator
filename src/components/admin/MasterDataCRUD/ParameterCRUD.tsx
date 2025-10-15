@@ -227,14 +227,14 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
       await masterDataService.deleteParameterWeightage(id);
     },
     getHistory: masterDataService.getParameterWeightageHistory,
-    requestChange: (operation, payload, reason) => 
-      masterDataService.submitChangeRequest({
-        entityType: 'ParameterWeightage',
-        entityId: payload.parameterCode,
-        operation,
-        payload,
-        reason
-      })
+    // requestChange: (operation, payload, reason) => 
+    //   masterDataService.submitChangeRequest({
+    //     entityType: 'ParameterWeightage',
+    //     entityId: payload.parameterCode,
+    //     operation,
+    //     payload,
+    //     reason
+    //   })
   };
 
   // CRUD service for bands

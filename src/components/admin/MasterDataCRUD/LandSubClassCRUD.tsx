@@ -11,14 +11,14 @@ const landSubClassService: CRUDService<LandSubClass> = {
   create: masterDataService.createLandSubClass,
   update: masterDataService.updateLandSubClass,
   deactivate: masterDataService.deactivateLandSubClass,
-  requestChange: async (operation, payload, reason) => {
-    return masterDataService.requestEntityChange({
-      entityType: 'LandSubClass',
-      operation,
-      payload,
-      reason
-    });
-  },
+  // requestChange: async (operation, payload, reason) => {
+  //   return masterDataService.requestEntityChange({
+  //     entityType: 'LandSubClass',
+  //     operation,
+  //     payload,
+  //     reason
+  //   });
+  // },
   getHistory: async (id: string) => masterDataService.getHistory('LandSubClass', id),
   search: async (query, filters) => {
     const all = await masterDataService.fetchLandSubClasses(filters?.parentClassCode);

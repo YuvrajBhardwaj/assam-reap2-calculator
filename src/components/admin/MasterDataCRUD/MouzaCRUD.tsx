@@ -219,14 +219,14 @@ export default function MouzaCRUD({ className = "" }: MouzaCRUDProps) {
       await masterDataService.deactivateMouza(id);
       await loadFilteredMouzas();
     },
-    requestChange: async (operation, payload, reason) => {
-      return masterDataService.requestEntityChange({
-        entityType: 'Mouza',
-        operation,
-        payload,
-        reason
-      });
-    },
+    // requestChange: async (operation, payload, reason) => {
+    //   return masterDataService.requestEntityChange({
+    //     entityType: 'Mouza',
+    //     operation,
+    //     payload,
+    //     reason
+    //   });
+    // },
     getHistory: async (id) => masterDataService.getEntityHistory('Mouza', id),
     search: async (query) => {
       const all = await getMouzasByDistrictAndCircle();

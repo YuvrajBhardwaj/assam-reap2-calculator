@@ -104,15 +104,15 @@ const SROCascadingCRUD: React.FC = () => {
       // Update local state to reflect deactivation
       setSroData(prev => prev.map(item => (item.id === id ? { ...item, isActive: false } : item)));
     },
-    requestChange: async (operation: 'CREATE' | 'UPDATE' | 'DEACTIVATE', payload: any, reason: string) => {
-      return await masterDataService.submitChangeRequest({
-        entityType: 'SRO',
-        entityId: operation !== 'CREATE' ? payload.id : undefined,
-        operation,
-        payload,
-        reason
-      });
-    },
+    // requestChange: async (operation: 'CREATE' | 'UPDATE' | 'DEACTIVATE', payload: any, reason: string) => {
+    //   return await masterDataService.submitChangeRequest({
+    //     entityType: 'SRO',
+    //     entityId: operation !== 'CREATE' ? payload.id : undefined,
+    //     operation,
+    //     payload,
+    //     reason
+    //   });
+    // },
     getHistory: async (id: string) => {
       return await masterDataService.getEntityHistory('SRO', id);
     },

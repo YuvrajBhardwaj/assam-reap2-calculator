@@ -78,14 +78,14 @@ const districtService: CRUDService<District> = {
       throw new Error(`District with id ${id} not found for reactivation.`);
     }
   },
-  requestChange: async (operation, payload, reason) => {
-    return masterDataService.requestEntityChange({
-      entityType: 'District',
-      operation,
-      payload: mapDistrictToApiData(payload),
-      reason
-    });
-  },
+  // requestChange: async (operation, payload, reason) => {
+  //   return masterDataService.requestEntityChange({
+  //     entityType: 'District',
+  //     operation,
+  //     payload: mapDistrictToApiData(payload),
+  //     reason
+  //   });
+  // },
   getHistory: masterDataService.getDistrictHistory,
   search: async (query, _filters) => {
     const allDistricts = await getAllDistricts();

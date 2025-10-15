@@ -12,14 +12,14 @@ const landClassService: CRUDService<LandClass> = {
   update: masterDataService.updateLandClass,
   deactivate: masterDataService.deactivateLandClass,
   reactivate: masterDataService.reactivateLandClass,
-  requestChange: async (operation, payload, reason) => {
-    return masterDataService.requestEntityChange({
-      entityType: 'LandClass',
-      operation,
-      payload,
-      reason
-    });
-  },
+  // requestChange: async (operation, payload, reason) => {
+  //   return masterDataService.requestEntityChange({
+  //     entityType: 'LandClass',
+  //     operation,
+  //     payload,
+  //     reason
+  //   });
+  // },
   getHistory: masterDataService.getLandClassHistory,
   search: async (query, filters) => {
     const allLandClasses = await getAllLandCategories();
