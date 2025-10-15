@@ -1,12 +1,17 @@
-
+// context/AuthContext.tsx
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { ApiService, LoginRequest } from '../services/adminService';
 
-type UserRole = 'ROLE_NormalUser' | 'ROLE_ADMIN' | 'ROLE_JuniorManager' | 'ROLE_Manager' | 'ROLE_SeniorManager' | 'user';
+export type UserRole = 
+  | 'ROLE_NormalUser'
+  | 'ROLE_ADMIN'
+  | 'ROLE_JuniorManager'
+  | 'ROLE_Manager'
+  | 'ROLE_SeniorManager';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  userRole: UserRole;
+  userRole: UserRole | null;
   loginId: string | null;
   token: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
@@ -19,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('user');
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loginId, setLoginId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -27,13 +32,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Check for stored auth data on mount
     const storedToken = localStorage.getItem('authToken');
     const storedLoginId = localStorage.getItem('loginId');
-    const storedRole = localStorage.getItem('userRole') as UserRole;
-    
-    if (storedToken && storedLoginId && storedRole) {
+    const storedRole = localStorage.getItem('userRole');
+
+    const validRoles: UserRole[] = [
+      'ROLE_NormalUser',
+      'ROLE_ADMIN',
+      'ROLE_JuniorManager',
+      'ROLE_Manager',
+      'ROLE_SeniorManager'
+    ];
+
+    if (
+      storedToken &&
+      storedLoginId &&
+      storedRole &&
+      validRoles.includes(storedRole as UserRole)
+    ) {
       setToken(storedToken);
       setLoginId(storedLoginId);
-      setUserRole(storedRole);
+      setUserRole(storedRole as UserRole);
       setIsAuthenticated(true);
+    } else {
+      // Optional: Assign public role by default for unauthenticated users
+      // setUserRole('ROLE_NormalUser');
     }
   }, []);
 
@@ -44,12 +65,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoginId(response.loginId);
       
       // Determine role based on the roles array in the response
-      let role: UserRole = 'user'; // Default role
+      let role: UserRole = 'ROLE_NormalUser'; // Default fallback for public access
       if (response.roles && response.roles.length > 0) {
-        // Assuming the first role in the array is the primary role for display
-        // You might want to implement more complex logic if a user can have multiple roles
         const primaryRole = response.roles[0];
-        if (['ROLE_NormalUser', 'ROLE_ADMIN', 'ROLE_JuniorManager', 'ROLE_Manager', 'ROLE_SeniorManager'].includes(primaryRole)) {
+        if ([
+          'ROLE_NormalUser',
+          'ROLE_ADMIN',
+          'ROLE_JuniorManager',
+          'ROLE_Manager',
+          'ROLE_SeniorManager'
+        ].includes(primaryRole)) {
           role = primaryRole as UserRole;
         }
       }
@@ -71,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(true);
     setUserRole(role);
     localStorage.setItem('userRole', role);
+    // Note: No real token, so don't set authToken/loginId
   };
 
   const switchRole = (role: UserRole) => {
@@ -80,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setIsAuthenticated(false);
-    setUserRole('user');
+    setUserRole(null);
     setToken(null);
     setLoginId(null);
     

@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import {
   User,
-  Search,
   Bell,
   LogOut,
   Menu,
@@ -30,8 +29,6 @@ const Header = () => {
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
-  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -101,10 +98,6 @@ const Header = () => {
     } finally {
       setIsLoading(false);
     }
-
-    setUsername('');
-    setPassword('');
-    setCaptchaInput('');
   };
 
   const handleLogout = () => {
@@ -115,20 +108,25 @@ const Header = () => {
     });
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
-      toast({
-        title: 'Search Initiated',
-        description: `Searching for: ${searchQuery}`,
-      });
-      setSearchDialogOpen(false);
-      setSearchQuery('');
-    }
-  };
-
   const handleNotificationClick = () => {
     setNotificationDialogOpen(true);
+  };
+
+  const getRoleDisplayName = () => {
+    switch (userRole) {
+      case 'ROLE_ADMIN':
+        return 'Admin';
+      case 'ROLE_JuniorManager':
+        return 'Junior Manager';
+      case 'ROLE_Manager':
+        return 'Manager';
+      case 'ROLE_SeniorManager':
+        return 'Senior Manager';
+      case 'ROLE_NormalUser':
+        return 'Public User';
+      default:
+        return 'Guest';
+    }
   };
 
   const navLinks = [
@@ -136,7 +134,7 @@ const Header = () => {
     { to: '/about-us', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
     { to: '/public-land-notifications', label: 'Public/Land Notifications' },
-    { to: '/related-links-to-land', label: 'Related Links to Land Revenue and Registration' },
+    { to: '/related-links-to-land', label: 'Related Links' },
   ];
 
   return (
@@ -190,21 +188,14 @@ const Header = () => {
             {/* Mobile-only icons */}
             <div className="flex md:hidden items-center gap-4 mt-4">
               <button
-                className="p-2 rounded-full hover:bg-[#1E8C98] transition-colors"
-                aria-label="Search"
-                onClick={() => setSearchDialogOpen(true)}
-              >
-                <Search className="h-5 w-5" />
-              </button>
-              <button
                 className="p-2 rounded-full hover:bg-[#1E8C98] transition-colors relative"
                 aria-label="Notifications"
                 onClick={handleNotificationClick}
               >
                 <Bell className="h-5 w-5" />
-                {isAuthenticated && userRole === 'ROLE_ADMIN' && (
+                {isAuthenticated && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                    3
+                    !
                   </span>
                 )}
               </button>
@@ -232,38 +223,21 @@ const Header = () => {
           {/* Desktop icons */}
           <div className="hidden md:flex items-center space-x-4">
             <button
-              className="p-2 rounded-full hover:bg-[#1E8C98] transition-colors"
-              aria-label="Search"
-              onClick={() => setSearchDialogOpen(true)}
-            >
-              <Search className="h-5 w-5" />
-            </button>
-            <button
               className="p-2 rounded-full hover:bg-[#1E8C98] transition-colors relative"
               aria-label="Notifications"
               onClick={handleNotificationClick}
             >
               <Bell className="h-5 w-5" />
-              {isAuthenticated && userRole === 'ROLE_ADMIN' && (
+              {isAuthenticated && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  3
+                  !
                 </span>
               )}
             </button>
             {isAuthenticated ? (
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium hidden sm:inline">
-                  {userRole === 'ROLE_ADMIN'
-                    ? 'Admin'
-                    : userRole === 'ROLE_NormalUser'
-                      ? 'Normal User'
-                      : userRole === 'ROLE_JuniorManager'
-                        ? 'Junior Manager'
-                        : userRole === 'ROLE_Manager'
-                          ? 'Manager'
-                          : userRole === 'ROLE_SeniorManager'
-                            ? 'Senior Manager'
-                            : 'User'}
+                  {getRoleDisplayName()}
                 </span>
                 <button
                   onClick={handleLogout}
@@ -330,7 +304,6 @@ const Header = () => {
               />
             </div>
             
-            {/* Captcha for all logins */}
             <div className="space-y-2">
               <Label htmlFor="captcha" className="text-[#1E8C98] font-semibold">
                 Captcha<span className="text-[#1E8C98]">*</span>
@@ -386,65 +359,65 @@ const Header = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Search Dialog */}
-      <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle className="text-lg font-semibold text-primary">
-            Search
-          </DialogTitle>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search for property, notifications, or services</Label>
-              <Input
-                id="search"
-                placeholder="Enter your search query..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSearchDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSearch}>
-              Search
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Notification Dialog */}
       <Dialog open={notificationDialogOpen} onOpenChange={setNotificationDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogTitle className="text-lg font-semibold text-primary">
             Notifications
           </DialogTitle>
-          <div className="space-y-4">
-            {isAuthenticated && userRole === 'ROLE_ADMIN' ? (
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {isAuthenticated ? (
               <>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-1">Welcome Admin!</h4>
-                  <p className="text-sm text-blue-600">You have administrative privileges.</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-semibold text-yellow-800 mb-1">Pending Approvals</h4>
-                    <p className="text-sm text-yellow-600">2 property valuation requests awaiting approval</p>
+                {/* Admin Notifications */}
+                {userRole === 'ROLE_ADMIN' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 mb-1">Admin Dashboard</h4>
+                      <p className="text-sm text-blue-600">You have full administrative access.</p>
+                    </div>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="font-semibold text-yellow-800 mb-1">Pending Approvals</h4>
+                      <p className="text-sm text-yellow-600">3 master data change requests awaiting review.</p>
+                    </div>
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <h4 className="font-semibold text-red-800 mb-1">Urgent Action Required</h4>
+                      <p className="text-sm text-red-600">1 user deactivation request needs immediate attention.</p>
+                    </div>
                   </div>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <h4 className="font-semibold text-red-800 mb-1">Urgent Request</h4>
-                    <p className="text-sm text-red-600">1 stamp duty calculation requires immediate review</p>
+                )}
+
+                {/* Department Notifications */}
+                {['ROLE_JuniorManager', 'ROLE_Manager', 'ROLE_SeniorManager'].includes(userRole || '') && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-semibold text-green-800 mb-1">Department Access</h4>
+                      <p className="text-sm text-green-600">You can manage department workflows and valuations.</p>
+                    </div>
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 mb-1">Pending Submissions</h4>
+                      <p className="text-sm text-purple-600">2 property valuation requests from your circle.</p>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Normal User Notifications */}
+                {userRole === 'ROLE_NormalUser' && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <h4 className="font-semibold text-gray-800 mb-1">Welcome!</h4>
+                      <p className="text-sm text-gray-600">You can access property valuation and stamp duty calculators.</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <h4 className="font-semibold text-amber-800 mb-1">New Feature</h4>
+                      <p className="text-sm text-amber-600">Zonal value database is now available for public view.</p>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                <p className="text-gray-600">No new notifications at this time.</p>
-                {!isAuthenticated && (
-                  <p className="text-sm text-gray-500 mt-2">Login to view personalized notifications.</p>
-                )}
+                <p className="text-gray-600">No notifications available.</p>
+                <p className="text-sm text-gray-500 mt-2">Login to view personalized notifications.</p>
               </div>
             )}
           </div>

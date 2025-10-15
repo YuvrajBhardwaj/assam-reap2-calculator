@@ -11,6 +11,7 @@ import {
   Calculator,
   Database,
   ChartBar,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import WorkflowDashboard from '@/components/admin/WorkflowDashboard';
@@ -32,15 +33,18 @@ const Index = () => {
   const [initialLocationData, setInitialLocationData] = useState<any>(null);
   const [prefilledStampDuty, setPrefilledStampDuty] = useState<{ marketValue?: number } | null>(null);
 
-  // ✅ Role flags
-  const isAdmin = userRole === 'ROLE_ADMIN' || 'admin';
-  const isDepartmentUser = userRole === 'ROLE_NormalUser';
-  const isJuniorManager = userRole === 'ROLE_JuniorManager';
-  const isManager = userRole === 'ROLE_Manager';
-  const isSeniorManager = userRole === 'ROLE_SeniorManager';
+  // ✅ Role flags (fixed logic: avoid truthy string coercion)
+const isAdmin = userRole === 'ROLE_ADMIN';
+const isDepartmentUser = 
+  userRole === 'ROLE_Manager' || 
+  userRole === 'ROLE_JuniorManager' || 
+  userRole === 'ROLE_SeniorManager';
+const isNormalUser = userRole === 'ROLE_NormalUser';
 
-  // ✅ Role-based tab access map
-  const roleAccessMap: Record<string, string[]> = {
+const isGuest = userRole === null;
+
+  // ✅ Role-based allowed tabs
+  const roleAccessMap = {
     admin: [
       "property-valuation",
       "valuation-calculator",
@@ -61,85 +65,107 @@ const Index = () => {
       "department-dashboard",
       "workflow-dept",
     ],
-    manager: [
+    basicUser: [
       "property-valuation",
       "valuation-calculator",
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
-      "department-dashboard",
-      "workflow-dept",
     ],
+    guest: ["landing"],
   };
 
   const getAllowedTabs = () => {
-    if (isAdmin) return roleAccessMap.admin;
-    if (isDepartmentUser) return roleAccessMap.department;
-    if (isJuniorManager || isManager || isSeniorManager) return roleAccessMap.manager;
-    return ["landing"];
-  };
+  if (isAdmin) return roleAccessMap.admin;
+  if (isDepartmentUser) return roleAccessMap.department;
+  if (isNormalUser || userRole === null) return roleAccessMap.basicUser; // guests get basic access
+  return ["landing"];
+};
 
-  // ✅ Handle role-based tab change
+  // ✅ Secure tab change handler
   const handleTabChange = (value: string) => {
     const allowedTabs = getAllowedTabs();
     if (!allowedTabs.includes(value)) {
-      console.warn("Access denied: User role insufficient");
+      console.warn(`Access denied: Role "${userRole}" cannot access tab "${value}"`);
+      setActiveTab("unauthorized");
       return;
     }
-
     setActiveTab(value);
 
+    // Reset state when leaving calculator
     if (value !== "valuation-calculator") {
       setInitialLocationData(null);
       window.history.pushState({}, '', '/');
     }
   };
 
-  // ✅ Handle navigation from Landing Page sections
   const handleNavigateToSection = (section: string) => {
-    const allowedTabs = getAllowedTabs();
-    if (!allowedTabs.includes(section)) {
-      console.warn("Access denied: User role insufficient");
-      return;
-    }
-    setActiveTab(section);
+    handleTabChange(section); // Reuse secure handler
   };
 
-  const handleGetStarted = () => setActiveTab("property-valuation");
+  const handleGetStarted = () => handleTabChange("property-valuation");
 
-  // ✅ Handle deep linking via query params
+  // ✅ Handle deep linking securely
   useEffect(() => {
     const handleTabNavigation = (event: CustomEvent) => {
       const { tab, locationData, stampDutyData } = event.detail || {};
-      if (tab) setActiveTab(tab);
-      if (locationData) setInitialLocationData(locationData);
-      if (stampDutyData && typeof stampDutyData.marketValue === 'number') {
-        setPrefilledStampDuty({ marketValue: stampDutyData.marketValue });
+      if (tab) {
+        // Validate access before switching
+        const allowedTabs = getAllowedTabs();
+        if (allowedTabs.includes(tab)) {
+          setActiveTab(tab);
+          if (locationData) setInitialLocationData(locationData);
+          if (stampDutyData?.marketValue) {
+            setPrefilledStampDuty({ marketValue: stampDutyData.marketValue });
+          }
+        } else {
+          setActiveTab("unauthorized");
+        }
       }
     };
 
     const searchParams = new URLSearchParams(window.location.search);
+    const initialTab = searchParams.get('tab');
+
+    // Handle deep link with location
     const districtCode = searchParams.get('district');
     const circleCode = searchParams.get('circle');
-    const mouzaCode = searchParams.get('mouza');
-
     if (districtCode && circleCode) {
       const locationData = {
         district: { code: districtCode, name: '' },
         circle: { code: circleCode, name: '' },
-        village: mouzaCode ? { code: mouzaCode, name: '' } : undefined,
+        village: searchParams.get('mouza') ? { code: searchParams.get('mouza')!, name: '' } : undefined,
       };
-      setInitialLocationData(locationData);
-      setActiveTab('valuation-calculator');
-      window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: { tab: 'valuation-calculator', locationData } }));
-    } else {
-      const initialTab = searchParams.get('tab');
-      if (initialTab) setActiveTab(initialTab);
+      // Trigger secure navigation
+      window.dispatchEvent(
+        new CustomEvent('navigate-to-tab', {
+          detail: { tab: 'valuation-calculator', locationData },
+        })
+      );
+    } else if (initialTab) {
+      handleTabChange(initialTab);
     }
 
     window.addEventListener("navigate-to-tab", handleTabNavigation as EventListener);
     return () => window.removeEventListener("navigate-to-tab", handleTabNavigation as EventListener);
-  }, []);
+  }, [userRole]);
+
+  // ✅ Render Unauthorized Tab
+  const renderUnauthorized = () => (
+    <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow-sm border border-red-200">
+      <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+      <h2 className="text-xl font-bold text-red-600 mb-2">Access Denied</h2>
+      <p className="text-gray-600 text-center max-w-md">
+        Your role <strong>({userRole || 'Guest'})</strong> does not have permission to access this section.
+      </p>
+      <button
+        onClick={() => setActiveTab("landing")}
+        className="mt-4 px-4 py-2 bg-assam-blue text-white rounded-md hover:bg-blue-700 transition"
+      >
+        Return to Home
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-assam-gray">
@@ -150,60 +176,131 @@ const Index = () => {
       </Helmet>
 
       <Header />
-
       <main className="flex-1 container mx-auto px-4 py-6">
         <RoleSwitcher />
 
-        <Tabs defaultValue="landing" value={activeTab} onValueChange={handleTabChange} className="w-full">
-          
-          {/* ✅ Restored your original styling */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          {/* Tab List */}
           <TabsList className="flex flex-nowrap gap-x-2 mb-8 rounded-lg p-1 justify-start overflow-x-auto sm:overflow-x-visible">
-            <TabsTrigger value="property-valuation" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'property-valuation' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+            {/* Common Tabs */}
+            <TabsTrigger
+              value="property-valuation"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                activeTab === 'property-valuation'
+                  ? 'bg-white text-[#595959] border border-[#595959]'
+                  : 'bg-[#595959] text-white'
+              } transition-colors`}
+            >
               <Building className="h-4 w-4" /> <span>Property Valuation</span>
             </TabsTrigger>
 
-            <TabsTrigger value="stamp-duty-calculator" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'stamp-duty-calculator' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+            <TabsTrigger
+              value="stamp-duty-calculator"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                activeTab === 'stamp-duty-calculator'
+                  ? 'bg-white text-[#595959] border border-[#595959]'
+                  : 'bg-[#595959] text-white'
+              } transition-colors`}
+            >
               <Calculator className="h-4 w-4" /> <span>Stamp Duty</span>
             </TabsTrigger>
 
-            <TabsTrigger value="zonal-value-database" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'zonal-value-database' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+            <TabsTrigger
+              value="zonal-value-database"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                activeTab === 'zonal-value-database'
+                  ? 'bg-white text-[#595959] border border-[#595959]'
+                  : 'bg-[#595959] text-white'
+              } transition-colors`}
+            >
               <Database className="h-4 w-4" /> <span>Zonal Values</span>
             </TabsTrigger>
 
-            <TabsTrigger value="certified-copies" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'certified-copies' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
-              <Database className="h-4 w-4" /> <span>Certified Copies & Related Links</span>
+            <TabsTrigger
+              value="certified-copies"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                activeTab === 'certified-copies'
+                  ? 'bg-white text-[#595959] border border-[#595959]'
+                  : 'bg-[#595959] text-white'
+              } transition-colors`}
+            >
+              <Database className="h-4 w-4" /> <span>Certified Copies</span>
             </TabsTrigger>
 
+            {/* Department Tabs */}
             {isDepartmentUser && (
               <>
-                <TabsTrigger value="department-dashboard" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'department-dashboard' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="department-dashboard"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'department-dashboard'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <Database className="h-4 w-4" /> <span>Department Dashboard</span>
                 </TabsTrigger>
-                <TabsTrigger value="workflow-dept" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow-dept' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="workflow-dept"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'workflow-dept'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
               </>
             )}
 
+            {/* Admin Tabs */}
             {isAdmin && (
               <>
-                <TabsTrigger value="master-data" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'master-data' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="master-data"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'master-data'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <Database className="h-4 w-4" /> <span>Master Data</span>
                 </TabsTrigger>
-                <TabsTrigger value="reports" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'reports' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="reports"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'reports'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <ChartBar className="h-4 w-4" /> <span>Reports</span>
                 </TabsTrigger>
-                <TabsTrigger value="workflow" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'workflow' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="workflow"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'workflow'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
-                <TabsTrigger value="user-management" className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${activeTab === 'user-management' ? 'bg-white text-[#595959] border border-[#595959]' : 'bg-[#595959] text-white'} transition-colors`}>
+                <TabsTrigger
+                  value="user-management"
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                    activeTab === 'user-management'
+                      ? 'bg-white text-[#595959] border border-[#595959]'
+                      : 'bg-[#595959] text-white'
+                  } transition-colors`}
+                >
                   <span>User Management</span>
                 </TabsTrigger>
               </>
             )}
           </TabsList>
 
-          {/* ✅ Tab Content */}
+          {/* Tab Contents */}
           <TabsContent value="landing" className="space-y-4">
             <LandingPage onGetStarted={handleGetStarted} onNavigateToSection={handleNavigateToSection} />
           </TabsContent>
@@ -294,6 +391,11 @@ const Index = () => {
               </TabsContent>
             </>
           )}
+
+          {/* Unauthorized Tab */}
+          <TabsContent value="unauthorized" className="space-y-4">
+            {renderUnauthorized()}
+          </TabsContent>
         </Tabs>
       </main>
 

@@ -1,23 +1,27 @@
+// components/RoleSwitcher.tsx
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
-type UserRole = 'user' | 'admin' | 'department';
+// These are the REAL roles from your AuthContext
+type RealUserRole = 
+  | 'ROLE_NormalUser'
+  | 'ROLE_ADMIN'
+  | 'ROLE_Manager'; // Using ROLE_Manager as representative for department
 
 const RoleSwitcher = () => {
   const { userRole, simpleLogin } = useAuth();
 
-  const handleRoleSwitch = (role: UserRole) => {
-    simpleLogin(role);
-  };
-
-  const getRoleDisplayName = (role: UserRole) => {
-    switch (role) {
-      case 'admin':
+  // Map real roles to display names
+  const getRoleDisplayName = () => {
+    switch (userRole) {
+      case 'ROLE_ADMIN':
         return 'Admin';
-      case 'department':
+      case 'ROLE_Manager':
+      case 'ROLE_JuniorManager':
+      case 'ROLE_SeniorManager':
         return 'Department';
-      case 'user':
+      case 'ROLE_NormalUser':
       default:
         return 'Public';
     }
@@ -28,43 +32,45 @@ const RoleSwitcher = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-amber-800">
-            Dev Role: {getRoleDisplayName(userRole)}
+            Dev Role: {getRoleDisplayName()}
           </span>
         </div>
         
         <div className="flex flex-wrap gap-2">
           <Button
-            variant={userRole === 'admin' ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
-            onClick={() => handleRoleSwitch('admin')}
+            onClick={() => simpleLogin('ROLE_ADMIN')}
             className={`${
-              userRole === 'admin'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                : 'border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white'
+              userRole === 'ROLE_ADMIN'
+                ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600'
+                : 'border-amber-600 text-amber-600 hover:bg-amber-50'
             }`}
           >
             As Admin
           </Button>
+          
           <Button
-            variant={userRole === 'department' ? 'default' : 'outline'}
+            variant="outline"
             size="sm"
-            onClick={() => handleRoleSwitch('department')}
+            onClick={() => simpleLogin('ROLE_Manager')} // or ROLE_SeniorManager
             className={`${
-              userRole === 'department'
-                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                : 'border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white'
+              ['ROLE_Manager', 'ROLE_JuniorManager', 'ROLE_SeniorManager'].includes(userRole || '')
+                ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600'
+                : 'border-amber-600 text-amber-600 hover:bg-amber-50'
             }`}
           >
             As Department
           </Button>
+          
           <Button
-            variant={userRole === 'user' ? 'destructive' : 'outline'}
+            variant="outline"
             size="sm"
-            onClick={() => handleRoleSwitch('user')}
+            onClick={() => simpleLogin('ROLE_NormalUser')}
             className={`${
-              userRole === 'user'
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'
+              userRole === 'ROLE_NormalUser'
+                ? 'bg-red-600 hover:bg-red-700 text-white border-red-600'
+                : 'border-red-600 text-red-600 hover:bg-red-50'
             }`}
           >
             As Public
