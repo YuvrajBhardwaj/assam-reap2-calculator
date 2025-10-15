@@ -73,12 +73,11 @@ export const useAssamDistrictDetails = () => {
         const cachedTimestamp = localStorage.getItem("assamDistrictCacheTime");
         const now = Date.now();
 
-        // Temporarily disable cache to force fresh data fetch
-        // if (cachedData && cachedTimestamp && now - Number(cachedTimestamp) < CACHE_EXPIRY_MS) {
-        //   setDistricts(JSON.parse(cachedData));
-        //   setLoading(false);
-        //   return;
-        // }
+        if (cachedData && cachedTimestamp && now - Number(cachedTimestamp) < CACHE_EXPIRY_MS) {
+          setDistricts(JSON.parse(cachedData));
+          setLoading(false);
+          return;
+        }
 
         // Fetch local GeoJSON
         const geoRes = await fetch("/assam.geojson");
@@ -86,41 +85,72 @@ export const useAssamDistrictDetails = () => {
 
         // Map: normalized district name → centroid
         const districtCentroids: Record<string, { lat: number; lng: number }> = {};
+        const districtList: string[] = [];
+        
         for (const feature of geoJson.features) {
           const name = feature.properties.district;
-          if (name && feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+          if (name && (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon")) {
             districtCentroids[normalize(name)] = getCentroid(feature.geometry.coordinates);
+            if (!districtList.includes(name)) {
+              districtList.push(name);
+            }
           }
         }
 
-        // Fetch backend district metadata
-        const response = await axios.get("http://localhost:8081/masterData/getAllDistrictDetails");
-        const baseData = response.data?.data || [];
+        let enriched: DistrictDetails[] = [];
 
-        // Merge backend data with coordinates
-        const enriched: DistrictDetails[] = baseData.map((dist: any) => {
-          const key = normalize(dist.districtName);
-          const geo = districtCentroids[key] || { lat: 0, lng: 0 };
+        // Try to fetch backend district metadata
+        try {
+          const response = await axios.get("http://localhost:8081/masterData/getAllDistrictDetails", {
+            timeout: 3000
+          });
+          const baseData = response.data?.data || [];
 
-          if (!districtCentroids[key]) {
-            console.warn(`No GeoJSON match found for district: "${dist.districtName}"`);
-          }
+          // Merge backend data with coordinates
+          enriched = baseData.map((dist: any) => {
+            const key = normalize(dist.districtName);
+            const geo = districtCentroids[key] || { lat: 0, lng: 0 };
 
-          return {
-            name: dist.districtName,
-            districtCode: dist.districtCode,
-            lat: geo.lat,
-            lng: geo.lng,
-            areaType: "Urban",
-            localBody: "",
-            ward: "",
-            guidelineLocation: "",
-          };
-        });
+            if (!districtCentroids[key]) {
+              console.warn(`No GeoJSON match found for district: "${dist.districtName}"`);
+            }
+
+            return {
+              name: dist.districtName,
+              districtCode: dist.districtCode,
+              lat: geo.lat,
+              lng: geo.lng,
+              areaType: "Urban",
+              localBody: "",
+              ward: "",
+              guidelineLocation: "",
+            };
+          });
+        } catch (apiError) {
+          console.warn("Backend API not available, using GeoJSON data only:", apiError);
+          
+          // Fallback: Use GeoJSON data to create districts
+          enriched = districtList.map((districtName, index) => {
+            const key = normalize(districtName);
+            const geo = districtCentroids[key] || { lat: 0, lng: 0 };
+
+            return {
+              name: districtName,
+              districtCode: `DIST${String(index + 1).padStart(3, '0')}`,
+              lat: geo.lat,
+              lng: geo.lng,
+              areaType: "Urban",
+              localBody: "",
+              ward: "",
+              guidelineLocation: "",
+            };
+          });
+        }
 
         localStorage.setItem("assamDistrictDetails", JSON.stringify(enriched));
         localStorage.setItem("assamDistrictCacheTime", now.toString());
 
+        console.log(`Loaded ${enriched.length} districts:`, enriched);
         setDistricts(enriched);
       } catch (error) {
         console.error("Error fetching Assam district details:", error);
