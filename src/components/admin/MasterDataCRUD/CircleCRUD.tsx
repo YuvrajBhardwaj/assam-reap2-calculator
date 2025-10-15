@@ -49,7 +49,7 @@ export default function CircleCRUD({
       });
     },
     update: async (id, item) => {
-        return masterDataService.updateCircle(id, {
+        return masterDataService.updateCircle(item.code, {
             name: item.name,
             districtCode: currentDistrictCode,
         });
