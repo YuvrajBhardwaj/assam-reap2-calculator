@@ -14,7 +14,7 @@ export interface DistrictDetails {
   village?: string;
 }
 
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const CACHE_EXPIRY_MS = 5 * 60 * 1000;
 
 // Compute centroid of a polygon or multipolygon
 const getCentroid = (

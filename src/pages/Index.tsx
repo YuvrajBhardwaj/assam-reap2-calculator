@@ -85,6 +85,7 @@ const isGuest = userRole === null;
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
+      "workflow-dept",
 
       "landing",
       "upcoming-initiatives",
