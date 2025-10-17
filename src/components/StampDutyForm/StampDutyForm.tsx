@@ -259,9 +259,13 @@ const instruments: MainInstrument[] = [
 ];
 
 const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
-  const [selectedInstrument, setSelectedInstrument] = useState<string | null>(null);
-  const [selectedSubInstrument, setSelectedSubInstrument] = useState<string>('');
-  const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
+  const [selectedSubInstruments, setSelectedSubInstruments] = useState<{
+    [key: string]: string[];
+  }>({});
+  const [instrumentGenders, setInstrumentGenders] = useState<{
+    [key: string]: string[];
+  }>({});
   const [agreementValue, setAgreementValue] = useState<number>(0);
   const [marketValue, setMarketValue] = useState<number>(0);
   const [stampDuty, setStampDuty] = useState<number | null>(null);
@@ -278,12 +282,6 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
 
   const genderOptions = ['Male', 'Female', 'Joint'];
 
-  const handleGenderChange = (gender: string) => {
-    setSelectedGenders((prev) =>
-      prev.includes(gender) ? prev.filter((g) => g !== gender) : [...prev, gender]
-    );
-  };
-
   const handleNumericInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const numeric = Number(value.replace(/[^0-9.]/g, '')) || 0;
@@ -292,21 +290,72 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
   };
 
   const handleInstrumentChange = (serial: string) => {
-    if (selectedInstrument === serial) {
-      setSelectedInstrument(null);
-      setSelectedSubInstrument('');
-    } else {
-      setSelectedInstrument(serial);
-      setSelectedSubInstrument('');
-    }
+    setSelectedInstruments((prev) => {
+      if (prev.includes(serial)) {
+        // If instrument is deselected, remove its sub-instruments and genders
+        setSelectedSubInstruments((prevSub) => {
+          const newSub = { ...prevSub
+          };
+          delete newSub[serial];
+          return newSub;
+        });
+        setInstrumentGenders((prevGenders) => {
+          const newGenders = { ...prevGenders
+          };
+          delete newGenders[serial];
+          return newGenders;
+        });
+        return prev.filter((s) => s !== serial);
+      } else {
+        return [...prev, serial];
+      }
+    });
+  };
+
+  const handleSubInstrumentChange = (instrumentSerial: string, subId: string) => {
+    setSelectedSubInstruments((prev) => ({
+      ...prev,
+      [instrumentSerial]: prev[instrumentSerial] ?
+        (prev[instrumentSerial].includes(subId) ?
+          prev[instrumentSerial].filter((id) => id !== subId) :
+          [...prev[instrumentSerial], subId]) : [subId],
+    }));
+  };
+
+  const handleInstrumentGenderChange = (instrumentSerial: string, gender: string) => {
+    setInstrumentGenders((prev) => ({
+      ...prev,
+      [instrumentSerial]: prev[instrumentSerial] ?
+        (prev[instrumentSerial].includes(gender) ?
+          prev[instrumentSerial].filter((g) => g !== gender) :
+          [...prev[instrumentSerial], gender]) : [gender],
+    }));
   };
 
   const calculateStampDuty = () => {
-    if (!selectedInstrument || selectedGenders.length === 0 || !agreementValue || !marketValue) return;
-    alert(`Selected Instrument: ${selectedInstrument}\nSub-type: ${selectedSubInstrument || 'None'}\nGenders: ${selectedGenders.join(', ')}\nMarket: ₹${marketValue}, Consideration: ₹${agreementValue}`);
-  };
+    if (selectedInstruments.length === 0 || !agreementValue || !marketValue) {
+      alert('Please select at least one instrument, enter market value and consideration value.');
+      return;
+    }
 
-  const currentInstrument = instruments.find(inst => inst.serial === selectedInstrument);
+    let calculationDetails = '';
+    selectedInstruments.forEach((serial) => {
+      const instrument = instruments.find((inst) => inst.serial === serial);
+      if (instrument) {
+        calculationDetails += `Instrument: ${instrument.description} (Serial: ${serial})\n`;
+        const selectedSubs = selectedSubInstruments[serial];
+        if (selectedSubs && selectedSubs.length > 0) {
+          calculationDetails += `  Sub-types: ${selectedSubs.join(', ')}\n`;
+        }
+        const selectedGens = instrumentGenders[serial];
+        if (selectedGens && selectedGens.length > 0) {
+          calculationDetails += `  Genders: ${selectedGens.join(', ')}\n`;
+        }
+      }
+    });
+
+    alert(`Market: ₹${marketValue}, Consideration: ₹${agreementValue}\n\n${calculationDetails}`);
+  };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -314,24 +363,24 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
         Assam Stamp Duty Calculator
       </h2>
       <p className="text-gray-600 mb-4 text-sm">
-        Select one instrument below. If it has sub-types, a dropdown will appear.
+        Select one or more instruments below. If an instrument has sub-types, checkboxes will appear.
       </p>
 
-      {/* Instrument Checkboxes (Single Select Behavior) */}
+      {/* Instrument Checkboxes (Multi Select Behavior) */}
       <div className="mb-6 max-h-96 overflow-y-auto border border-gray-200 rounded-md p-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {instruments.map((inst) => (
             <label
               key={inst.serial}
               className={`flex items-start p-3 rounded cursor-pointer border ${
-                selectedInstrument === inst.serial
+                selectedInstruments.includes(inst.serial)
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >
               <input
                 type="checkbox"
-                checked={selectedInstrument === inst.serial}
+                checked={selectedInstruments.includes(inst.serial)}
                 onChange={() => handleInstrumentChange(inst.serial)}
                 className="mt-1 h-4 w-4 accent-blue-600"
               />
@@ -343,45 +392,61 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
         </div>
       </div>
 
-      {/* Sub-Instrument Dropdown (if applicable) */}
-      {currentInstrument?.hasSub && currentInstrument.subInstruments && (
-        <div className="mb-6">
-          <label htmlFor="subInstrument" className="block text-gray-700 font-medium mb-1">
-            Select Sub-type:
-          </label>
-          <select
-            id="subInstrument"
-            value={selectedSubInstrument}
-            onChange={(e) => setSelectedSubInstrument(e.target.value)}
-            className="border border-gray-300 px-4 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="">Choose sub-type</option>
-            {currentInstrument.subInstruments.map((sub) => (
-              <option key={sub.id} value={sub.id}>
-                {sub.id}: {sub.description}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Sub-Instrument Checkboxes and Gender Selection for each selected instrument */}
+      {selectedInstruments.map((serial) => {
+        const instrument = instruments.find((inst) => inst.serial === serial);
+        if (!instrument) return null;
 
-      {/* Gender */}
-      <div className="mb-6">
-        <label className="block text-gray-700 font-medium mb-1">Select Gender:</label>
-        <div className="flex flex-wrap gap-4">
-          {genderOptions.map((g) => (
-            <label key={g} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedGenders.includes(g)}
-                onChange={() => handleGenderChange(g)}
-                className="h-4 w-4 accent-blue-600"
-              />
-              <span>{g}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+        return (
+          <div key={serial} className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Options for {instrument.description} (Serial: {serial})
+            </h3>
+
+            {instrument.hasSub && instrument.subInstruments && instrument.subInstruments.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Select Sub-types for {serial}:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {instrument.subInstruments.map((sub) => (
+                    <label key={sub.id} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedSubInstruments[serial]?.includes(sub.id) || false}
+                        onChange={() => handleSubInstrumentChange(serial, sub.id)}
+                        className="h-4 w-4 accent-blue-600"
+                      />
+                      <span>
+                        <strong>{sub.id}:</strong> {sub.description}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-gray-700 font-medium mb-2">
+                Select Gender for {serial}:
+              </label>
+              <div className="flex flex-wrap gap-4">
+                {genderOptions.map((g) => (
+                  <label key={g} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={instrumentGenders[serial]?.includes(g) || false}
+                      onChange={() => handleInstrumentGenderChange(serial, g)}
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    <span>{g}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
       {/* Market & Consideration Values */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -417,9 +482,9 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
       <div className="flex justify-center">
         <button
           onClick={calculateStampDuty}
-          disabled={!selectedInstrument || selectedGenders.length === 0 || !agreementValue || !marketValue}
+          disabled={selectedInstruments.length === 0 || !agreementValue || !marketValue || selectedInstruments.some(serial => !instrumentGenders[serial] || instrumentGenders[serial].length === 0)}
           className={`px-6 py-2 rounded-md font-medium transition-colors ${
-            selectedInstrument && selectedGenders.length > 0 && agreementValue && marketValue
+            selectedInstruments.length > 0 && agreementValue && marketValue && !selectedInstruments.some(serial => !instrumentGenders[serial] || instrumentGenders[serial].length === 0)
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 cursor-not-allowed text-gray-500'
           }`}
