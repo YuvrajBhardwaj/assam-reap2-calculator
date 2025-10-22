@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchInstruments } from '../../services/stampDutyService';
-import { Instrument, GenderOption, SelectionRequest, SelectionResponse } from '../../types/stampDuty';
+import { jurisdictionApi } from '../../services/http'; // Assuming http service is in services/http.ts
+import { Instrument, GenderOption, SelectionResponse } from '../../types/stampDuty';
 
 interface StampDutyFormProps {
   initialMarketValue?: number;
@@ -27,7 +28,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectionResults, setSelectionResults] = useState<SelectionResponse[] | null>(null);
-
 
   const genderOptions: GenderOption[] = ['Male', 'Female', 'Joint'];
 
@@ -66,14 +66,12 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
       if (prev.includes(id)) {
         // If instrument is deselected, remove its sub-instruments and genders
         setSelectedSubInstruments((prevSub) => {
-          const newSub = { ...prevSub
-          };
+          const newSub = { ...prevSub };
           delete newSub[id];
           return newSub;
         });
         setInstrumentGenders((prevGenders) => {
-          const newGenders = { ...prevGenders
-          };
+          const newGenders = { ...prevGenders };
           delete newGenders[id];
           return newGenders;
         });
@@ -87,10 +85,11 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
   const handleSubInstrumentChange = (instrumentSerial: string, subId: string) => {
     setSelectedSubInstruments((prev) => ({
       ...prev,
-      [instrumentSerial]: prev[instrumentSerial] ?
-        (prev[instrumentSerial].includes(subId) ?
-          prev[instrumentSerial].filter((id) => id !== subId) :
-          [...prev[instrumentSerial], subId]) : [subId],
+      [instrumentSerial]: prev[instrumentSerial]
+        ? (prev[instrumentSerial].includes(subId)
+            ? prev[instrumentSerial].filter((id) => id !== subId)
+            : [...prev[instrumentSerial], subId])
+        : [subId],
     }));
   };
 
@@ -102,72 +101,58 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
   };
 
   const calculateStampDuty = async () => {
-    // Ensure each selected instrument has a chosen gender
+    // Auto-calculate agreementValue if not set
+    let currentAgreementValue = agreementValue;
+    if (!currentAgreementValue || currentAgreementValue === 0) {
+      if (!marketValue) {
+        alert('Please enter market value.');
+        return;
+      }
+      currentAgreementValue = marketValue;
+      setAgreementValue(currentAgreementValue);
+    }
+
     const missingGender = selectedInstruments.some((id) => !instrumentGenders[id]);
-    if (selectedInstruments.length === 0 || !marketValue || !agreementValue || selectedInstruments.some((id) => !instrumentGenders[id])) {
-      alert('Please select at least one instrument, choose a gender for each, and enter market and consideration values.');
+    if (selectedInstruments.length === 0 || !marketValue || missingGender) {
+      alert('Please select at least one instrument and choose a gender for each.');
       return;
     }
 
-    setBaseValue(Math.max(marketValue, agreementValue));
+    const currentBaseValue = Math.max(marketValue, currentAgreementValue);
+    setBaseValue(currentBaseValue);
+
+    const payload = selectedInstruments.map((id) => ({
+      instrumentId: id,
+      selectedOption: instrumentGenders[id],
+    }));
 
     try {
       setLoading(true);
-      const results: SelectionResponse[] = selectedInstruments.map((id) => {
-        const instrument = instruments.find((inst) => inst.id === id);
-        if (!instrument) {
-          throw new Error(`Instrument with ID ${id} not found.`);
-        }
-        const selectedGender = instrumentGenders[id];
-        let dutyAmount = 0;
+      setError(null);
 
-        if (instrument.isFixed) {
-          // Fixed duty amount
-          if (selectedGender === 'Male') {
-            dutyAmount = instrument.maleDuty;
-          } else if (selectedGender === 'Female') {
-            dutyAmount = instrument.femaleDuty;
-          } else if (selectedGender === 'Joint') {
-            dutyAmount = instrument.jointDuty;
-          }
-        } else {
-          // Percentage-based duty
-          let dutyPercentage = 0;
-          if (selectedGender === 'Male') {
-            dutyPercentage = instrument.maleDuty;
-          } else if (selectedGender === 'Female') {
-            dutyPercentage = instrument.femaleDuty;
-          } else if (selectedGender === 'Joint') {
-            dutyPercentage = instrument.jointDuty;
-          }
-          dutyAmount = (dutyPercentage / 100) * baseValue;
-        }
-
-        return {
-          id: id,
-          instrumentId: id,
-          instrumentName: instrument.name,
-          selectedOption: selectedGender,
-          dutyValue: dutyAmount,
-          createdAt: new Date().toISOString(),
-        };
-      });
+      // Fetch from backend
+      const res = await jurisdictionApi.post('/jurisdictionInfo/selections', payload);
+      const results: SelectionResponse[] = res.data;
 
       setSelectionResults(results);
 
       const totalDuty = results.reduce((sum, r) => sum + (r.dutyValue || 0), 0);
       setStampDuty(totalDuty);
 
-      const surcharge = totalDuty * 0.10; // 10% surcharge
+      // Calculate additional fees (based on Assam rules: no standard surcharge/cess for fixed; registration 8.5% capped)
+      const surcharge = 0; // No surcharge for fixed duties; adjust if value-based
       setSurcharge(surcharge);
 
-      const cess = totalDuty * 0.01; // 1% cess
+      const cess = 0; // No cess mentioned
       setCess(cess);
 
-      const registrationFees = Math.min(agreementValue * 0.085, 10000); // 8.5% capped at 10000
+      const registrationFees = Math.min(currentAgreementValue * 0.085, 10000);
       setRegistrationFees(registrationFees);
 
-      const totalPayableAmount = agreementValue + totalDuty + surcharge + cess + registrationFees;
+      const totalAdditionalFees = surcharge + cess + registrationFees;
+      setTotalFees(totalAdditionalFees);
+
+      const totalPayableAmount = currentAgreementValue + totalDuty + totalAdditionalFees;
       setTotalPayable(totalPayableAmount);
     } catch (e) {
       setError('Failed to calculate stamp duty. Please try again.');
@@ -220,7 +205,7 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
         </div>
       </div>
 
-      {/* Sub-Instrument Checkboxes and Gender Selection for each selected instrument */}
+      {/* Gender Selection for each selected instrument */}
       {selectedInstruments.map((id) => {
         const instrument = instruments.find((inst) => inst.id === id);
         if (!instrument) return null;
@@ -230,30 +215,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
             <h3 className="text-lg font-semibold text-gray-800 mb-3">
               Options for {instrument.name} (ID: {id})
             </h3>
-
-            {/* Sub-instruments are not part of the current API contract, so this section is commented out or removed */}
-            {/* {instrument.hasSub && instrument.subInstruments && instrument.subInstruments.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">
-                  Select Sub-types for {id}:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {instrument.subInstruments.map((sub) => (
-                    <label key={sub.id} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedSubInstruments[id]?.includes(sub.id) || false}
-                        onChange={() => handleSubInstrumentChange(id, sub.id)}
-                        className="h-4 w-4 accent-blue-600"
-                      />
-                      <span>
-                        <strong>{sub.id}:</strong> {sub.description}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )} */}
 
             <div className="mb-4">
               <label className="block text-gray-700 font-medium mb-2">
@@ -278,8 +239,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
         );
       })}
 
-
-
       {/* Market & Consideration Values */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
         <div>
@@ -298,14 +257,14 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
         <div>
           <label htmlFor="agreementValue" className="block text-gray-700 font-medium mb-1 relative">
             Consideration Value (₹):
-            <span className="ml-2 cursor-help text-gray-500" title="Enter the deed's stated consideration (sale price). Duty uses the higher of this or Market Value.">ℹ️</span>
+            <span className="ml-2 cursor-help text-gray-500" title="Enter the deed's stated consideration (sale price). If not entered, it will auto-set to Market Value. Duty uses the higher of this or Market Value.">ℹ️</span>
           </label>
           <input
             id="agreementValue"
             type="text"
             value={agreementValue || ''}
             onChange={handleNumericInput}
-            placeholder="e.g. 950000"
+            placeholder="e.g. 950000 (auto-sets to Market Value if blank)"
             className="border border-gray-300 px-4 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
@@ -315,14 +274,14 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
       <div className="flex justify-center">
         <button
           onClick={calculateStampDuty}
-          disabled={selectedInstruments.length === 0 || !agreementValue || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
+          disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
           className={`px-6 py-2 rounded-md font-medium transition-colors ${
-            selectedInstruments.length > 0 && agreementValue && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
+            selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 cursor-not-allowed text-gray-500'
           }`}
         >
-          {loading ? 'Calculating...' : 'Calculate'}
+          {loading ? 'Calculating...' : 'Calculate Stamp Duty'}
         </button>
       </div>
 
@@ -333,21 +292,24 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
           <ul className="text-sm text-gray-800 space-y-2">
             {selectionResults.map((r) => (
               <li key={r.id}>
-                {r.instrumentName} — {r.selectedOption}: ₹{r.dutyValue}
+                {r.instrumentName} — {r.selectedOption}: ₹{Math.round(r.dutyValue || 0)}
               </li>
             ))}
           </ul>
           {baseValue !== null && (
-            <div className="mt-3 font-semibold">
-              Base used for duty: ₹{baseValue.toFixed(2)} ({baseValue === marketValue ? 'Market Value' : 'Agreement Value'})
+            <div className="mt-3 font-semibold text-sm text-gray-600">
+              Base used for duty: ₹{baseValue.toLocaleString()} ({baseValue === marketValue ? 'Market Value' : 'Agreement Value'})
             </div>
           )}
-          <div className="mt-3 font-semibold">
-            Total Stamp Duty: ₹{stampDuty ?? 0}
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <div className="font-semibold">Total Stamp Duty: ₹{Math.round(stampDuty || 0).toLocaleString()}</div>
+            <div>Surcharge: ₹{Math.round(surcharge || 0).toLocaleString()}</div>
+            <div>Cess: ₹{Math.round(cess || 0).toLocaleString()}</div>
+            <div>Registration Fees: ₹{Math.round(registrationFees || 0).toLocaleString()}</div>
           </div>
           {totalPayable !== null && (
-            <div className="mt-3 font-semibold">
-              Total Payable: ₹{totalPayable ?? 0}
+            <div className="mt-3 font-bold text-lg text-blue-800">
+              Total Payable: ₹{Math.round(totalPayable || 0).toLocaleString()}
             </div>
           )}
         </div>
