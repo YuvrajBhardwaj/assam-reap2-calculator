@@ -2,11 +2,7 @@ import { coreApi, jurisdictionApi } from './http';
 import {
   StampDutyCalculationInput,
   StampDutyCalculationResult,
-  StampDutyRateFilter,
-  StampDutyRateItem,
   Instrument,
-  SelectionRequest,
-  SelectionResponse,
 } from '@/types/stampDuty';
 
 export async function calculateStampDuty(

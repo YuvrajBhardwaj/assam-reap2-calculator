@@ -26,27 +26,6 @@ export interface StampDutyCalculationResult extends StampDutyBreakdown {
   effectiveRateVersion?: string;
 }
 
-export interface StampDutyRateFilter {
-  instrumentType?: string;
-  areaType?: AreaType;
-  districtCode?: string;
-  sroCode?: string;
-  gender?: string;
-}
-
-export interface StampDutyRateItem {
-  instrumentType: string;
-  areaType?: AreaType;
-  districtCode?: string;
-  sroCode?: string;
-  gender?: string;
-  rate: number;
-  feeFormula?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string | null;
-  version?: string;
-}
-
 // Backend-driven instrument and selection types
 export interface Instrument {
   id: number;
