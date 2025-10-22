@@ -1,9 +1,12 @@
-import { coreApi } from './http';
+import { coreApi, jurisdictionApi } from './http';
 import {
   StampDutyCalculationInput,
   StampDutyCalculationResult,
   StampDutyRateFilter,
   StampDutyRateItem,
+  Instrument,
+  SelectionRequest,
+  SelectionResponse,
 } from '@/types/stampDuty';
 
 export async function calculateStampDuty(
@@ -13,14 +16,13 @@ export async function calculateStampDuty(
   return res.data;
 }
 
-export async function fetchStampDutyRates(
-  filter?: StampDutyRateFilter
-): Promise<StampDutyRateItem[]> {
-  const res = await coreApi.get('/stamp-duty/rates', { params: filter });
+export async function getInstrumentTypes(): Promise<string[]> {
+  const res = await coreApi.get('/stamp-duty/instruments');
   return res.data;
 }
 
-export async function getInstrumentTypes(): Promise<string[]> {
-  const res = await coreApi.get('/stamp-duty/instruments');
+// New: GET instruments from jurisdiction backend
+export async function fetchInstruments(): Promise<Instrument[]> {
+  const res = await jurisdictionApi.get('/jurisdictionInfo/instruments');
   return res.data;
 }

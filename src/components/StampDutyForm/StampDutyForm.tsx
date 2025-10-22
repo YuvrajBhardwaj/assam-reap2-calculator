@@ -1,286 +1,58 @@
 import { useState, useEffect } from 'react';
+import { fetchInstruments } from '../../services/stampDutyService';
+import { Instrument, GenderOption, SelectionRequest, SelectionResponse } from '../../types/stampDuty';
 
 interface StampDutyFormProps {
   initialMarketValue?: number;
 }
 
-type SubInstrument = {
-  id: string;
-  description: string;
-};
-
-type MainInstrument = {
-  serial: string;
-  description: string;
-  hasSub: boolean;
-  subInstruments?: SubInstrument[];
-};
-
-// Full instrument list (from your data)
-const instruments: MainInstrument[] = [
-  { serial: "1", description: "Acknowledgement", hasSub: false },
-  { serial: "2", description: "Administrative Bond", hasSub: false },
-  { serial: "3", description: "Adoption Deed", hasSub: false },
-  { serial: "4", description: "Affidavit including affirmation or declaration", hasSub: false },
-  {
-    serial: "5",
-    description: "Agreement or memorandum of an Agreement",
-    hasSub: true,
-    subInstruments: [
-      { id: "5(a)", description: "Agreement for conveyance" },
-      { id: "5(b)", description: "Development Agreement" },
-      { id: "5(c)", description: "Other Agreement" }
-    ]
-  },
-  {
-    serial: "6",
-    description: "Agreement relating to deposit of title-deeds, pawn or pledge",
-    hasSub: true,
-    subInstruments: [
-      { id: "6(a)(i)", description: "Loan ≤ ₹1000, repayable on demand or >3 months" },
-      { id: "6(a)(ii)", description: "Loan > ₹1000 and ≤ ₹10,000" },
-      { id: "6(a)(iii)", description: "For every ₹10,000 or part thereof in excess of ₹10,000" },
-      { id: "6(b)", description: "Repayable within 3 months" }
-    ]
-  },
-  { serial: "7", description: "Appointment in execution of a power", hasSub: false },
-  {
-    serial: "8",
-    description: "Appraisement or Valuation",
-    hasSub: true,
-    subInstruments: [
-      { id: "8(a)", description: "Amount ≤ ₹1000" },
-      { id: "8(b)", description: "Any other case" }
-    ]
-  },
-  { serial: "9", description: "Apprenticeship Deed", hasSub: false },
-  {
-    serial: "10",
-    description: "Article of Association of a company",
-    hasSub: true,
-    subInstruments: [
-      { id: "10(a)", description: "Nominal share capital ≤ ₹2,500" },
-      { id: "10(b)", description: "Nominal share capital > ₹2,500" }
-    ]
-  },
-  { serial: "11", description: "Articles of Clerkship, or contract...", hasSub: false },
-  {
-    serial: "12",
-    description: "Award",
-    hasSub: true,
-    subInstruments: [
-      { id: "12(a)", description: "Value ≤ ₹1,000" },
-      { id: "12(b)", description: "Value > ₹1,000" }
-    ]
-  },
-  { serial: "13", description: "Bill of Exchange where payable otherwise than on demand", hasSub: false },
-  { serial: "14", description: "Bill of Lading (including a through bill of lading)", hasSub: false },
-  { serial: "15", description: "Bond", hasSub: false },
-  { serial: "16", description: "Bottomry Bond", hasSub: false },
-  { serial: "17", description: "Cancellation", hasSub: false },
-  { serial: "18", description: "Certificate of Sale", hasSub: false },
-  { serial: "19", description: "Certificate or other document evidencing the right or title", hasSub: false },
-  { serial: "20", description: "Charter-Party", hasSub: false },
-  { serial: "22", description: "Composition Deed", hasSub: false },
-  { serial: "23", description: "Sale (Conveyance)", hasSub: false },
-  { serial: "24", description: "Certified Copy", hasSub: false },
-  { serial: "25", description: "Counterpart or a duplicate of any instrument", hasSub: false },
-  {
-    serial: "26", 
-    description: "Customs Bond",
-    hasSub: true,
-    subInstruments: [
-      { id: "26(a)", description: "Amount ≤ ₹1,000" },
-      { id: "26(b)", description: "Any other case" }
-    ]
-  },
-  {
-    serial: "27",
-    description: "Debenture",
-    hasSub: true,
-    subInstruments: [
-      { id: "27(a)", description: "By endorsement, value ≤ ₹1000 + slab" },
-      { id: "27(b)", description: "By delivery, value ≤ ₹1000 + slab" }
-    ]
-  },
-  { serial: "28", description: "Delivery-Order in respect of Goods", hasSub: false },
-  { serial: "29", description: "Divorce", hasSub: false },
-  {
-    serial: "30",
-    description: "Entry as an Advocate, Vakil or Attorney...",
-    hasSub: true,
-    subInstruments: [
-      { id: "30(a)", description: "Advocate or Vakil" },
-      { id: "30(b)", description: "Attorney" }
-    ]
-  },
-  { serial: "31", description: "Exchange of property", hasSub: false },
-  {
-    serial: "32",
-    description: "Further Charge",
-    hasSub: true,
-    subInstruments: [
-      { id: "32(a)", description: "Original mortgage with possession" },
-      { id: "32(b)", description: "Original mortgage without possession" },
-      { id: "32(b)(i)", description: "Possession given in further charge" },
-      { id: "32(b)(ii)", description: "Possession not given" }
-    ]
-  },
-  { serial: "33", description: "Gift", hasSub: false },
-  { serial: "34", description: "Indemnity Bond", hasSub: false },
-  {
-    serial: "35",
-    description: "Lease, including an under-lease or sub-lease...",
-    hasSub: true,
-    subInstruments: [
-      { id: "35(a)", description: "Rent fixed, no premium" },
-      { id: "35(a)(i)", description: "Term < 1 year" },
-      { id: "35(a)(ii)", description: "1 ≤ Term ≤ 5 years" },
-      { id: "35(a)(iii)", description: "5 < Term ≤ 10 years" },
-      { id: "35(a)(iv)", description: "10 < Term ≤ 20 years" },
-      { id: "35(a)(v)", description: "20 < Term ≤ 30 years" },
-      { id: "35(a)(vi)", description: "30 < Term ≤ 100 years" },
-      { id: "35(a)(vii)", description: "Term > 100 years or perpetuity" },
-      { id: "35(a)(viii)", description: "No definite term" },
-      { id: "35(b)", description: "Premium only, no rent" },
-      { id: "35(c)", description: "Premium + rent" },
-      { id: "35(d)", description: "Revisions as per 2025 Notification" }
-    ]
-  },
-  { serial: "36", description: "Letter of Allotment of Shares", hasSub: false },
-  { serial: "37", description: "Letter of Credit", hasSub: false },
-  { serial: "38", description: "Letter of License", hasSub: false },
-  { serial: "39", description: "Memorandum of Association of a Company", hasSub: false },
-  {
-    serial: "40",
-    description: "Mortgage",
-    hasSub: true,
-    subInstruments: [
-      { id: "40(a)", description: "With possession" },
-      { id: "40(b)", description: "Without possession (Equitable)" }
-    ]
-  },
-  {
-    serial: "41",
-    description: "Mortgage of a Crop",
-    hasSub: true,
-    subInstruments: [
-      { id: "41(a)", description: "Repayable ≤ 3 months" },
-      { id: "41(b)", description: "Repayable > 3 and ≤ 18 months" }
-    ]
-  },
-  { serial: "42", description: "Notarial Act", hasSub: false },
-  { serial: "43", description: "Note or Memorandum", hasSub: false },
-  { serial: "44", description: "Note of protest by the Master of a ship", hasSub: false },
-  { serial: "45", description: "Partition", hasSub: false },
-  {
-    serial: "46",
-    description: "Partnership",
-    hasSub: true,
-    subInstruments: [
-      { id: "46(A)", description: "Partnership" },
-      { id: "46(B)", description: "Dissolution of Partnership" }
-    ]
-  },
-  {
-    serial: "47",
-    description: "Policy of Insurance",
-    hasSub: true,
-    subInstruments: [
-      { id: "47A(1)(i)", description: "Sea Insurance (premium ≤ 1/8%)" },
-      { id: "47A(1)(ii)", description: "Sea Insurance (other)" },
-      { id: "47A(2)(iii)", description: "Time-based Sea Insurance" },
-      { id: "47B(1)(i)", description: "Fire/Property Insurance ≤ ₹5,000" },
-      { id: "47B(1)(ii)", description: "Fire/Property Insurance > ₹5,000" },
-      { id: "47B(2)", description: "Renewal receipt" },
-      { id: "47C(a)", description: "Railway accident (single journey)" },
-      { id: "47C(b)", description: "Other accident/sickness insurance" },
-      { id: "47CC", description: "Insurance by way of indemnity" },
-      { id: "47E(i)", description: "Life insurance ≤ ₹250" },
-      { id: "47E(ii)", description: "Life insurance ₹250–500" },
-      { id: "47E(iii)", description: "Life insurance > ₹500" },
-      { id: "47F", description: "Re-insurance" }
-    ]
-  },
-  {
-    serial: "48",
-    description: "Power of Attorney",
-    hasSub: true,
-    subInstruments: [
-      { id: "48(a)", description: "Special Power of Attorney" },
-      { id: "48(b)", description: "General Power of Attorney" }
-    ]
-  },
-  {
-    serial: "49",
-    description: "Promissory Note",
-    hasSub: true,
-    subInstruments: [
-      { id: "49(a)(i)", description: "Payable on demand, ≤ ₹1000" },
-      { id: "49(a)(ii)", description: "Other demand note" },
-      { id: "49(b)", description: "Payable otherwise than on demand" }
-    ]
-  },
-  { serial: "50", description: "Protest of bill or Note", hasSub: false },
-  { serial: "51", description: "Protest by the master of Ship", hasSub: false },
-  { serial: "52", description: "Proxy", hasSub: false },
-  { serial: "53", description: "Receipt", hasSub: false },
-  { serial: "54", description: "Reconveyance", hasSub: false },
-  { serial: "55", description: "Release Relinquishment of right", hasSub: false },
-  { serial: "56", description: "Respondentia Bond", hasSub: false },
-  { serial: "57", description: "Security Bond", hasSub: false },
-  { serial: "58", description: "Settlement Instrument (including deed of dower), Revocation", hasSub: false },
-  { serial: "59", description: "Share Warrants", hasSub: false },
-  { serial: "60", description: "Shipping Order", hasSub: false },
-  { serial: "61", description: "Surrender of Lease", hasSub: false },
-  {
-    serial: "62",
-    description: "Transfer",
-    hasSub: true,
-    subInstruments: [
-      { id: "62(a)", description: "Shares in company" },
-      { id: "62(b)", description: "Debentures" },
-      { id: "62(c)", description: "Interest secured by bond/mortgage" },
-      { id: "62(d)", description: "Property under Administrator Generals Act" },
-      { id: "62(e)", description: "Trust-property without consideration" }
-    ]
-  },
-  { serial: "63", description: "Transfer of Lease", hasSub: false },
-  {
-    serial: "64",
-    description: "Trust",
-    hasSub: true,
-    subInstruments: [
-      { id: "64A", description: "Declaration of trust (not Will)" },
-      { id: "64B", description: "Revocation of trust (not Will)" }
-    ]
-  },
-  { serial: "65", description: "Warrant for Goods", hasSub: false }
-];
-
-const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
-  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
+function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
+  const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [selectedInstruments, setSelectedInstruments] = useState<number[]>([]);
   const [selectedSubInstruments, setSelectedSubInstruments] = useState<{
-    [key: string]: string[];
+    [key: number]: string[];
   }>({});
   const [instrumentGenders, setInstrumentGenders] = useState<{
-    [key: string]: string[];
+    [key: number]: GenderOption;
   }>({});
   const [agreementValue, setAgreementValue] = useState<number>(0);
   const [marketValue, setMarketValue] = useState<number>(0);
+  const [baseValue, setBaseValue] = useState<number | null>(null);
   const [stampDuty, setStampDuty] = useState<number | null>(null);
   const [surcharge, setSurcharge] = useState<number | null>(null);
   const [cess, setCess] = useState<number | null>(null);
   const [registrationFees, setRegistrationFees] = useState<number | null>(null);
   const [totalFees, setTotalFees] = useState<number | null>(null);
+  const [totalPayable, setTotalPayable] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectionResults, setSelectionResults] = useState<SelectionResponse[] | null>(null);
+
+
+  const genderOptions: GenderOption[] = ['Male', 'Female', 'Joint'];
+
+  useEffect(() => {
+    const loadInstruments = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchInstruments();
+        setInstruments(data);
+      } catch (e) {
+        setError('Failed to load instruments from backend');
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInstruments();
+  }, []);
 
   useEffect(() => {
     if (typeof initialMarketValue === 'number' && !isNaN(initialMarketValue)) {
       setMarketValue(initialMarketValue);
     }
   }, [initialMarketValue]);
-
-  const genderOptions = ['Male', 'Female', 'Joint'];
 
   const handleNumericInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -289,25 +61,25 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
     if (id === 'agreementValue') setAgreementValue(numeric);
   };
 
-  const handleInstrumentChange = (serial: string) => {
+  const handleInstrumentChange = (id: number) => {
     setSelectedInstruments((prev) => {
-      if (prev.includes(serial)) {
+      if (prev.includes(id)) {
         // If instrument is deselected, remove its sub-instruments and genders
         setSelectedSubInstruments((prevSub) => {
           const newSub = { ...prevSub
           };
-          delete newSub[serial];
+          delete newSub[id];
           return newSub;
         });
         setInstrumentGenders((prevGenders) => {
           const newGenders = { ...prevGenders
           };
-          delete newGenders[serial];
+          delete newGenders[id];
           return newGenders;
         });
-        return prev.filter((s) => s !== serial);
+        return prev.filter((s) => s !== id);
       } else {
-        return [...prev, serial];
+        return [...prev, id];
       }
     });
   };
@@ -322,40 +94,96 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
     }));
   };
 
-  const handleInstrumentGenderChange = (instrumentSerial: string, gender: string) => {
+  const handleInstrumentGenderChange = (id: number, gender: GenderOption) => {
     setInstrumentGenders((prev) => ({
       ...prev,
-      [instrumentSerial]: prev[instrumentSerial] ?
-        (prev[instrumentSerial].includes(gender) ?
-          prev[instrumentSerial].filter((g) => g !== gender) :
-          [...prev[instrumentSerial], gender]) : [gender],
+      [id]: gender,
     }));
   };
 
-  const calculateStampDuty = () => {
-    if (selectedInstruments.length === 0 || !agreementValue || !marketValue) {
-      alert('Please select at least one instrument, enter market value and consideration value.');
+  const calculateStampDuty = async () => {
+    // Ensure each selected instrument has a chosen gender
+    const missingGender = selectedInstruments.some((id) => !instrumentGenders[id]);
+    if (selectedInstruments.length === 0 || !marketValue || !agreementValue || selectedInstruments.some((id) => !instrumentGenders[id])) {
+      alert('Please select at least one instrument, choose a gender for each, and enter market and consideration values.');
       return;
     }
 
-    let calculationDetails = '';
-    selectedInstruments.forEach((serial) => {
-      const instrument = instruments.find((inst) => inst.serial === serial);
-      if (instrument) {
-        calculationDetails += `Instrument: ${instrument.description} (Serial: ${serial})\n`;
-        const selectedSubs = selectedSubInstruments[serial];
-        if (selectedSubs && selectedSubs.length > 0) {
-          calculationDetails += `  Sub-types: ${selectedSubs.join(', ')}\n`;
-        }
-        const selectedGens = instrumentGenders[serial];
-        if (selectedGens && selectedGens.length > 0) {
-          calculationDetails += `  Genders: ${selectedGens.join(', ')}\n`;
-        }
-      }
-    });
+    setBaseValue(Math.max(marketValue, agreementValue));
 
-    alert(`Market: ₹${marketValue}, Consideration: ₹${agreementValue}\n\n${calculationDetails}`);
+    try {
+      setLoading(true);
+      const results: SelectionResponse[] = selectedInstruments.map((id) => {
+        const instrument = instruments.find((inst) => inst.id === id);
+        if (!instrument) {
+          throw new Error(`Instrument with ID ${id} not found.`);
+        }
+        const selectedGender = instrumentGenders[id];
+        let dutyAmount = 0;
+
+        if (instrument.isFixed) {
+          // Fixed duty amount
+          if (selectedGender === 'Male') {
+            dutyAmount = instrument.maleDuty;
+          } else if (selectedGender === 'Female') {
+            dutyAmount = instrument.femaleDuty;
+          } else if (selectedGender === 'Joint') {
+            dutyAmount = instrument.jointDuty;
+          }
+        } else {
+          // Percentage-based duty
+          let dutyPercentage = 0;
+          if (selectedGender === 'Male') {
+            dutyPercentage = instrument.maleDuty;
+          } else if (selectedGender === 'Female') {
+            dutyPercentage = instrument.femaleDuty;
+          } else if (selectedGender === 'Joint') {
+            dutyPercentage = instrument.jointDuty;
+          }
+          dutyAmount = (dutyPercentage / 100) * baseValue;
+        }
+
+        return {
+          id: id,
+          instrumentId: id,
+          instrumentName: instrument.name,
+          selectedOption: selectedGender,
+          dutyValue: dutyAmount,
+          createdAt: new Date().toISOString(),
+        };
+      });
+
+      setSelectionResults(results);
+
+      const totalDuty = results.reduce((sum, r) => sum + (r.dutyValue || 0), 0);
+      setStampDuty(totalDuty);
+
+      const surcharge = totalDuty * 0.10; // 10% surcharge
+      setSurcharge(surcharge);
+
+      const cess = totalDuty * 0.01; // 1% cess
+      setCess(cess);
+
+      const registrationFees = Math.min(agreementValue * 0.085, 10000); // 8.5% capped at 10000
+      setRegistrationFees(registrationFees);
+
+      const totalPayableAmount = agreementValue + totalDuty + surcharge + cess + registrationFees;
+      setTotalPayable(totalPayableAmount);
+    } catch (e) {
+      setError('Failed to calculate stamp duty. Please try again.');
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading instruments...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -371,21 +199,21 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {instruments.map((inst) => (
             <label
-              key={inst.serial}
+              key={inst.id}
               className={`flex items-start p-3 rounded cursor-pointer border ${
-                selectedInstruments.includes(inst.serial)
+                selectedInstruments.includes(inst.id)
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >
               <input
                 type="checkbox"
-                checked={selectedInstruments.includes(inst.serial)}
-                onChange={() => handleInstrumentChange(inst.serial)}
+                checked={selectedInstruments.includes(inst.id)}
+                onChange={() => handleInstrumentChange(inst.id)}
                 className="mt-1 h-4 w-4 accent-blue-600"
               />
               <span className="ml-3 text-sm">
-                <strong>{inst.serial}.</strong> {inst.description}
+                <strong>{inst.id}.</strong> {inst.name}
               </span>
             </label>
           ))}
@@ -393,28 +221,29 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
       </div>
 
       {/* Sub-Instrument Checkboxes and Gender Selection for each selected instrument */}
-      {selectedInstruments.map((serial) => {
-        const instrument = instruments.find((inst) => inst.serial === serial);
+      {selectedInstruments.map((id) => {
+        const instrument = instruments.find((inst) => inst.id === id);
         if (!instrument) return null;
 
         return (
-          <div key={serial} className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+          <div key={id} className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Options for {instrument.description} (Serial: {serial})
+              Options for {instrument.name} (ID: {id})
             </h3>
 
-            {instrument.hasSub && instrument.subInstruments && instrument.subInstruments.length > 0 && (
+            {/* Sub-instruments are not part of the current API contract, so this section is commented out or removed */}
+            {/* {instrument.hasSub && instrument.subInstruments && instrument.subInstruments.length > 0 && (
               <div className="mb-4">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Select Sub-types for {serial}:
+                  Select Sub-types for {id}:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {instrument.subInstruments.map((sub) => (
                     <label key={sub.id} className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedSubInstruments[serial]?.includes(sub.id) || false}
-                        onChange={() => handleSubInstrumentChange(serial, sub.id)}
+                        checked={selectedSubInstruments[id]?.includes(sub.id) || false}
+                        onChange={() => handleSubInstrumentChange(id, sub.id)}
                         className="h-4 w-4 accent-blue-600"
                       />
                       <span>
@@ -424,19 +253,20 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             <div className="mb-4">
               <label className="block text-gray-700 font-medium mb-2">
-                Select Gender for {serial}:
+                Select Gender for {id}:
               </label>
               <div className="flex flex-wrap gap-4">
                 {genderOptions.map((g) => (
                   <label key={g} className="flex items-center space-x-2 cursor-pointer">
                     <input
-                      type="checkbox"
-                      checked={instrumentGenders[serial]?.includes(g) || false}
-                      onChange={() => handleInstrumentGenderChange(serial, g)}
+                      type="radio"
+                      name={`gender-${id}`}
+                      checked={instrumentGenders[id] === g}
+                      onChange={() => handleInstrumentGenderChange(id, g)}
                       className="h-4 w-4 accent-blue-600"
                     />
                     <span>{g}</span>
@@ -447,6 +277,8 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
           </div>
         );
       })}
+
+
 
       {/* Market & Consideration Values */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -464,8 +296,9 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
           />
         </div>
         <div>
-          <label htmlFor="agreementValue" className="block text-gray-700 font-medium mb-1">
+          <label htmlFor="agreementValue" className="block text-gray-700 font-medium mb-1 relative">
             Consideration Value (₹):
+            <span className="ml-2 cursor-help text-gray-500" title="Enter the deed's stated consideration (sale price). Duty uses the higher of this or Market Value.">ℹ️</span>
           </label>
           <input
             id="agreementValue"
@@ -482,22 +315,41 @@ const StampDutyForm = ({ initialMarketValue }: StampDutyFormProps = {}) => {
       <div className="flex justify-center">
         <button
           onClick={calculateStampDuty}
-          disabled={selectedInstruments.length === 0 || !agreementValue || !marketValue || selectedInstruments.some(serial => !instrumentGenders[serial] || instrumentGenders[serial].length === 0)}
+          disabled={selectedInstruments.length === 0 || !agreementValue || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
           className={`px-6 py-2 rounded-md font-medium transition-colors ${
-            selectedInstruments.length > 0 && agreementValue && marketValue && !selectedInstruments.some(serial => !instrumentGenders[serial] || instrumentGenders[serial].length === 0)
+            selectedInstruments.length > 0 && agreementValue && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
               ? 'bg-blue-600 hover:bg-blue-700 text-white'
               : 'bg-gray-300 cursor-not-allowed text-gray-500'
           }`}
         >
-          Calculate
+          {loading ? 'Calculating...' : 'Calculate'}
         </button>
       </div>
 
-      {/* Results Placeholder */}
-      {stampDuty !== null && (
+      {/* Results Display */}
+      {selectionResults && (
         <div className="mt-8 bg-blue-50 p-5 rounded-lg shadow-inner">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Estimated Charges</h3>
-          <p>Full calculation logic can be added using selected instrument ID and sub-type.</p>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Duty Results</h3>
+          <ul className="text-sm text-gray-800 space-y-2">
+            {selectionResults.map((r) => (
+              <li key={r.id}>
+                {r.instrumentName} — {r.selectedOption}: ₹{r.dutyValue}
+              </li>
+            ))}
+          </ul>
+          {baseValue !== null && (
+            <div className="mt-3 font-semibold">
+              Base used for duty: ₹{baseValue.toFixed(2)} ({baseValue === marketValue ? 'Market Value' : 'Agreement Value'})
+            </div>
+          )}
+          <div className="mt-3 font-semibold">
+            Total Stamp Duty: ₹{stampDuty ?? 0}
+          </div>
+          {totalPayable !== null && (
+            <div className="mt-3 font-semibold">
+              Total Payable: ₹{totalPayable ?? 0}
+            </div>
+          )}
         </div>
       )}
     </div>

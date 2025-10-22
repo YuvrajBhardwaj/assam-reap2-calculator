@@ -46,3 +46,29 @@ export interface StampDutyRateItem {
   effectiveTo?: string | null;
   version?: string;
 }
+
+// Backend-driven instrument and selection types
+export interface Instrument {
+  id: number;
+  name: string;
+  maleDuty: number;
+  femaleDuty: number;
+  jointDuty: number;
+  isFixed?: boolean; // Added to differentiate fixed vs percentage duties
+}
+
+export type GenderOption = 'Male' | 'Female' | 'Joint';
+
+export interface SelectionRequest {
+  instrumentId: number;
+  selectedOption: GenderOption;
+}
+
+export interface SelectionResponse {
+  id: number;
+  instrumentId: number;
+  instrumentName: string;
+  selectedOption: GenderOption;
+  dutyValue: number;
+  createdAt: string | null;
+}
