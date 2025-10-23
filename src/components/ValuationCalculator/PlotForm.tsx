@@ -2,7 +2,6 @@ import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories } from '@/services/locationService';
 import type { District, Circle, Mouza, LandClass, Lot } from '@/types/masterData';
 
-
 import {
   Card,
   CardHeader,
@@ -24,7 +23,6 @@ import {
 } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-
 
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
@@ -103,7 +101,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [selectedSubclauses, setSelectedSubclauses] = useState<string[]>([]);
   const [parameters, setParameters] = useState<any[]>([]);
   const [loadingParameters, setLoadingParameters] = useState<boolean>(true);
-
 
   // New: Daag lookup state
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
@@ -248,6 +245,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       console.error('Daag lookup failed', err);
       toast({ title: 'No specific factor found', description: 'Using default Lot-level factor or auto-derived average during calculation.', variant: 'default' });
     } finally {
+      setIsDaagLookupLoading(false);
     }
   };
 
@@ -364,7 +362,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       }
     };
     loadLots();
-  }, [selectedDistrictCode, selectedCircleCode]);
+  }, [selectedDistrictCode, selectedCircleCode, toast]);
 
   return (
     <div className="space-y-6">
@@ -377,102 +375,112 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
-            <SelectTrigger>
-              <SelectValue placeholder="District" />
-            </SelectTrigger>
-            <SelectContent>
-              {districts.map((dist) => (
-                <SelectItem key={dist.code} value={dist.code}>
-                  {dist.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">District</Label>
+            <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select District" />
+              </SelectTrigger>
+              <SelectContent>
+                {districts.map((dist) => (
+                  <SelectItem key={dist.code} value={dist.code}>
+                    {dist.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={selectedCircleCode} onValueChange={setSelectedCircleCode}>
-            <SelectTrigger>
-              <SelectValue placeholder="Circle" />
-            </SelectTrigger>
-            <SelectContent>
-              {circles.map((circ) => (
-                <SelectItem key={circ.code} value={circ.code}>
-                  {circ.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Circle</Label>
+            <Select value={selectedCircleCode} onValueChange={setSelectedCircleCode}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Circle" />
+              </SelectTrigger>
+              <SelectContent>
+                {circles.map((circ) => (
+                  <SelectItem key={circ.code} value={circ.code}>
+                    {circ.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Mouza</Label>
+            <Select value={selectedMouzaCode} onValueChange={setSelectedMouzaCode}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Mouza" />
+              </SelectTrigger>
+              <SelectContent>
+                {mouzas.map((mouza) => (
+                  <SelectItem key={mouza.code} value={mouza.code}>
+                    {mouza.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Lot</Label>
+            <Select value={selectedLotCode} onValueChange={setSelectedLotCode}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Lot" />
+              </SelectTrigger>
+              <SelectContent>
+                {lots.map((lot) => (
+                  <SelectItem key={lot.code} value={lot.code}>
+                    {lot.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={selectedMouzaCode} onValueChange={setSelectedMouzaCode}>
-            <SelectTrigger>
-              <SelectValue placeholder="Mouza">
-                {selectedMouzaCode ? mouzas.find(m => m.code === selectedMouzaCode)?.name : "Mouza"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {mouzas.map((mouza) => (
-                <SelectItem key={mouza.code} value={mouza.code}>
-                  {mouza.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Lot dropdown */}
-          <Select value={selectedLotCode} onValueChange={setSelectedLotCode}>
-            <SelectTrigger>
-              <SelectValue placeholder="Lot" />
-            </SelectTrigger>
-            <SelectContent>
-              {lots.map((lot) => (
-                <SelectItem key={lot.code} value={lot.code}>
-                  {lot.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex flex-col gap-1">
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-sm font-medium">Daag / Plot No.</Label>
             <div className="flex gap-2">
               <Input
                 value={plotNo}
                 onChange={(e) => setPlotNo(e.target.value)}
-                placeholder="Daag / Plot No."
+                placeholder="Enter Daag / Plot No."
               />
               <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading}>
                 {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
               </Button>
             </div>
             {daagFactorInfo && (
-              <div className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
-              </div>
+              </p>
             )}
           </div>
 
-          <Select value={currentLandUse} onValueChange={(val) => {
-            setCurrentLandUse(val);
-            setCurrentLandType(val); // Auto-populate current land type
-          }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Current Land Use" />
-            </SelectTrigger>
-            <SelectContent>
-              {landCategories
-                .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
-                .map((category) => (
-                  <SelectItem
-                    key={String(category.id)}
-                    value={String(category.id)}
-                  >
-                    {category?.name ?? `Category ${String(category.id)}`}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Current Land Use</Label>
+            <Select value={currentLandUse} onValueChange={(val) => {
+              setCurrentLandUse(val);
+              setCurrentLandType(val); // Auto-populate current land type
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Current Land Use" />
+              </SelectTrigger>
+              <SelectContent>
+                {landCategories
+                  .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
+                  .map((category) => (
+                    <SelectItem
+                      key={String(category.id)}
+                      value={String(category.id)}
+                    >
+                      {category?.name ?? `Category ${String(category.id)}`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
@@ -496,97 +504,103 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             Land Type Details
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4 mb-4">
-            <Label className="flex items-center space-x-1">
-              New Land? 
-              <span className="text-sm text-gray-500">
-                (Select if the plot is being used for the first time)
-              </span>
-
-              <input
-                type="radio"
-                checked={!landUseChange}
-                onChange={() => setLandUseChange(false)}
-              />
-              <span>No</span>
-            </Label>
-            <Label className="flex items-center space-x-1">
-              <input
-                type="radio"
-                checked={landUseChange}
-                onChange={() => setLandUseChange(true)}
-              />
-              <span>Yes</span>
-            </Label>
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">New Land Use?</Label>
+            <RadioGroup value={landUseChange ? 'yes' : 'no'} onValueChange={(v) => setLandUseChange(v === 'yes')}>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="no" id="no-change" />
+                  <Label htmlFor="no-change">No</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="yes" id="yes-change" />
+                  <Label htmlFor="yes-change">Yes</Label>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Select if the plot is being used for the first time</p>
+            </RadioGroup>
           </div>
 
-          {/* Area Type Selection */}
-          <div className="mb-4">
-            <Label className="mb-2 block">Area Type</Label>
-            <RadioGroup value={areaType} onValueChange={(v) => setAreaType((v as 'RURAL' | 'URBAN'))}>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Area Type</Label>
+            <RadioGroup value={areaType} onValueChange={(v) => setAreaType(v as 'RURAL' | 'URBAN')}>
               <div className="flex items-center gap-6">
-                <Label className="flex items-center gap-2"><RadioGroupItem value="RURAL" /> RURAL</Label>
-                <Label className="flex items-center gap-2"><RadioGroupItem value="URBAN" /> URBAN</Label>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="RURAL" id="rural" />
+                  <Label htmlFor="rural">RURAL</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="URBAN" id="urban" />
+                  <Label htmlFor="urban">URBAN</Label>
+                </div>
               </div>
             </RadioGroup>
           </div>
 
-          <div className="mt-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Current Land Type</Label>
             <Select value={currentLandType} onValueChange={setCurrentLandType} disabled={landUseChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Current Land Type" />
+                <SelectValue placeholder="Select Current Land Type" />
               </SelectTrigger>
               <SelectContent>
-              {landCategories
-                .filter(category => category.id != null && String(category.id).trim() !== '') // Filter out categories with null, undefined, or empty string id
-                .map((category) => (
-                <SelectItem key={String(category.id)} value={String(category.id)}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+                {landCategories
+                  .filter(category => category.id != null && String(category.id).trim() !== '')
+                  .map((category) => (
+                    <SelectItem key={String(category.id)} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
             </Select>
           </div>
 
           {landUseChange && (
-            <div className="mt-2">
-              <Select value={newLandUse} onValueChange={setNewLandUse} disabled={!landUseChange}>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">New Land Use Type</Label>
+              <Select value={newLandUse} onValueChange={setNewLandUse}>
                 <SelectTrigger>
-                  <SelectValue placeholder="New Land Use Type" />
+                  <SelectValue placeholder="Select New Land Use Type" />
                 </SelectTrigger>
                 <SelectContent>
-              {landCategories
-                .filter(category => category.id !== null && category.id !== undefined && String(category.id).trim() !== '') // Filter out categories with null, undefined, or empty string id
-                .map((category) => (
-                <SelectItem
-                  key={String(category.id)}
-                  value={String(category.id)}
-                >
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-            </Select>
-          </div>
+                  {landCategories
+                    .filter(category => category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
+                    .map((category) => (
+                      <SelectItem
+                        key={String(category.id)}
+                        value={String(category.id)}
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <Input
-              placeholder="Bigha"
-              value={areaBigha}
-              onChange={(e) => setAreaBigha(e.target.value)}
-            />
-            <Input
-              placeholder="Katha"
-              value={areaKatha}
-              onChange={(e) => setAreaKatha(e.target.value)}
-            />
-            <Input
-              placeholder="Lessa"
-              value={areaLessa}
-              onChange={(e) => setAreaLessa(e.target.value)}
-            />
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Area Details</Label>
+            <div className="grid grid-cols-3 gap-4">
+              <Input
+                placeholder="Bigha"
+                value={areaBigha}
+                onChange={(e) => setAreaBigha(e.target.value)}
+                type="number"
+              />
+              <Input
+                placeholder="Katha"
+                value={areaKatha}
+                onChange={(e) => setAreaKatha(e.target.value)}
+                type="number"
+              />
+              <Input
+                placeholder="Lessa"
+                value={areaLessa}
+                onChange={(e) => setAreaLessa(e.target.value)}
+                type="number"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -611,74 +625,111 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             Plot Land Details
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4 mb-4">
-            <Label className="flex items-center space-x-1">
-              <input
-                type="radio"
-                name="locationType"
-                value="manual"
-                checked={locationMethod === 'manual'}
-                onChange={() => setLocationMethod('manual')}
-              />
-              <span>Manual</span>
-            </Label>
-            <Label className="flex items-center space-x-1">
-              <input
-                type="radio"
-                name="locationType"
-                value="gis"
-                checked={locationMethod === 'gis'}
-                onChange={() => setLocationMethod('gis')}
-              />
-              <span>GIS</span>
-            </Label>
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Location Method</Label>
+            <RadioGroup value={locationMethod} onValueChange={setLocationMethod}>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="manual" id="manual" />
+                  <Label htmlFor="manual">Manual</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="gis" id="gis" />
+                  <Label htmlFor="gis">GIS</Label>
+                </div>
+              </div>
+            </RadioGroup>
           </div>
 
           {locationMethod === 'manual' ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <Label className="text-sm font-medium">Select Parameters</Label>
               {loadingParameters ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="text-gray-500">Loading parameters...</div>
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading parameters...</div>
                 </div>
               ) : parameters.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-48 overflow-y-auto p-2 border rounded-md">
                   {parameters.map((param) => (
-                    <div key={param.parameterId} className="flex items-start">
+                    <div key={param.parameterId} className="flex items-start space-x-3 p-2 hover:bg-muted/50 rounded">
                       <Checkbox
                         id={`parameter-${param.parameterId}`}
                         checked={selectedSubclauses.includes(param.parameterId.toString())}
                         onCheckedChange={() => handleSubclauseChange(param.parameterId.toString())}
-                        className="h-5 w-5 mt-0.5 border-maroon-300 text-maroon-600"
                       />
-                      <Label htmlFor={`parameter-${param.parameterId}`} className="ml-2 text-gray-700">
+                      <Label htmlFor={`parameter-${param.parameterId}`} className="text-sm text-foreground cursor-pointer flex-1">
                         {param.parameter}
                       </Label>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-gray-500 text-center py-4">
+                <div className="text-center py-8 text-muted-foreground">
                   No parameters available. Please check your connection.
                 </div>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-cols-3 gap-6 mt-4">
-              <div className="lg:col-span-2 space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-md">
+                  <Checkbox 
+                    checked={onRoad} 
+                    onCheckedChange={(checked) => setOnRoad(Boolean(checked))} 
+                    id="on-road" 
+                  />
+                  <Label htmlFor="on-road" className="text-sm font-medium">On Road</Label>
+                </div>
+                {onRoad ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm">Road Width (ft)</Label>
+                    <Input
+                      type="number"
+                      value={roadWidth}
+                      onChange={(e) => setRoadWidth(e.target.value)}
+                      placeholder="Enter road width"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-sm">Distance from Road (ft)</Label>
+                    <Input
+                      type="number"
+                      value={distanceFromRoad}
+                      onChange={(e) => setDistanceFromRoad(e.target.value)}
+                      placeholder="Enter distance from road"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3 pt-4 border-t">
+                <Label className="text-sm font-medium">Additional Attributes</Label>
                 <div className="space-y-2">
-                  <Label className="flex items-center space-x-2">
-                    <Checkbox checked={cornerPlot} onCheckedChange={(checked) => setCornerPlot(!!checked)} />
-                    <span>Corner Plot</span>
-                  </Label>
-                  <Label className="flex items-center space-x-2">
-                    <Checkbox checked={litigatedPlot} onCheckedChange={(checked) => setLitigatedPlot(!!checked)} />
-                    <span>Litigated Plot</span>
-                  </Label>
-                  <Label className="flex items-center space-x-2">
-                    <Checkbox checked={hasTenant} onCheckedChange={(checked) => setHasTenant(!!checked)} />
-                    <span>Has Tenant</span>
-                  </Label>
+                  <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-md">
+                    <Checkbox 
+                      checked={cornerPlot} 
+                      onCheckedChange={(checked) => setCornerPlot(Boolean(checked))} 
+                      id="corner-plot" 
+                    />
+                    <Label htmlFor="corner-plot" className="text-sm">Corner Plot</Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-md">
+                    <Checkbox 
+                      checked={litigatedPlot} 
+                      onCheckedChange={(checked) => setLitigatedPlot(Boolean(checked))} 
+                      id="litigated-plot" 
+                    />
+                    <Label htmlFor="litigated-plot" className="text-sm">Litigated Plot</Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-md">
+                    <Checkbox 
+                      checked={hasTenant} 
+                      onCheckedChange={(checked) => setHasTenant(Boolean(checked))} 
+                      id="has-tenant" 
+                    />
+                    <Label htmlFor="has-tenant" className="text-sm">Has Tenant</Label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -694,31 +745,35 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             Previous Transactions
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={() => setShowPreviousTransactions(!showPreviousTransactions)}>
+        <CardContent className="p-6">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPreviousTransactions(!showPreviousTransactions)}
+            className="w-full justify-start"
+          >
             {showPreviousTransactions ? 'Hide Previous Transactions' : 'Show Previous Transactions'}
           </Button>
 
           {showPreviousTransactions && (
-            <div className="mt-4">
+            <div className="mt-6 overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Area</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="text-sm font-semibold">Date</TableHead>
+                    <TableHead className="text-sm font-semibold">Price</TableHead>
+                    <TableHead className="text-sm font-semibold">Area</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow>
-                    <TableCell>01/01/2023</TableCell>
-                    <TableCell>₹10,00,000</TableCell>
-                    <TableCell>1 Bigha</TableCell>
+                    <TableCell className="text-sm">01/01/2023</TableCell>
+                    <TableCell className="text-sm font-medium">₹10,00,000</TableCell>
+                    <TableCell className="text-sm">1 Bigha</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>01/07/2023</TableCell>
-                    <TableCell>₹12,00,000</TableCell>
-                    <TableCell>1.2 Bigha</TableCell>
+                    <TableCell className="text-sm">01/07/2023</TableCell>
+                    <TableCell className="text-sm font-medium">₹12,00,000</TableCell>
+                    <TableCell className="text-sm">1.2 Bigha</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -730,16 +785,31 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       {/* Calculate Button - Only show when not explicitly hidden */}
       {!hideCalculateButton && (
         <div className="flex justify-end">
-          <Button onClick={handleCalculate} disabled={isCalculating}>{isCalculating ? 'Calculating...' : 'Show Market Value'}</Button>
+          <Button 
+            onClick={handleCalculate} 
+            disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
+            className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+          >
+            {isCalculating ? 'Calculating...' : 'Show Market Value'}
+          </Button>
         </div>
       )}
 
       {/* Market Value Display - Only show when calculate button is visible */}
       {!hideCalculateButton && marketValue !== null && (
-        <div className="bg-green-50 p-4 rounded-lg text-center">
-          <h3 className="text-lg font-semibold text-green-800">Market Value Calculated</h3>
-          <p className="text-2xl font-bold text-green-700">₹{marketValue.toLocaleString()}</p>
-        </div>
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg text-center">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center mb-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              <CardTitle className="text-xl font-bold text-green-800">Property Valuation Result</CardTitle>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-inner">
+              <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
+              <p className="text-3xl font-bold text-green-700">₹{marketValue.toLocaleString('en-IN')}</p>
+              <p className="text-xs text-muted-foreground mt-2">Based on current guideline rates and property specifications</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
