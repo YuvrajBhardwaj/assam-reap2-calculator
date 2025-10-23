@@ -33,7 +33,6 @@ export interface Instrument {
   maleDuty: number;
   femaleDuty: number;
   jointDuty: number;
-  isFixed?: boolean; // Added to differentiate fixed vs percentage duties
 }
 
 export type GenderOption = 'Male' | 'Female' | 'Joint';
