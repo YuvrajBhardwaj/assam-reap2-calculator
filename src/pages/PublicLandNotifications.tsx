@@ -79,7 +79,7 @@ const PublicLandNotifications = () => {
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-6xl mx-auto mb-8">
           <CardHeader>
-            <CardTitle className="text-3xl text-primary text-center">
+            <CardTitle className="text-3xl  text-center">
               Public/Land Notifications
             </CardTitle>
             <p className="text-center text-muted-foreground mt-2">
@@ -95,7 +95,7 @@ const PublicLandNotifications = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-start gap-3 mb-3">
-                      <FileText className="h-5 w-5 text-primary mt-1" />
+                      <FileText className="h-5 w-5  mt-1" />
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-foreground mb-2">
                           {notification.title}

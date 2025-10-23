@@ -174,7 +174,7 @@ const Header = () => {
               <div key={index} className="relative group w-full md:w-auto">
                 <Link
                   to={link.to}
-                  className="block text-sm hover:text-[#1E8C98] transition-colors py-2 md:py-0 w-full text-center md:text-left"
+                  className="block text-sm hover:text-blue-300 transition-colors py-2 md:py-0 w-full text-center md:text-left"
                   onClick={() => {
                     link.action?.();
                     setMenuOpen(false);
@@ -188,7 +188,7 @@ const Header = () => {
             {/* Mobile-only icons */}
             <div className="flex md:hidden items-center gap-4 mt-4">
               <button
-                className="p-2 rounded-full hover:bg-[#1E8C98] transition-colors relative"
+                className="p-2 rounded-full hover:bg-blue-700 transition-colors relative"
                 aria-label="Notifications"
                 onClick={handleNotificationClick}
               >

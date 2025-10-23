@@ -7,15 +7,15 @@ const AboutUs = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-4xl mx-auto">
+        <Card className="max-w-4xl mx-auto ">
           <CardHeader>
-            <CardTitle className="text-3xl text-primary text-center">
+            <CardTitle className="text-3xl  text-center">
               About Directorate of Registration and Stamps Revenue
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <section>
-              <h2 className="text-2xl font-semibold text-primary mb-4">Our Mission</h2>
+              <h2 className="text-2xl font-semibold  mb-4">Our Mission</h2>
               <p className="text-muted-foreground leading-relaxed">
                 The Directorate of Registration and Stamps Revenue, Government of Assam, is committed to 
                 providing efficient and transparent property registration services. We facilitate property 
@@ -24,7 +24,7 @@ const AboutUs = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-primary mb-4">Our Services</h2>
+              <h2 className="text-2xl font-semibold  mb-4">Our Services</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <Card className="p-4">
                   <h3 className="font-semibold text-lg mb-2">Property Valuation</h3>
@@ -54,7 +54,7 @@ const AboutUs = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-primary mb-4">Our Commitment</h2>
+              <h2 className="text-2xl font-semibold  mb-4">Our Commitment</h2>
               <p className="text-muted-foreground leading-relaxed">
                 We strive to modernize property registration processes through digital transformation, 
                 ensuring transparency, efficiency, and accessibility for all citizens of Assam. Our 

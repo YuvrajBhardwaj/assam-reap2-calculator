@@ -14,7 +14,7 @@ const Contact = () => {
         <div className="max-w-6xl mx-auto">
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-3xl text-primary text-center">
+              <CardTitle className="text-3xl  text-center">
                 Contact Us
               </CardTitle>
               <p className="text-center text-muted-foreground mt-2">
@@ -27,11 +27,11 @@ const Contact = () => {
             {/* Contact Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-xl text-primary">Contact Information</CardTitle>
+                <CardTitle className="text-xl ">Contact Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-start space-x-3">
-                  <MapPin className="h-5 w-5 text-primary mt-1" />
+                  <MapPin className="h-5 w-5  mt-1" />
                   <div>
                     <h3 className="font-semibold">Address</h3>
                     <p className="text-muted-foreground">
@@ -43,7 +43,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-primary" />
+                  <Phone className="h-5 w-5 " />
                   <div>
                     <h3 className="font-semibold">Phone</h3>
                     <p className="text-muted-foreground">+91-361-2345678</p>
@@ -51,7 +51,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-primary" />
+                  <Mail className="h-5 w-5 " />
                   <div>
                     <h3 className="font-semibold">Email</h3>
                     <p className="text-muted-foreground">info@assamrevenue.gov.in</p>
@@ -59,7 +59,7 @@ const Contact = () => {
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <Clock className="h-5 w-5 text-primary mt-1" />
+                  <Clock className="h-5 w-5  mt-1" />
                   <div>
                     <h3 className="font-semibold">Office Hours</h3>
                     <p className="text-muted-foreground">

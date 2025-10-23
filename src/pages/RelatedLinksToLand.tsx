@@ -119,7 +119,7 @@ const RelatedLinksToLand = () => {
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-6xl mx-auto mb-8">
           <CardHeader>
-            <CardTitle className="text-3xl text-primary text-center">
+            <CardTitle className="text-3xl  text-center">
               Related Links to Land
             </CardTitle>
             <p className="text-center text-muted-foreground mt-2">
@@ -132,7 +132,7 @@ const RelatedLinksToLand = () => {
           {linkCategories.map((category, index) => (
             <Card key={index}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-xl text-primary">
+                <CardTitle className="flex items-center gap-3 text-xl ">
                   <category.icon className="h-6 w-6" />
                   {category.title}
                 </CardTitle>

@@ -17,9 +17,9 @@ const Footer = () => {
             <a href="#" aria-label="Twitter" className="hover:text-maroon-200 transition-colors">
               <Twitter size={18} />
             </a>
-            <a href="#" aria-label="Instagram" className="hover:text-maroon-200 transition-colors">
+            {/* <a href="#" aria-label="Instagram" className="hover:text-maroon-200 transition-colors">
               <Instagram size={18} />
-            </a>
+            </a> */}
             <a href="#" aria-label="Email" className="hover:text-maroon-200 transition-colors">
               <Mail size={18} />
             </a>
@@ -28,10 +28,9 @@ const Footer = () => {
 
         <div className="mt-6 border-t border-maroon-700 pt-4 text-center text-xs">
           <div className="flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-6">
-            <a href="#" className="hover:underline">E-NOTHRIAM.ASSAM.GOV.IN</a>
-            <a href="#" className="hover:underline">OFFICES</a>
-            <a href="#" className="hover:underline">DIGITAL INDIA</a>
-            <a href="#" className="hover:underline">HELP</a>
+            <a href="https://www.india.gov.in/website-assam-government" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam Government Portal</a>
+            <a href="https://igod.gov.in/sg/AS/E003/organizations" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam Departments</a>
+            <a href="https://assamtenders.gov.in/" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam eProcurement</a>
           </div>
         </div>
       </div>
