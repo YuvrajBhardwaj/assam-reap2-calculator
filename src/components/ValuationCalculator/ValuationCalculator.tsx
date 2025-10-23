@@ -19,22 +19,19 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
   const plotFormRef = useRef<PlotFormRef>(null);
   const plotWithStructureFormRef = useRef<PlotWithStructureFormRef>(null);
 
-
-
-
   const calculateMarketValue = (value: number) => {
     setMarketValue(value);
     // Auto-redirect to Stamp Duty with prefilled market value
-    // try {
-    //   window.dispatchEvent(new CustomEvent('navigate-to-tab', {
-    //     detail: {
-    //       tab: 'stamp-duty-calculator',
-    //       stampDutyData: { marketValue: value }
-    //     }
-    //   }));
-    // } catch (e) {
-    //   // no-op
-    // }
+    try {
+      window.dispatchEvent(new CustomEvent('navigate-to-tab', {
+        detail: {
+          tab: 'stamp-duty-calculator',
+          stampDutyData: { marketValue: value }
+        }
+      }));
+    } catch (e) {
+      // no-op
+    }
   };
 
   const handleTypeChange = (type: 'plot' | 'plot-with-structure') => {
@@ -78,8 +75,6 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
         <CardContent className="pt-2">
           {selectedType === 'plot' && <PlotForm ref={plotFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
           {selectedType === 'plot-with-structure' && <PlotWithStructureForm ref={plotWithStructureFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
-
-
 
           {/* Show Market Value Button */}
           <div className="flex justify-center mt-6">

@@ -152,7 +152,8 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
 
       // Total payable: base value + stamp duty + additional fees
       const totalPayableAmount = currentBaseValue + totalDutyAmount + totalAdditionalFees;
-      setTotalPayable(totalPayableAmount);
+      setTotalPayable(totalPayableAmount);  // set Total Payable = base value + stamp duty + additional fees
+      setAgreementValue(totalPayableAmount);  // set Consideration Value as Total Payable
     } catch (e) {
       setError('Failed to calculate stamp duty. Please try again.');
       console.error(e);
