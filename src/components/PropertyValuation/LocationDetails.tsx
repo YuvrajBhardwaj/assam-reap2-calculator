@@ -202,7 +202,7 @@ const LocationDetails = ({
               <div className="flex gap-2">
                 <span className="font-semibold w-32">District:</span>
                 <Select
-                  value={selectedDistrictCode}
+                  value={selectedDistrictCode || ""}
                   onValueChange={(value) => {
                     setSelectedDistrictCode(value);
                     setSelectedCircleCode(undefined);
@@ -240,7 +240,7 @@ const LocationDetails = ({
                       <SelectItem value="no-data" disabled>No districts</SelectItem>
                     ) : (
                       districts.map(d => (
-                        <SelectItem key={d.districtCode} value={d.districtCode}>
+                        <SelectItem key={d.districtCode || d.name} value={d.districtCode || d.name}>
                           {d.name}
                         </SelectItem>
                       ))
