@@ -12,10 +12,7 @@ import Contact from "./pages/Contact";
 import PublicLandNotifications from "./pages/PublicLandNotifications";
 import RelatedLinksToLand from "./pages/RelatedLinksToLand";
 import DepartmentDashboard from "./components/department-dashboard/DepartmentDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import ValuationPortal from "./pages/ValuationPortal";
 import ReportsAnalytics from "./pages/ReportsAnalytics";
-import PlotManagement from "./pages/PlotManagement";
 
 
 const queryClient = new QueryClient();
@@ -39,10 +36,7 @@ const App = () => (
             <Route path="/public-land-notifications" element={<PublicLandNotifications />} />
             <Route path="/related-links-to-land" element={<RelatedLinksToLand />} />
             <Route path="/department-dashboard" element={<DepartmentDashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/valuation" element={<ValuationPortal />} />
             <Route path="/reports" element={<ReportsAnalytics />} />
-            <Route path="/plots" element={<PlotManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
