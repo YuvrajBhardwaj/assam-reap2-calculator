@@ -163,15 +163,20 @@ export async function fetchLots(districtCode?: string, circleCode?: string, mouz
       isActive: lot.active ?? lot.isActive ?? true,
       createdAt: lot.createdDtm ?? lot.createdAt ?? '',
       updatedAt: lot.updatedDtm ?? lot.updatedAt ?? '',
+      basePriceIncreaseLot: lot.basePriceIncreaseLot ?? 0,
     })).filter((l: Lot) => l.code && l.name);
 
-    return lots;
+    // Deduplicate lots by name and code
+    const uniqueLots = lots.filter((lot, index, self) =>
+      index === self.findIndex((l) => l.name === lot.name && l.code === lot.code)
+    );
+
+    return uniqueLots;
   } catch (err) {
     console.error('Failed to fetch lots', { districtCode, circleCode, mouzaCode, err });
     return [];
   }
 }
-
 export async function fetchLotsByDistrictAndCircle(districtCode: string, circleCode: string): Promise<Lot[]> {
   try {
     const res = await masterDataApi.get(`/getLotByDistrictAndCircle?districtCode=${districtCode}&circleCode=${circleCode}`);
@@ -180,7 +185,7 @@ export async function fetchLotsByDistrictAndCircle(districtCode: string, circleC
       : Array.isArray(res?.data)
         ? res.data
         : [];
-    return raw.map((lot: any) => ({
+    const lots = raw.map((lot: any) => ({
       id: (lot.lotGenId ?? lot.id ?? '').toString(),
       code: lot.lotCode ?? lot.code ?? '',
       name: lot.lotName ?? lot.name ?? '',
@@ -190,7 +195,13 @@ export async function fetchLotsByDistrictAndCircle(districtCode: string, circleC
       isActive: lot.active ?? lot.isActive ?? true,
       createdAt: lot.createdDtm ?? lot.createdAt ?? '',
       updatedAt: lot.updatedDtm ?? lot.updatedAt ?? '',
+      basePriceIncreaseLot: lot.basePriceIncreaseLot ?? 0,
     })).filter((l: Lot) => l.code && l.name);
+
+    // Deduplicate lots by name and code
+    return lots.filter((lot, index, self) =>
+      index === self.findIndex((l) => l.name === lot.name && l.code === lot.code)
+    );
   } catch (err) {
     console.error('Failed to fetch lots by district & circle', { districtCode, circleCode, err });
     return [];

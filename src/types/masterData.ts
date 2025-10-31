@@ -57,6 +57,7 @@ export interface Mouza extends BaseEntity {
   districtCode: string;
   circleCode: string;
   areaTypeId?: string;
+  basePriceMouza?: number;
 }
 
 export interface Lot extends BaseEntity {
@@ -64,6 +65,7 @@ export interface Lot extends BaseEntity {
   circleCode: string;
   mouzaCode: string;
   areaTypeId?: string;
+  basePriceIncreaseLot?: number;
 }
 
 export interface Village extends BaseEntity {

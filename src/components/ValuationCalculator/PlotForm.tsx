@@ -1,4 +1,4 @@
-import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories } from '@/services/locationService';
 import type { District, Circle, Mouza, LandClass, Lot } from '@/types/masterData';
 
@@ -58,7 +58,6 @@ export interface PlotFormRef {
 // Placeholder data
 const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange }, ref) => {
 
-  const [showPreviousTransactions, setShowPreviousTransactions] = useState(false);
 
   const { toast } = useToast();
 
@@ -72,7 +71,13 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
   const [selectedCircleCode, setSelectedCircleCode] = useState('');
   const [selectedMouzaCode, setSelectedMouzaCode] = useState('');
-  const [selectedLotCode, setSelectedLotCode] = useState('');
+  const [basePriceMouza, setBasePriceMouza] = useState<number | null>(null);
+  const [selectedLotId, setSelectedLotId] = useState('');
+  const [basePriceLot, setBasePriceLot] = useState<number | null>(null);
+
+  const selectedLot = useMemo(() => {
+    return lots.find(lot => lot.id === selectedLotId);
+  }, [selectedLotId, lots]);
 
   const [plotNo, setPlotNo] = useState('');
   const [currentLandUse, setCurrentLandUse] = useState('');
@@ -113,7 +118,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         selectedDistrictCode,
         selectedCircleCode,
         selectedMouzaCode,
-        selectedLotCode,
+        selectedLotId,
         plotNo,
         currentLandUse,
         landUseChange,
@@ -140,7 +145,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     selectedDistrictCode,
     selectedCircleCode,
     selectedMouzaCode,
-    selectedLotCode,
+    selectedLotId,
     plotNo,
     currentLandUse,
     landUseChange,
@@ -161,7 +166,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   ]);
 
   // Section completion states
-  const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotCode && plotNo && currentLandUse;
+  const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && plotNo && currentLandUse;
   const isLandTypeComplete = currentLandType && areaBigha;
   const isLocationComplete = locationMethod === 'manual' ? 
     (onRoad ? roadWidth : distanceFromRoad) : 
@@ -176,7 +181,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           districtCode: selectedDistrictCode,
           circleCode: selectedCircleCode,
           mouzaCode: selectedMouzaCode,
-          lotCode: selectedLotCode,
+          lotCode: selectedLot?.code, // Use the code from the found lot
           plotNo: plotNo || undefined
         },
         landTypeDetails: {
@@ -221,7 +226,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
   // New: handler to lookup daag-based geographical factor
   const handleDaagLookup = async () => {
-    if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedLotCode) {
+    if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedLotId) {
       toast({ title: 'Missing selection', description: 'Please select District, Circles, Mouza and Lot before lookup.', variant: 'destructive' });
       return;
     }
@@ -236,7 +241,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       const res = await fetchCircleLotFactor({
         districtCode: selectedDistrictCode,
         circleCode: selectedCircleCode,
-        lotCode: selectedLotCode,
+        lotCode: selectedLot?.code, // Use the code from the found lot
         daagNumber: plotNo.trim(),
       });
       setDaagFactorInfo(res);
@@ -324,21 +329,31 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   useEffect(() => {
     if (selectedDistrictCode && selectedCircleCode) {
       const fetchMouzas = async () => {
+        let mouzaCode = initialLocationData?.mouza?.code || initialLocationData?.village?.code;
         try {
           const data = await getMouzasByDistrictAndCircle(selectedDistrictCode, selectedCircleCode);
           setMouzas(data);
-          const mouzaCode = initialLocationData?.mouza?.code || initialLocationData?.village?.code;
           if (mouzaCode) {
             setSelectedMouzaCode(mouzaCode);
+            const selectedMouza = data.find(m => m.code === mouzaCode);
+            if (selectedMouza) {
+              setBasePriceMouza(selectedMouza.basePriceMouza || null);
+            }
           }
         } catch (error) {
           console.error('Error fetching mouzas:', error);
+        } finally {
+          // Ensure basePriceMouza is reset if no mouza is selected or an error occurs
+          if (!selectedMouzaCode) {
+            setBasePriceMouza(null);
+          }
         }
       };
       fetchMouzas();
     } else {
       setMouzas([]);
       setSelectedMouzaCode('');
+      setBasePriceMouza(null); // Reset base price when no mouza is selected
     }
   }, [selectedDistrictCode, selectedCircleCode, initialLocationData]);
 
@@ -347,22 +362,43 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     const shouldFetchLots = selectedDistrictCode && selectedCircleCode;
     if (!shouldFetchLots) {
       setLots([]);
-      setSelectedLotCode('');
+      setSelectedLotId('');
       return;
     }
     const loadLots = async () => {
       try {
         const data = await fetchLots(selectedDistrictCode, selectedCircleCode);
         setLots(data);
+        console.log("Fetched Lots:", data); // Log the fetched lots
         // Auto-select if only one lot
-        if (data.length === 1) setSelectedLotCode(data[0].code);
+        if (data.length === 1) {
+          setSelectedLotId(data[0].id);
+          setBasePriceLot(data[0].basePriceIncreaseLot);
+        }
         toast({ title: 'Lots Loaded', description: 'Please select a lot. The list is not filtered by mouza.' });
       } catch (error) {
         console.error('Error fetching lots:', error);
       }
     };
+
     loadLots();
-  }, [selectedDistrictCode, selectedCircleCode, toast]);
+  }, [selectedDistrictCode, selectedCircleCode]);
+
+  useEffect(() => {
+    if (selectedLotId) {
+      const lot = lots.find((l) => l.id === selectedLotId);
+      if (lot) {
+        setBasePriceLot(lot.basePriceIncreaseLot);
+      } else {
+        setBasePriceLot(null);
+      }
+    } else {
+      setBasePriceLot(null);
+    }
+  }, [selectedLotId, lots]);
+
+  console.log("PlotForm - lots:", lots);
+  console.log("PlotForm - selectedLotId:", selectedLotId);
 
   return (
     <div className="space-y-6">
@@ -409,7 +445,15 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Mouza</Label>
-            <Select value={selectedMouzaCode} onValueChange={setSelectedMouzaCode}>
+            <Select value={selectedMouzaCode} onValueChange={(value) => {
+              setSelectedMouzaCode(value);
+              const selectedMouza = mouzas.find(m => m.code === value);
+              if (selectedMouza) {
+                setBasePriceMouza(selectedMouza.basePriceMouza || null);
+              } else {
+                setBasePriceMouza(null);
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Mouza" />
               </SelectTrigger>
@@ -421,39 +465,36 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 ))}
               </SelectContent>
             </Select>
+            {basePriceMouza !== null && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Base Price: ₹{basePriceMouza.toLocaleString()}
+                </p>
+              )}
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Lot</Label>
-            <Select value={selectedLotCode} onValueChange={setSelectedLotCode}>
+            <Select value={selectedLotId} onValueChange={(val) => {
+              console.log("Lot Select - onValueChange - val:", val);
+              setSelectedLotId(val);
+            }}>
               <SelectTrigger>
-                <SelectValue placeholder="Select Lot" />
+                <SelectValue>
+                  {lots.find((lot) => lot.id === selectedLotId)?.name ||
+                    "Select Lot"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {lots.map((lot) => (
-                  <SelectItem key={lot.code} value={lot.code}>
+                  <SelectItem key={lot.id} value={lot.id}>
                     {lot.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label className="text-sm font-medium">Daag / Plot No.</Label>
-            <div className="flex gap-2">
-              <Input
-                value={plotNo}
-                onChange={(e) => setPlotNo(e.target.value)}
-                placeholder="Enter Daag / Plot No."
-              />
-              <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading}>
-                {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
-              </Button>
-            </div>
-            {daagFactorInfo && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
+            {selectedLot && basePriceLot !== null && (
+              <p className="text-sm text-gray-500 mt-1">
+                Lot Increase: {basePriceLot}%
               </p>
             )}
           </div>
@@ -480,6 +521,26 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2 md:col-span-1">
+            <Label className="text-xs font-medium">Daag / Plot No.</Label>
+            <div className="flex gap-2">
+              <Input
+                value={plotNo}
+                onChange={(e) => setPlotNo(e.target.value)}
+                placeholder="Enter Daag / Plot No."
+                className="w-full" // Shorten the input field
+              />
+              <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading}>
+                {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
+              </Button>
+            </div>
+            {daagFactorInfo && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -737,50 +798,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* Admin Section - Previous Transactions */}
-      <Card className="border-2 border-primary/20 shadow-lg bg-gradient-to-br from-background to-primary/5">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
-          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full"></div>
-            Previous Transactions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowPreviousTransactions(!showPreviousTransactions)}
-            className="w-full justify-start"
-          >
-            {showPreviousTransactions ? 'Hide Previous Transactions' : 'Show Previous Transactions'}
-          </Button>
 
-          {showPreviousTransactions && (
-            <div className="mt-6 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-sm font-semibold">Date</TableHead>
-                    <TableHead className="text-sm font-semibold">Price</TableHead>
-                    <TableHead className="text-sm font-semibold">Area</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="text-sm">01/01/2023</TableCell>
-                    <TableCell className="text-sm font-medium">₹10,00,000</TableCell>
-                    <TableCell className="text-sm">1 Bigha</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-sm">01/07/2023</TableCell>
-                    <TableCell className="text-sm font-medium">₹12,00,000</TableCell>
-                    <TableCell className="text-sm">1.2 Bigha</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Calculate Button - Only show when not explicitly hidden */}
       {!hideCalculateButton && (

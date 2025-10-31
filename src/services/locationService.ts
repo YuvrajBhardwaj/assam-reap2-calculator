@@ -83,6 +83,7 @@ export async function getMouzasByDistrictAndCircle(districtCode?: string, circle
       districtCode: m.districtCode ?? districtCode ?? '',
       circleCode: m.circleCode ?? circleCode ?? '',
       areaTypeId: m.areaTypeId ?? m.areaType ?? undefined,
+      basePriceMouza: m.basePriceMouza ?? null,
     }));
   } catch (err) {
     console.error('Failed to fetch mouzas', { districtCode, circleCode, err });
