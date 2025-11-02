@@ -111,6 +111,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
   const [daagFactorInfo, setDaagFactorInfo] = useState<import('@/types/masterData').CircleLotFactorResponse | null>(null);
 
+  // Land use increase states
+  const [basePriceLandUse, setBasePriceLandUse] = useState<number | null>(null);
+  const [newBasePriceLandUse, setNewBasePriceLandUse] = useState<number | null>(null);
+
   // Effect to call onDataChange whenever relevant state changes
   useEffect(() => {
     if (onDataChange) {
@@ -182,12 +186,13 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           circleCode: selectedCircleCode,
           mouzaCode: selectedMouzaCode,
           lotCode: selectedLot?.code, // Use the code from the found lot
-          plotNo: plotNo || undefined
+          plotNo: plotNo || undefined,
+          currentLandUse: currentLandUse
         },
         landTypeDetails: {
-          currentLandCategoryGenId: currentLandType,
+          currentLandType: currentLandType,
           landUseChange: landUseChange,
-          newLandCategoryGenId: landUseChange ? newLandUse : undefined,
+          newLandCategoryType: landUseChange ? newLandUse : undefined,
           areaType: areaType,
           areaDetails: {
             bigha: parseFloat(areaBigha) || 0,
@@ -403,167 +408,210 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   return (
     <div className="space-y-6">
       {/* Jurisdiction Info */}
-      <Card className="border-2 border-primary/20 shadow-lg bg-gradient-to-br from-background to-muted/30">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
-          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full"></div>
-            Jurisdiction Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">District</Label>
-            <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select District" />
-              </SelectTrigger>
-              <SelectContent>
-                {districts.map((dist) => (
-                  <SelectItem key={dist.code} value={dist.code}>
-                    {dist.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Circle</Label>
-            <Select value={selectedCircleCode} onValueChange={setSelectedCircleCode}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Circle" />
-              </SelectTrigger>
-              <SelectContent>
-                {circles.map((circ) => (
-                  <SelectItem key={circ.code} value={circ.code}>
-                    {circ.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Mouza</Label>
-            <Select value={selectedMouzaCode} onValueChange={(value) => {
-              setSelectedMouzaCode(value);
-              const selectedMouza = mouzas.find(m => m.code === value);
-              if (selectedMouza) {
-                setBasePriceMouza(selectedMouza.basePriceMouza || null);
-              } else {
-                setBasePriceMouza(null);
-              }
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Mouza" />
-              </SelectTrigger>
-              <SelectContent>
-                {mouzas.map((mouza) => (
-                  <SelectItem key={mouza.code} value={mouza.code}>
-                    {mouza.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {basePriceMouza !== null && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Base Price: ₹{basePriceMouza.toLocaleString()}
-                </p>
-              )}
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Lot</Label>
-            <Select value={selectedLotId} onValueChange={(val) => {
-              console.log("Lot Select - onValueChange - val:", val);
-              setSelectedLotId(val);
-            }}>
-              <SelectTrigger>
-                <SelectValue>
-                  {lots.find((lot) => lot.id === selectedLotId)?.name ||
-                    "Select Lot"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {lots.map((lot) => (
-                  <SelectItem key={lot.id} value={lot.id}>
-                    {lot.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedLot && basePriceLot !== null && (
-              <p className="text-sm text-gray-500 mt-1">
-                Lot Increase: {basePriceLot}%
-              </p>
+      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
+        isJurisdictionComplete 
+          ? 'ring-2 ring-blue-500/20 bg-gradient-to-br from-blue-50/50 to-blue-100/50 border-blue-200' 
+          : 'border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50'
+      }`}>
+        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 ${
+          isJurisdictionComplete ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-300'
+        }`} />
+        <CardHeader className={`relative z-10 rounded-t-lg p-4 ${
+          isJurisdictionComplete 
+            ? 'bg-gradient-to-r from-blue-500/10 via-blue-600/10 to-blue-700/10 border-b border-blue-200/50' 
+            : 'bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50'
+        }`}>
+          <div className="flex items-center justify-between">
+            <CardTitle className={`text-xl font-bold flex items-center gap-2 ${
+              isJurisdictionComplete ? 'text-blue-800' : 'text-gray-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                isJurisdictionComplete ? 'bg-blue-500 scale-110' : 'bg-gray-400'
+              }`}></div>
+              Jurisdiction Information
+            </CardTitle>
+            {isJurisdictionComplete && (
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
+                ✓
+              </div>
             )}
           </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Current Land Use</Label>
-            <Select value={currentLandUse} onValueChange={(val) => {
-              setCurrentLandUse(val);
-              setCurrentLandType(val); // Auto-populate current land type
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Current Land Use" />
-              </SelectTrigger>
-              <SelectContent>
-                {landCategories
-                  .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
-                  .map((category) => (
-                    <SelectItem
-                      key={String(category.id)}
-                      value={String(category.id)}
-                    >
-                      {category?.name ?? `Category ${String(category.id)}`}
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">District</Label>
+              <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select District" />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map((dist) => (
+                    <SelectItem key={dist.code} value={dist.code}>
+                      {dist.name}
                     </SelectItem>
                   ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2 md:col-span-1">
-            <Label className="text-xs font-medium">Daag / Plot No.</Label>
-            <div className="flex gap-2">
-              <Input
-                value={plotNo}
-                onChange={(e) => setPlotNo(e.target.value)}
-                placeholder="Enter Daag / Plot No."
-                className="w-full" // Shorten the input field
-              />
-              <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading}>
-                {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
-              </Button>
+                </SelectContent>
+              </Select>
             </div>
-            {daagFactorInfo && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
-              </p>
-            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Circle</Label>
+              <Select value={selectedCircleCode} onValueChange={setSelectedCircleCode}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Circle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {circles.map((circ) => (
+                    <SelectItem key={circ.code} value={circ.code}>
+                      {circ.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Mouza</Label>
+              <Select value={selectedMouzaCode} onValueChange={(value) => {
+                setSelectedMouzaCode(value);
+                const selectedMouza = mouzas.find(m => m.code === value);
+                if (selectedMouza) {
+                  setBasePriceMouza(selectedMouza.basePriceMouza || null);
+                } else {
+                  setBasePriceMouza(null);
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Mouza" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mouzas.map((mouza) => (
+                    <SelectItem key={mouza.code} value={mouza.code}>
+                      {mouza.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {basePriceMouza !== null && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Base Price: ₹{basePriceMouza.toLocaleString()}
+                  </p>
+                )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Lot</Label>
+              <Select value={selectedLotId} onValueChange={(val) => {
+                console.log("Lot Select - onValueChange - val:", val);
+                setSelectedLotId(val);
+              }}>
+                <SelectTrigger>
+                  <SelectValue>
+                    {lots.find((lot) => lot.id === selectedLotId)?.name ||
+                      "Select Lot"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {lots.map((lot) => (
+                    <SelectItem key={lot.id} value={lot.id}>
+                      {lot.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedLot && basePriceLot !== null && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Lot Increase: {basePriceLot}%
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Current Land Use</Label>
+              <Select value={currentLandUse} onValueChange={(val) => {
+                setCurrentLandUse(val);
+                setCurrentLandType(val); // Auto-populate current land type
+                const category = landCategories.find(c => String(c.id) === val);
+                console.log("PlotForm - category for Current Land Use:", category);
+                console.log("PlotForm - basePriceMouzaIncrease for Current Land Use:", category?.basePriceMouzaIncrease);
+                setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Current Land Use" />
+                </SelectTrigger>
+                <SelectContent>
+                  {landCategories
+                    .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
+                    .map((category) => (
+                      <SelectItem
+                        key={String(category.id)}
+                        value={String(category.id)}
+                      >
+                        {category?.name ?? `Category ${String(category.id)}`}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {basePriceLandUse !== null && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Land Use Increase: {basePriceLandUse}%
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2 md:col-span-1">
+              <Label className="text-xs font-medium">Daag / Plot No.</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={plotNo}
+                  onChange={(e) => setPlotNo(e.target.value)}
+                  placeholder="Enter Daag / Plot No."
+                  className="w-full" // Shorten the input field
+                />
+                <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading}>
+                  {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
+                </Button>
+              </div>
+              {daagFactorInfo && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Land Type */}
-      <Card className={`border-2 shadow-lg bg-gradient-to-br from-background ${
-        isJurisdictionComplete 
-          ? 'border-blue-500/50 to-blue-50/50' 
-          : 'border-gray-300/50 to-gray-50/50'
+      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
+        isLandTypeComplete 
+          ? 'ring-2 ring-green-500/20 bg-gradient-to-br from-green-50/50 to-green-100/50 border-green-200' 
+          : 'border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50'
       }`}>
-        <CardHeader className={`rounded-t-lg ${
-          isJurisdictionComplete 
-            ? 'bg-gradient-to-r from-blue-500/10 to-blue-600/20' 
-            : 'bg-gradient-to-r from-gray-300/10 to-gray-400/20'
+        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 ${
+          isLandTypeComplete ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gray-300'
+        }`} />
+        <CardHeader className={`relative z-10 rounded-t-lg p-4 ${
+          isLandTypeComplete 
+            ? 'bg-gradient-to-r from-green-500/10 via-green-600/10 to-green-700/10 border-b border-green-200/50' 
+            : 'bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50'
         }`}>
-          <CardTitle className={`text-xl font-bold flex items-center gap-2 ${
-            isJurisdictionComplete ? 'text-blue-700' : 'text-gray-600'
-          }`}>
-            <div className={`w-2 h-2 rounded-full ${
-              isJurisdictionComplete ? 'bg-blue-500' : 'bg-gray-400'
-            }`}></div>
-            Land Type Details
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className={`text-xl font-bold flex items-center gap-2 ${
+              isLandTypeComplete ? 'text-green-800' : 'text-gray-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                isLandTypeComplete ? 'bg-green-500 scale-110' : 'bg-gray-400'
+              }`}></div>
+              Land Type Details
+            </CardTitle>
+            {isLandTypeComplete && (
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
+                ✓
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           <div className="space-y-2">
@@ -601,7 +649,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Current Land Type</Label>
-            <Select value={currentLandType} onValueChange={setCurrentLandType} disabled={landUseChange}>
+            <Select value={currentLandType} onValueChange={(val) => {
+              setCurrentLandType(val);
+              const category = landCategories.find(c => String(c.id) === val);
+              setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
+            }} disabled={landUseChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Current Land Type" />
               </SelectTrigger>
@@ -615,12 +667,21 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   ))}
               </SelectContent>
             </Select>
+            {basePriceLandUse !== null && (
+              <p className="text-sm text-gray-500 mt-1">
+                Land Type Increase: {basePriceLandUse}%
+              </p>
+            )}
           </div>
 
           {landUseChange && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">New Land Use Type</Label>
-              <Select value={newLandUse} onValueChange={setNewLandUse}>
+              <Select value={newLandUse} onValueChange={(val) => {
+                setNewLandUse(val);
+                const category = landCategories.find(c => String(c.id) === val);
+                setNewBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select New Land Use Type" />
                 </SelectTrigger>
@@ -637,6 +698,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     ))}
                 </SelectContent>
               </Select>
+              {newBasePriceLandUse !== null && (
+                <p className="text-sm text-gray-500 mt-1">
+                  New Land Use Increase: {newBasePriceLandUse}%
+                </p>
+              )}
             </div>
           )}
 
@@ -667,24 +733,34 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       </Card>
 
       {/* Plot Land Details */}
-      <Card className={`border-2 shadow-lg bg-gradient-to-br from-background ${
-        isLandTypeComplete 
-          ? 'border-blue-500/50 to-blue-50/50' 
-          : 'border-gray-300/50 to-gray-50/50'
+      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${
+        isLocationComplete 
+          ? 'ring-2 ring-indigo-500/20 bg-gradient-to-br from-indigo-50/50 to-indigo-100/50 border-indigo-200' 
+          : 'border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50'
       }`}>
-        <CardHeader className={`rounded-t-lg ${
-          isLandTypeComplete 
-            ? 'bg-gradient-to-r from-blue-500/10 to-blue-600/20' 
-            : 'bg-gradient-to-r from-gray-300/10 to-gray-400/20'
+        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 ${
+          isLocationComplete ? 'bg-gradient-to-r from-indigo-500 to-indigo-600' : 'bg-gray-300'
+        }`} />
+        <CardHeader className={`relative z-10 rounded-t-lg p-4 ${
+          isLocationComplete 
+            ? 'bg-gradient-to-r from-indigo-500/10 via-indigo-600/10 to-indigo-700/10 border-b border-indigo-200/50' 
+            : 'bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50'
         }`}>
-          <CardTitle className={`text-xl font-bold flex items-center gap-2 ${
-            isLandTypeComplete ? 'text-blue-700' : 'text-gray-600'
-          }`}>
-            <div className={`w-2 h-2 rounded-full ${
-              isLandTypeComplete ? 'bg-blue-500' : 'bg-gray-400'
-            }`}></div>
-            Plot Land Details
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className={`text-xl font-bold flex items-center gap-2 ${
+              isLocationComplete ? 'text-indigo-800' : 'text-gray-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                isLocationComplete ? 'bg-indigo-500 scale-110' : 'bg-gray-400'
+              }`}></div>
+              Plot Land Details
+            </CardTitle>
+            {isLocationComplete && (
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse">
+                ✓
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           <div className="space-y-2">

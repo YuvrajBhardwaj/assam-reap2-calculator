@@ -89,6 +89,7 @@ export interface LandClass extends BaseEntity {
   reasonForRequest?: string;
   description?: string;
   baseRate?: number;
+  basePriceMouzaIncrease?: number;
 }
 
 export interface LandSubClass extends BaseEntity {

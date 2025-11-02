@@ -216,11 +216,12 @@ export interface ComprehensiveValuationRequest {
     mouzaCode: string;
     lotCode: string;
     plotNo?: string;
+    currentLandUse: string;
   };
   landTypeDetails: {
-    currentLandCategoryGenId: string;
+    currentLandType: string;
     landUseChange: boolean;
-    newLandCategoryGenId?: string;
+    newLandCategoryType?: string;
     areaType: 'RURAL' | 'URBAN';
     areaDetails: {
       bigha: number;

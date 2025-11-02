@@ -148,6 +148,7 @@ export async function getAllLandCategories(): Promise<LandClass[]> {
       updatedDtm: lc.updatedDtm,
       status: lc.status,
       statusCode: lc.statusCode,
+      basePriceMouzaIncrease: lc.basePriceMouzaIncrease ?? 0,
     }));
   } catch (err) {
     console.error('Failed to fetch land categories', err);

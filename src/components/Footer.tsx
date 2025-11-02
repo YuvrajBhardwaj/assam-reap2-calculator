@@ -1,4 +1,4 @@
-import { Facebook, Twitter, Instagram, Mail } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Mail, Globe } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -31,6 +31,10 @@ const Footer = () => {
             <a href="https://www.india.gov.in/website-assam-government" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam Government Portal</a>
             <a href="https://igod.gov.in/sg/AS/E003/organizations" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam Departments</a>
             <a href="https://assamtenders.gov.in/" className="hover:underline" target="_blank" rel="noopener noreferrer">Assam eProcurement</a>
+            <a href="https://www.digitalindia.gov.in/" aria-label="Digital India" className="hover:underline flex items-center gap-1" target="_blank" rel="noopener noreferrer">
+              <Globe size={18} />
+              <span>www.digitalindia.gov.in</span>
+            </a>
           </div>
         </div>
       </div>

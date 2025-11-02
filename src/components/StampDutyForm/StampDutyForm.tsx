@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { fetchInstruments } from '../../services/stampDutyService';
 import { jurisdictionApi } from '../../services/http'; // Assuming http service is in services/http.ts
 import { Instrument, GenderOption, SelectionResponse } from '../../types/stampDuty';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface StampDutyFormProps {
   initialMarketValue?: number;
@@ -36,6 +44,109 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
     if (value === null || isNaN(value)) return '0';
     return new Intl.NumberFormat('en-IN').format(Math.round(value));
   };
+
+  // Pie chart data for total breakdown
+  const pieData = useMemo(() => {
+    if (!stampDuty || !surcharge || !cess || !registrationFees) return null;
+    const total = stampDuty + (surcharge || 0) + (cess || 0) + registrationFees;
+    return {
+      labels: ['Stamp Duty', 'Surcharge', 'Cess', 'Registration Fees'],
+      datasets: [
+        {
+          data: [stampDuty, surcharge || 0, cess || 0, registrationFees],
+          backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [stampDuty, surcharge, cess, registrationFees]);
+
+  // Second pie data for total payable composition
+  const totalPayablePieData = useMemo(() => {
+    if (!totalPayable || !marketValue) return null;
+    return {
+      labels: ['Base Value', 'Total Duty & Fees'],
+      datasets: [{
+        data: [marketValue, (totalPayable || 0) - marketValue],
+        backgroundColor: ['#E5E7EB', '#3B82F6'],
+        borderWidth: 1,
+      }],
+    };
+  }, [totalPayable, marketValue]);
+
+  // Common tooltip callback for currency formatting
+  const currencyTooltipCallback = (context: any) => {
+    const value = context.parsed;
+    return formatIndianCurrency(value);
+  };
+
+  // Pie chart options with interactive tooltips
+  const pieOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+        callbacks: {
+          label: function(context: any) {
+            let label = context.label || '';
+            if (label) {
+              label += ': ';
+            }
+            label += currencyTooltipCallback(context);
+            return label;
+          },
+          afterLabel: function(context: any) {
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = ((context.parsed / total) * 100).toFixed(1);
+            return `(${percentage}%)`;
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: 'Stamp Duty Breakdown',
+        font: {
+          size: 16,
+          weight: 700,
+        },
+        color: '#374151'
+      },
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
+  }), []);
+
+  // Options for the second pie
+  const totalPayablePieOptions = useMemo(() => ({
+    ...pieOptions,
+    plugins: {
+      ...pieOptions.plugins,
+      title: {
+        display: true,
+        text: 'Total Payable Composition',
+        font: {
+          size: 16,
+          weight: 700,  // Fixed: Use number 700 instead of string 'bold'
+        },
+        color: '#374151'
+      },
+    },
+  }), [pieOptions]);
 
   useEffect(() => {
     const loadInstruments = async () => {
@@ -112,48 +223,37 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
       alert('Please select at least one instrument and choose a gender for each.');
       return;
     }
-
     // Base value is max(marketValue, agreementValue)
     const currentBaseValue = Math.max(marketValue, agreementValue);
     setBaseValue(currentBaseValue);
-
     const payload = selectedInstruments.map((id) => ({
       instrumentId: id,
       selectedOption: instrumentGenders[id],
     }));
-
     try {
       setLoading(true);
       setError(null);
-
       // Fetch rates from backend
       const res = await jurisdictionApi.post('/jurisdictionInfo/selections', payload);
       const results: SelectionResponse[] = res.data;
-
       setSelectionResults(results);
-
       // Calculate individual duty amounts and total stamp duty
       const individualAmounts = results.map(r => Math.round(currentBaseValue * (r.dutyValue / 100)));
       const totalDutyAmount = individualAmounts.reduce((sum, amount) => sum + amount, 0);
       setStampDuty(totalDutyAmount);
-
       // Calculate additional fees (based on Assam rules; adjust as needed from Excel data)
       const surcharge = 0;
       setSurcharge(surcharge);
-
       const cess = 0;
       setCess(cess);
-
       const registrationFeesAmount = Math.min(currentBaseValue * 0.085, 10000);
       setRegistrationFees(registrationFeesAmount);
-
       const totalAdditionalFees = surcharge + cess + registrationFeesAmount;
       setTotalFees(totalAdditionalFees);
-
       // Total payable: base value + stamp duty + additional fees
       const totalPayableAmount = currentBaseValue + totalDutyAmount + totalAdditionalFees;
-      setTotalPayable(totalPayableAmount);  // set Total Payable = base value + stamp duty + additional fees
-      setAgreementValue(totalPayableAmount);  // set Consideration Value as Total Payable
+      setTotalPayable(totalPayableAmount); // set Total Payable = base value + stamp duty + additional fees
+      setAgreementValue(totalPayableAmount); // set Consideration Value as Total Payable
     } catch (e) {
       setError('Failed to calculate stamp duty. Please try again.');
       console.error(e);
@@ -180,114 +280,152 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
           <p className="text-gray-600 mb-6">
             Select one or more instruments below. If an instrument has sub-types, checkboxes will appear.
           </p>
-
-          {/* Instrument Selection */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {instruments.map((inst) => (
-                <label
-                  key={inst.id}
-                  className={`flex items-center p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
-                    selectedInstruments.includes(inst.id)
-                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Left Column: Deed Detail (Placeholder for now) */}
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Deed Detail</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Deed Category</label>
+                  <p className="mt-1 text-sm text-gray-900">Documents involving Immovable Property</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Deed Type</label>
+                  <p className="mt-1 text-sm text-gray-900">Conveyance</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Deed Description</label>
+                  <p className="mt-1 text-sm text-gray-900">Conveyance - not being a transfer charged or exempted under No.56 Explanation - For the purpose...</p>
+                  <a href="#" className="text-blue-600 hover:underline text-sm">Read more</a>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Instrument</label>
+                  <p className="mt-1 text-sm text-gray-900">Conveyance - Related to Merger or Amalgamation</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Instrument Description</label>
+                  <p className="mt-1 text-sm text-gray-900">(a) where an instrument relates to the merger or amalgamation of companies under the orders of...</p>
+                  <a href="#" className="text-blue-600 hover:underline text-sm">Read more</a>
+                </div>
+                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                  Show Duty Details
+                </button>
+              </div>
+            </div>
+            {/* Right Column: Calculate Section */}
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculate</h3>
+              {/* Value Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
+                    Market Value (₹)
+                  </label>
+                  <input
+                    id="marketValue"
+                    type="text"
+                    value={formatIndianCurrency(marketValue)}
+                    onChange={handleNumericInput}
+                    placeholder="e.g., 1,00,00,000"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="agreementValue" className="block text-sm font-medium text-gray-700 mb-2 relative">
+                    Consideration Value (₹)
+                    <span className="ml-2 cursor-help text-gray-500" title="This value is the consideration amount for the instrument.">ℹ️</span>
+                  </label>
+                  <input
+                    id="agreementValue"
+                    type="text"
+                    value={formatIndianCurrency(agreementValue)}
+                    onChange={handleNumericInput}
+                    placeholder="e.g., 1,00,00,000"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              {/* Instrument Selection */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {instruments.map((inst) => (
+                    <label
+                      key={inst.id}
+                      className={`flex items-center p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
+                        selectedInstruments.includes(inst.id)
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedInstruments.includes(inst.id)}
+                        onChange={() => handleInstrumentChange(inst.id)}
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-900">
+                        <strong>{inst.id}.</strong> {inst.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* Gender Selections */}
+              <div className="mb-6 space-y-6">
+                {selectedInstruments.map((id) => {
+                  const instrument = instruments.find((inst) => inst.id === id);
+                  if (!instrument) return null;
+                  return (
+                    <div key={id} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Options for {instrument.name} (ID: {id})
+                      </h3>
+                      <div className="flex items-center space-x-6">
+                        <label className="text-sm font-medium text-gray-700">Select Gender:</label>
+                        <div className="flex space-x-8">
+                          {genderOptions.map((g) => (
+                            <label key={g} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`gender-${id}`}
+                                checked={instrumentGenders[id] === g}
+                                onChange={() => handleInstrumentGenderChange(id, g)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-900">{g}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Calculate Button */}
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={calculateStampDuty}
+                  disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
+                  className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
+                    selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
+                      ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-lg'
+                      : 'bg-gray-300 cursor-not-allowed'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedInstruments.includes(inst.id)}
-                    onChange={() => handleInstrumentChange(inst.id)}
-                    className="h-5 w-5 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-3 text-sm font-medium text-gray-900">
-                    <strong>{inst.id}.</strong> {inst.name}
-                  </span>
-                </label>
-              ))}
+                  {loading ? 'Calculating...' : 'Calculate Duty'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()} // Simple page reload for reset
+                  className="px-8 py-3 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Gender Selections */}
-          <div className="mb-6 space-y-6">
-            {selectedInstruments.map((id) => {
-              const instrument = instruments.find((inst) => inst.id === id);
-              if (!instrument) return null;
-
-              return (
-                <div key={id} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Options for {instrument.name} (ID: {id})
-                  </h3>
-                  <div className="flex items-center space-x-6">
-                    <label className="text-sm font-medium text-gray-700">Select Gender:</label>
-                    <div className="flex space-x-8">
-                      {genderOptions.map((g) => (
-                        <label key={g} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`gender-${id}`}
-                            checked={instrumentGenders[id] === g}
-                            onChange={() => handleInstrumentGenderChange(id, g)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-900">{g}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Value Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
-                Market Value (₹)
-              </label>
-              <input
-                id="marketValue"
-                type="text"
-                value={formatIndianCurrency(marketValue)}
-                onChange={handleNumericInput}
-                placeholder="e.g., 1,00,00,000"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="agreementValue" className="block text-sm font-medium text-gray-700 mb-2 relative">
-                Consideration Value (₹)
-                <span className="ml-2 cursor-help text-gray-500" title="This value is the consideration amount for the instrument.">ℹ️</span>
-              </label>
-              <input
-                id="agreementValue"
-                type="text"
-                value={formatIndianCurrency(agreementValue)}
-                onChange={handleNumericInput}
-                placeholder="e.g., 1,00,00,000"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Calculate Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={calculateStampDuty}
-              disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
-              className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
-                selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
-                  ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-lg'
-                  : 'bg-gray-300 cursor-not-allowed'
-              }`}
-            >
-              {loading ? 'Calculating...' : 'Calculate Stamp Duty'}
-            </button>
           </div>
         </div>
-
         {/* Results - Stamp Duty Bill */}
         {selectionResults && (
           <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -295,7 +433,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
               <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
               <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
             </div>
-
             {/* Property Details */}
             <div className="p-6 border-b border-gray-200">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h4>
@@ -314,7 +451,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
                 </div>
               </div>
             </div>
-
             {/* Instrument Breakdown */}
             <div className="p-6 border-b border-gray-200">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Instrument Breakdown</h4>
@@ -348,11 +484,10 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
                 </table>
               </div>
             </div>
-
             {/* Fees Breakdown */}
             <div className="p-6">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Fees & Charges</h4>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto mb-6">
                 <table className="w-full table-auto border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
@@ -388,6 +523,25 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
                   </tbody>
                 </table>
               </div>
+              {/* Pie Charts for Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {pieData && (
+                  <div>
+                    <h5 className="text-md font-semibold text-gray-900 mb-2">Duty Breakdown</h5>
+                    <div className="h-64">
+                      <Pie data={pieData} options={pieOptions} />
+                    </div>
+                  </div>
+                )}
+                {totalPayablePieData && (
+                  <div>
+                    <h5 className="text-md font-semibold text-gray-900 mb-2">Total Payable Composition</h5>
+                    <div className="h-64">
+                      <Pie data={totalPayablePieData} options={totalPayablePieOptions} />
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
                 <p>* Calculations based on Assam Stamp Duty rules. Subject to change. Consult official sources for final verification.</p>
               </div>
@@ -397,6 +551,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
       </div>
     </div>
   );
-};
+}
 
 export default StampDutyForm;
