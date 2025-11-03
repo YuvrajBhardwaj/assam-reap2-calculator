@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 import {
   User,
   Bell,
@@ -143,7 +144,7 @@ const Header = () => {
         <div className="flex items-center justify-between py-3">
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
-            <img
+            <OptimizedImage
               src="/src/assets/lovable-uploads/Seal_of_Assam.png"
               alt="Assam Government Logo"
               className="h-10 w-10 sm:h-12 sm:w-12"

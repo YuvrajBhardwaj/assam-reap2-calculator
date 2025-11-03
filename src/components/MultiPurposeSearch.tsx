@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
@@ -26,7 +26,7 @@ interface MultiPurposeSearchProps {
   onSearchTextChange?: (text: string) => void;
 }
 
-export default function MultiPurposeSearch({
+export default memo(function MultiPurposeSearch({
   onSearchTypeChange,
   onSearchTextChange,
 }: MultiPurposeSearchProps = {}) {
@@ -35,7 +35,7 @@ export default function MultiPurposeSearch({
   const [inputError, setInputError] = useState('');
 
   // Function to handle search text change
-  const handleSearchTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchTextChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Alphanumeric validation for specific fields
     if (['Agriculture ID', 'ULPIN / Land Parcel ID', 'Municipal ID'].includes(activeOption)) {
@@ -53,16 +53,16 @@ export default function MultiPurposeSearch({
       setInputError('');
       onSearchTextChange?.(value);
     }
-  };
+  }, [activeOption, onSearchTextChange]);
 
   // Function to handle option change
-  const handleOptionChange = (option: string) => {
+  const handleOptionChange = useCallback((option: string) => {
     setActiveOption(option);
     setSearchText('');
     setInputError('');
     onSearchTypeChange?.(option);
     onSearchTextChange?.('');
-  };
+  }, [onSearchTypeChange, onSearchTextChange]);
 
   // Function to handle Enter key for search
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -137,4 +137,4 @@ export default function MultiPurposeSearch({
     </div>
 
   );
-}
+})

@@ -1,5 +1,5 @@
 // context/AuthContext.tsx
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { ApiService, LoginRequest } from '../services/adminService';
 
 export type UserRole = 
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = async (credentials: LoginRequest) => {
+  const login = useCallback(async (credentials: LoginRequest) => {
     try {
       const response = await ApiService.login(credentials);
       setToken(response.jwt);
@@ -90,21 +90,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Login failed:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const simpleLogin = (role: UserRole) => {
+  const simpleLogin = useCallback((role: UserRole) => {
     setIsAuthenticated(true);
     setUserRole(role);
     localStorage.setItem('userRole', role);
     // Note: No real token, so don't set authToken/loginId
-  };
+  }, []);
 
-  const switchRole = (role: UserRole) => {
+  const switchRole = useCallback((role: UserRole) => {
     setUserRole(role);
     localStorage.setItem('userRole', role);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsAuthenticated(false);
     setUserRole(null);
     setToken(null);
@@ -114,19 +114,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('loginId');
     localStorage.removeItem('userRole');
-  };
+  }, []);
+
+  const authContextValue = useMemo(() => ({
+    isAuthenticated,
+    userRole,
+    loginId,
+    token,
+    login,
+    simpleLogin,
+    switchRole,
+    logout,
+  }), [isAuthenticated, userRole, loginId, token, login, simpleLogin, switchRole, logout]);
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      userRole, 
-      loginId, 
-      token, 
-      login, 
-      simpleLogin,
-      switchRole, 
-      logout 
-    }}>
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );

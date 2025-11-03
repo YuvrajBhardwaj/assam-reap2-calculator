@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, LandPlot, MapPin } from "lucide-react";
 import { LAND_TYPES, BUILDING_SUBTYPES } from "@/constants/propertyValuation";
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface LandTypeSelectionProps {
   selectedLandType: string;
@@ -99,7 +100,7 @@ const BuildingSubtypeCard = ({
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <img src="https://placehold.co/60x40" alt={title} className="mx-auto" />
+        <OptimizedImage src="https://placehold.co/60x40" alt={title} className="mx-auto" />
       </CardContent>
       <Button 
         variant={selectedSubtype === type ? "default" : "outline"} 
