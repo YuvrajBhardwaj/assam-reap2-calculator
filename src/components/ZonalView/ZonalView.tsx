@@ -31,7 +31,7 @@ const CardGrid = <T extends { name: string; code: string }>({
           key={i.code}
           onClick={() => onSelect(i)}
           className={`p-3 rounded shadow text-sm font-semibold text-white transition
-                      ${selected === i.code ? 'bg-red-700' : 'bg-red-600 hover:scale-105'}`}
+                      ${selected === i.code ? 'bg-maroon-800' : 'bg-maroon-700 hover:scale-105'}`}
         >
           {i.name}
         </button>
