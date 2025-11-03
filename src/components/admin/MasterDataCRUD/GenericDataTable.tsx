@@ -21,7 +21,11 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  History
+  History,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Check
 } from 'lucide-react';
 import { BaseEntity, AuditLog } from '@/types/masterData';
 
@@ -465,18 +469,20 @@ export default function GenericDataTable<T extends BaseEntity>({
 
 // Action buttons
 const renderActionButtons = (item: T) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-1">
     {canEdit && (
       <Button
         variant="ghost"
         size="sm"
+        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
         onClick={() => {
           setEditingItem(item);
           setFormData({ ...item });
           setIsEditDialogOpen(true);
         }}
+        title="Edit"
       >
-        Update
+        <Edit2 className="h-4 w-4" />
       </Button>
     )}
 
@@ -484,9 +490,11 @@ const renderActionButtons = (item: T) => (
       <Button
         variant="ghost"
         size="sm"
+        className="h-8 w-8 p-0 hover:bg-gray-50 hover:text-gray-600"
         onClick={() => handleViewHistory(item)}
+        title="View History"
       >
-        View History
+        <History className="h-4 w-4" />
       </Button>
     )}
 
@@ -494,26 +502,29 @@ const renderActionButtons = (item: T) => (
       <Button
         variant="ghost"
         size="sm"
-        className="text-red-600"
+        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
         onClick={() => {
           setPendingAction({ type: 'deactivate', item });
           setDeactivatingItemName(getItemName ? getItemName(item) : (item.name || item.id));
           setIsConfirmDialogOpen(true);
         }}
+        title="Deactivate"
       >
-        Deactivate
+        <Trash2 className="h-4 w-4" />
       </Button>
     )}
 
     {customActions.map((action, index) => (
       <Button
         key={index}
-        variant={action.variant || "ghost"}
+        variant="ghost"
         size="sm"
+        className="h-8 px-2 hover:bg-gray-50"
         onClick={() => action.onClick(item)}
+        title={action.label}
       >
-        {action.icon}
-        {action.label}
+        {action.icon && <span className="mr-1">{action.icon}</span>}
+        <span className="text-xs">{action.label}</span>
       </Button>
     ))}
   </div>
@@ -552,22 +563,40 @@ const renderActionButtons = (item: T) => (
             </Select>
           )}
 
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh} 
+            disabled={loading}
+            className="flex items-center gap-2"
+            title="Refresh Data"
+          >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
 
           {enableExport && (
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+              title="Export Data"
+            >
               <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
             </Button>
           )}
 
           {canCreate && (
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add {title}
+                <Button 
+                  size="sm"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  title={`Create New ${title}`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create {title}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl overflow-y-auto max-h-[80vh]">
@@ -593,13 +622,22 @@ const renderActionButtons = (item: T) => (
                   )}
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreate}>
-                    {requiresApproval ? 'Submit Request' : 'Create'}
-                  </Button>
-                </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsCreateDialogOpen(false)}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreate}
+            className="flex items-center gap-2"
+          >
+            <Check className="h-4 w-4" />
+            {requiresApproval ? 'Submit Request' : 'Create'}
+          </Button>
+        </div>
               </DialogContent>
             </Dialog>
           )}
@@ -682,10 +720,12 @@ const renderActionButtons = (item: T) => (
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage <= 1}
+              className="flex items-center gap-1"
             >
-              Previous
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
-            <span className="text-sm">
+            <span className="text-sm px-2">
               Page {currentPage} of {totalPages}
             </span>
             <Button
@@ -693,8 +733,10 @@ const renderActionButtons = (item: T) => (
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage >= totalPages}
+              className="flex items-center gap-1"
             >
-              Next
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -726,10 +768,19 @@ const renderActionButtons = (item: T) => (
           )}
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsEditDialogOpen(false)}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
             Cancel
           </Button>
-          <Button onClick={handleEdit}>
+          <Button 
+            onClick={handleEdit}
+            className="flex items-center gap-2"
+          >
+            <Check className="h-4 w-4" />
             {requiresApproval ? 'Submit Request' : 'Update'}
           </Button>
         </div>
@@ -803,7 +854,12 @@ const renderActionButtons = (item: T) => (
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsConfirmDialogOpen(false)}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
             Cancel
           </Button>
           <Button
@@ -813,7 +869,9 @@ const renderActionButtons = (item: T) => (
                 handleDeactivate(pendingAction.item);
               }
             }}
+            className="flex items-center gap-2"
           >
+            <Check className="h-4 w-4" />
             Confirm
           </Button>
         </div>

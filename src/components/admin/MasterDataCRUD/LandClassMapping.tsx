@@ -11,6 +11,7 @@ import * as masterDataService from '@/services/masterDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Unlink, X, Check } from 'lucide-react';
 
 export default function LandClassMapping() {
   const [landClasses, setLandClasses] = useState<LandClass[]>([]);
@@ -288,7 +289,16 @@ export default function LandClassMapping() {
                     <TableCell>{m.mouzaCode || '-'}</TableCell>
                     <TableCell>{m.villageCode || '-'}</TableCell>
                     <TableCell>
-                      <Button variant="destructive" size="sm" onClick={() => unmap(m)}>Unmap</Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => unmap(m)}
+                        className="flex items-center gap-2"
+                        title="Unmap Land Class"
+                      >
+                        <Unlink className="h-4 w-4" />
+                        Unmap
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -391,8 +401,21 @@ export default function LandClassMapping() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddLandClassDialogOpen(false)}>Cancel</Button>
-            <Button onClick={addNewLandClass}>Submit Request</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddLandClassDialogOpen(false)}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            <Button 
+              onClick={addNewLandClass}
+              className="flex items-center gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Submit Request
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -45,7 +45,7 @@ export async function updateDistrict(districtCode: string, districtName: string)
 }
 
 export async function deactivateDistrict(districtCode: string): Promise<void> {
-  await masterDataApi.post(`/update/deleteDistrictDetails?districtCode=${districtCode}`);
+  await masterDataApi.post(`/delete/district?districtCode=${districtCode}`);
 }
 
 // Added: Reactivate District
@@ -81,17 +81,17 @@ export async function deactivateSRO(id: string): Promise<void> {
 
 // ===== CIRCLE MANAGEMENT =====
 export async function createCircle(circle: Omit<Circle, 'id'>): Promise<Circle> {
-  const res = await masterDataApi.post('/circle/add', { circleName: circle.name, districtCode: circle.districtCode });
+  const res = await masterDataApi.post('/add/circle', { circleName: circle.name, districtCode: circle.districtCode });
   return res.data;
 }
 
 export async function updateCircle(id: string, updates: Partial<Circle>): Promise<Circle> {
-  const res = await masterDataApi.post('/circle/update', { circleCode: id, circleName: updates.name, districtCode: updates.districtCode });
+  const res = await masterDataApi.post('/update/circle', { circleCode: id, circleName: updates.name, districtCode: updates.districtCode });
   return res.data;
 }
 
 export async function deactivateCircle(id: string): Promise<void> {
-  await masterDataApi.post(`/circle/delete?circleCode=${id}`);
+  await masterDataApi.post(`/delete/circle?circleCode=${id}`);
 }
 
 export async function reactivateCircle(id: string): Promise<void> {

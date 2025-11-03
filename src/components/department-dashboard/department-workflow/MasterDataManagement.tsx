@@ -1,7 +1,8 @@
+// Top-level imports in module scope
 import React, { useEffect, useState } from 'react';
 import { AuditService } from '@/services/auditService';
 import type { WorkflowActionRequest } from '@/services/auditService';
-import { submitChangeRequest } from '@/services/masterDataService';
+import { createAreaType, createCircle, createDistrict, createLandClass, createLot, createMouza, createVillage, deactivateCircle, deactivateDistrict, deactivateLandClass, deactivateLot, deactivateMouza, deactivateVillage, deleteAreaType, submitChangeRequest, updateAreaType, updateCircle, updateDistrict, updateLot, updateMouza, updateVillage } from '@/services/masterDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,14 @@ import {
 } from 'lucide-react';
 
 import { MasterDataChangeRequest } from '@/types/masterData';
-import DistrictsDeptTable from './dept/DistrictsDeptTable';
-import CirclesDeptTable from './dept/CirclesDeptTable';
-import MouzasDeptTable from './dept/MouzasDeptTable';
-import VillagesDeptTable from './dept/VillagesDeptTable';
-import LotsDeptTable from './dept/LotsDeptTable';
-import LandClassesDeptTable from './dept/LandClassesDeptTable';
-import AreaTypesDeptTable from './dept/AreaTypesDeptTable';
-import SROHierarchyDeptTable from './dept/SROHierarchyDeptTable';
+import DistrictCRUD from '@/components/admin/MasterDataCRUD/DistrictCRUD';
+import CircleCRUD from '@/components/admin/MasterDataCRUD/CircleCRUD';
+import MouzaCRUD from '@/components/admin/MasterDataCRUD/MouzaCRUD';
+import VillageCRUD from '@/components/admin/MasterDataCRUD/VillageCRUD';
+import LotCRUD from '@/components/admin/MasterDataCRUD/LotCRUD';
+import LandClassCRUD from '@/components/admin/MasterDataCRUD/LandClassCRUD';
+import AreaTypeCRUD from '@/components/admin/MasterDataCRUD/AreaTypeCRUD';
+import SROCascadingCRUD from '@/components/admin/MasterDataCRUD/SROCascadingCRUD';
 
 interface MasterDataManagementProps {
   userRole: string | null;
@@ -178,6 +179,57 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   };
 
   // Approve/Reject via role endpoints (jm/man/sman/admin). Send Back => reject.
+  const applyFinalChange = async (request: MasterDataChangeRequest) => {
+    const op = request.operation;
+    const p = request.payload || {};
+
+    switch (request.entityType) {
+      case 'Districts':
+        if (op === 'create') await createDistrict({ districtName: p.districtName });
+        else if (op === 'update') await updateDistrict(p.districtCode, p.districtName);
+        else if (op === 'deactivate') await deactivateDistrict(p.districtCode);
+        break;
+
+      case 'Circles':
+        if (op === 'create') await createCircle({ name: p.circleName, districtCode: p.districtCode } as any);
+        else if (op === 'update') await updateCircle(p.circleCode, { name: p.circleName, districtCode: p.districtCode });
+        else if (op === 'deactivate') await deactivateCircle(p.circleCode);
+        break;
+
+      case 'Mouzas':
+        if (op === 'create') await createMouza(p);
+        else if (op === 'update') await updateMouza(p.mouzaCode, p);
+        else if (op === 'deactivate') await deactivateMouza(p.mouzaCode);
+        break;
+
+      case 'Villages':
+        if (op === 'create') await createVillage(p);
+        else if (op === 'update') await updateVillage(p.villageCode, p);
+        else if (op === 'deactivate') await deactivateVillage(p.villageCode);
+        break;
+
+      case 'Lots':
+        if (op === 'create') await createLot(p);
+        else if (op === 'update') await updateLot(p.lotCode, p);
+        else if (op === 'deactivate') await deactivateLot(p.lotCode);
+        break;
+
+      case 'Land Classes':
+        if (op === 'create') await createLandClass({ landCategoryName: p.landCategoryName } as any);
+        else if (op === 'deactivate') await deactivateLandClass(p.landCategoryGenId);
+        break;
+
+      case 'Area Types':
+        if (op === 'create') await createAreaType({ areaType: p.areaType });
+        else if (op === 'update') await updateAreaType(p.areaTypesGenId || p.id, { areaType: p.areaType });
+        else if (op === 'deactivate') await deleteAreaType(p.areaTypesGenId || p.id);
+        break;
+
+      default:
+        throw new Error(`Unsupported entity type: ${request.entityType}`);
+    }
+  };
+
   const confirmWorkflowAction = async (request: MasterDataChangeRequest, action: 'approve' | 'send-back' | 'reject') => {
     try {
       const masterType = toMasterTypeParam(request.entityType);
@@ -214,14 +266,14 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   // Move renderDeptView inside the component to access selectedMasterDataEntity
   const renderDeptView = () => {
     switch (selectedMasterDataEntity) {
-      case 'Districts': return <DistrictsDeptTable />;
-      case 'Circles': return <CirclesDeptTable />;
-      case 'Mouzas': return <MouzasDeptTable />;
-      case 'Villages': return <VillagesDeptTable />;
-      case 'Lots': return <LotsDeptTable />;
-      case 'Land Classes': return <LandClassesDeptTable />;
-      case 'Area Types': return <AreaTypesDeptTable />;
-      case 'SRO Hierarchy': return <SROHierarchyDeptTable />;
+      case 'Districts': return <DistrictCRUD />;
+      case 'Circles': return <CircleCRUD />;
+      case 'Mouzas': return <MouzaCRUD />;
+      case 'Villages': return <VillageCRUD />;
+      case 'Lots': return <LotCRUD />;
+      case 'Land Classes': return <LandClassCRUD />;
+      case 'Area Types': return <AreaTypeCRUD />;
+      case 'SRO Hierarchy': return <SROCascadingCRUD />;
       default: return null;
     }
   };

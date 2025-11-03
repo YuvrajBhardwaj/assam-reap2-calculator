@@ -64,6 +64,7 @@ interface DepartmentStats {
   medianApprovalDays: number;
 }
 
+// End of DepartmentDashboard component
 const DepartmentDashboard = () => {
   const { userRole } = useAuth();
   const { toast } = useToast();
@@ -861,7 +862,7 @@ const subModules = [
 
       {/* Master Data Change Request Dialog */}
       <Dialog open={showMasterDataRequestDialog} onOpenChange={setShowMasterDataRequestDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Request Master Data Change</DialogTitle>
           </DialogHeader>
@@ -929,5 +930,3 @@ const subModules = [
     </div>
   );
 };
-
-export default DepartmentDashboard;

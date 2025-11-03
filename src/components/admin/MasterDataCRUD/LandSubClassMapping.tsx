@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { LandSubClass, type LandSubClassMapping, LandClass } from '@/types/masterData';
 import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircle } from '@/services/locationService';
 import * as masterDataService from '@/services/masterDataService';
+import { Unlink } from 'lucide-react';
 
 export default function LandSubClassMapping() {
   const [parentClasses, setParentClasses] = useState<LandClass[]>([]);
@@ -252,7 +253,16 @@ export default function LandSubClassMapping() {
                     <TableCell>{m.mouzaCode || '-'}</TableCell>
                     <TableCell>{m.villageCode || '-'}</TableCell>
                     <TableCell>
-                      <Button variant="destructive" size="sm" onClick={() => unmap(m)}>Unmap</Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={() => unmap(m)}
+                        className="flex items-center gap-2"
+                        title="Unmap Land Sub Class"
+                      >
+                        <Unlink className="h-4 w-4" />
+                        Unmap
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

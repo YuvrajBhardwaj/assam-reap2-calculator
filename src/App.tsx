@@ -11,7 +11,6 @@ import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
 import PublicLandNotifications from "./pages/PublicLandNotifications";
 import RelatedLinksToLand from "./pages/RelatedLinksToLand";
-import DepartmentDashboard from "./components/department-dashboard/DepartmentDashboard";
 import ReportsAnalytics from "./pages/ReportsAnalytics";
 
 
@@ -35,7 +34,6 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/public-land-notifications" element={<PublicLandNotifications />} />
             <Route path="/related-links-to-land" element={<RelatedLinksToLand />} />
-            <Route path="/department-dashboard" element={<DepartmentDashboard />} />
             <Route path="/reports" element={<ReportsAnalytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
