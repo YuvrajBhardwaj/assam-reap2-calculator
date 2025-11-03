@@ -20,6 +20,7 @@ import ZonalView from '@/components/ZonalView/ZonalView';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
 import CertifiedCopiesServices from '@/components/CertifiedCopiesServices';
 import DepartmentWorkflowDashboard from '@/components/department-dashboard/department-workflow/DepartmentWorkflowDashboard';
+import DepartmentDashboard from '@/components/department-dashboard/DepartmentDashboard';
 import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
@@ -392,31 +393,7 @@ const isGuest = userRole === null;
           {isDepartmentUser && (
             <>
               <TabsContent value="department-dashboard" className="space-y-4">
-                <MasterDataManagement userRole={''} toast={undefined} selectedMasterDataEntity={''} setSelectedMasterDataEntity={function (entity: string): void {
-                  throw new Error('Function not implemented.');
-                } } showMasterDataRequestDialog={false} setShowMasterDataRequestDialog={function (show: boolean): void {
-                  throw new Error('Function not implemented.');
-                } } selectedMasterDataRequest={undefined} setSelectedMasterDataRequest={function (request: MasterDataChangeRequest | null): void {
-                  throw new Error('Function not implemented.');
-                } } masterDataRequestType={'create'} setMasterDataRequestType={function (type: 'create' | 'update' | 'deactivate'): void {
-                  throw new Error('Function not implemented.');
-                } } masterDataRequestReason={''} setMasterDataRequestReason={function (reason: string): void {
-                  throw new Error('Function not implemented.');
-                } } masterDataChangeRequests={[]} handleMasterDataChangeRequest={function (entityType: string, operation: 'create' | 'update' | 'deactivate', payload: any, reason: string): void {
-                  throw new Error('Function not implemented.');
-                } } handleMasterDataActionSelect={function (request: MasterDataChangeRequest, action: 'approve' | 'send-back' | 'reject'): void {
-                  throw new Error('Function not implemented.');
-                } } handleConfirmMasterDataAction={function (): void {
-                  throw new Error('Function not implemented.');
-                } } handleRefreshData={function (): void {
-                  throw new Error('Function not implemented.');
-                } } getStatusColor={function (status: string): string {
-                  throw new Error('Function not implemented.');
-                } } actionType={'approve'} setShowActionDialog={function (show: boolean): void {
-                  throw new Error('Function not implemented.');
-                } } setActionReason={function (reason: string): void {
-                  throw new Error('Function not implemented.');
-                } } />
+                <DepartmentDashboard />
               </TabsContent>
               <TabsContent value="workflow-dept" className="space-y-4">
                 <DepartmentWorkflowDashboard />

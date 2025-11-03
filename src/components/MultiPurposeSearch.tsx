@@ -74,15 +74,15 @@ export default function MultiPurposeSearch({
   return (
     <div className="w-full bg-white shadow-md rounded-xl px-6 pt-6 pb-4 z-10 relative">
       {/* Search Options */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+      <div className="flex flex-wrap justify-center gap-2 mb-4">
         {searchOptions.map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => handleOptionChange(option)}
-            className={`text-sm sm:text-base px-3 py-2 rounded-lg font-medium border transition-all duration-150 ${activeOption === option
-                ? 'bg-[#1e8c98] text-white border-[#1e8c98] shadow-md'
-                : 'bg-white text-[#1e8c98] border-[#1e8c98] hover:bg-[#e6f7fa]'
+            className={`text-sm sm:text-base px-4 py-2 rounded-full font-medium border transition-all duration-150 ${activeOption === option
+                ? 'bg-gray-700 text-white border-gray-700 shadow-md'
+                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
               }`}
           >
             {option}
@@ -102,7 +102,7 @@ export default function MultiPurposeSearch({
       >
         {/* Input with icon */}
         <div className="relative flex-1">
-          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#1e8c98]" />
+          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-700" />
           <Input
             type="text"
             value={searchText}
@@ -114,14 +114,14 @@ export default function MultiPurposeSearch({
                 : undefined
             }
             placeholder={placeholders[activeOption]}
-            className="pl-10 pr-4 py-2 w-full rounded-md border-2 border-[#b2e6ee] bg-[#f0fcfd] text-[#1e8c98] placeholder-[#1e8c98] focus:outline-none focus:ring-2 focus:ring-[#1e8c98] focus:border-[#1e8c98] text-sm sm:text-base"
+            className="pl-10 pr-4 py-2 w-full rounded-md border-2 border-gray-300 bg-gray-100 text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm sm:text-base"
           />
         </div>
 
         {/* Submit Button */}
         <Button
           type="submit"
-          className="bg-[#1e8c98] text-white px-6 py-2 rounded-md shadow hover:bg-[#176c77] transition-all duration-200 text-sm sm:text-base min-h-[42px]"
+          className="bg-gray-700 text-white px-6 py-2 rounded-md shadow hover:bg-gray-800 transition-all duration-200 text-sm sm:text-base min-h-[42px]"
           disabled={inputError !== '' || !searchText.trim()}
         >
           Submit

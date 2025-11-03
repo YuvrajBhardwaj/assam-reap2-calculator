@@ -374,9 +374,8 @@ const DepartmentWorkflowDashboard = () => {
 
       {/* Tabs Section */}
       <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto mb-4">
+        <TabsList className="grid w-full sm:w-[500px] grid-cols-3 mb-4">
           <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
-          <TabsTrigger value="master-data">Master Data Management</TabsTrigger>
           <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
         </TabsList>

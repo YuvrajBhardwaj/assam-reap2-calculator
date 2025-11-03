@@ -64,11 +64,11 @@ interface DepartmentStats {
   medianApprovalDays: number;
 }
 
-// End of DepartmentDashboard component
-const DepartmentDashboard = () => {
+// Method: DepartmentDashboard component
+export default function DepartmentDashboard() {
   const { userRole } = useAuth();
   const { toast } = useToast();
-  const [activeMainTab, setActiveMainTab] = useState<'approvals' | 'master-data' | 'analytics' | 'property'>('approvals');
+  const [activeMainTab, setActiveMainTab] = useState<'approvals' | 'master-data' | 'analytics' | 'property'>('master-data');
   const [activeSubTab, setActiveSubTab] = useState('requestor');
   const [analyticsView, setAnalyticsView] = useState('reports');
   const [selectedFilter, setSelectedFilter] = useState('for-action');
