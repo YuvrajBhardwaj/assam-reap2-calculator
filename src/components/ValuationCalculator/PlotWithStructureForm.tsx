@@ -80,6 +80,7 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     lotCode: '',
     plotNo: '',
     currentLandCategoryGenId: '',
+    currentLandUse: '', // Added missing property
     landUseChange: false,
     newLandCategoryGenId: '',
     areaType: 'RURAL',
@@ -131,12 +132,13 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
           circleCode: plotFormData.selectedCircleCode,
           mouzaCode: plotFormData.selectedMouzaCode,
           lotCode: plotFormData.lotCode,
-          plotNo: plotFormData.plotNo
+          plotNo: plotFormData.plotNo,
+          currentLandUse: plotFormData.currentLandUse // Added missing property
         },
         landTypeDetails: {
-          currentLandCategoryGenId: plotFormData.currentLandCategoryGenId,
+          currentLandType: plotFormData.currentLandCategoryGenId, // Corrected property name
           landUseChange: plotFormData.landUseChange,
-          newLandCategoryGenId: plotFormData.newLandCategoryGenId,
+          newLandCategoryType: plotFormData.newLandCategoryGenId, // Corrected property name
           areaType: plotFormData.areaType,
           areaDetails: {
             bigha: plotFormData.areaDetails.bigha,
@@ -181,14 +183,6 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
 
   return (
     <div className="space-y-6">
-      {/* Reuse the refined PlotForm */}
-      <PlotForm
-        ref={plotFormRef}
-        hideCalculateButton={true}
-        initialLocationData={initialLocationData}
-        onDataChange={setPlotFormData} // Pass setPlotFormData to update the state
-      />
-
       {/* Structure Details Section */}
       <Card className="border-t-4 border-blue-500 bg-blue-50">
         <CardHeader>
@@ -310,6 +304,14 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
           </div>
         </CardContent>
       </Card>
+
+      {/* Reuse the refined PlotForm */}
+      <PlotForm
+        ref={plotFormRef}
+        hideCalculateButton={true}
+        initialLocationData={initialLocationData}
+        onDataChange={setPlotFormData} // Pass setPlotFormData to update the state
+      />
 
       {!hideCalculateButton && (
         <div className="flex justify-end">
