@@ -21,17 +21,8 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
 
   const calculateMarketValue = (value: number) => {
     setMarketValue(value);
-    // Auto-redirect to Stamp Duty with prefilled market value
-    try {
-      window.dispatchEvent(new CustomEvent('navigate-to-tab', {
-        detail: {
-          tab: 'stamp-duty-calculator',
-          stampDutyData: { marketValue: value }
-        }
-      }));
-    } catch (e) {
-      // no-op
-    }
+    // Note: Navigation to stamp duty is now handled by the PlotForm component
+    // Users can click the "Calculate Stamp Duty" button when ready
   };
 
   const handleTypeChange = (type: 'plot' | 'plot-with-structure') => {

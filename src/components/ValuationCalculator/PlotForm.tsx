@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories } from '@/services/locationService';
 import type { District, Circle, Mouza, LandClass, Lot } from '@/types/masterData';
-
 import {
   Card,
   CardHeader,
@@ -23,9 +23,7 @@ import {
 } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { fetchLots } from '@/services/masterDataService';
 import { calculatePlotBaseValue } from '@/services/masterDataService';
@@ -33,13 +31,21 @@ import { useToast } from '@/hooks/use-toast';
 import { getParameterDetails, type Parameter } from "@/services/parameterService";
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
-import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle } from 'lucide-react'; // Assuming Lucide React for icons
-
+import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink } from 'lucide-react'; // Assuming Lucide React for icons
 interface DistrictDetails {
   id: number;
   name: string;
 }
-
+interface CalculationHistory {
+  id: string;
+  timestamp: number;
+  formData: any;
+  result: {
+    totalValue: number;
+    breakdown?: any;
+  };
+  description: string;
+}
 interface PlotFormProps {
   onCalculate?: (value: number) => void;
   hideCalculateButton?: boolean;
@@ -52,87 +58,223 @@ interface PlotFormProps {
   // New: allow parent to receive live form data
   onDataChange?: (data: any) => void;
 }
-
 export interface PlotFormRef {
   handleCalculate: () => void;
 }
-
 // Placeholder data
 const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange }, ref) => {
-
-
+  const navigate = useNavigate();
   const { toast } = useToast();
-
   const [landCategories, setLandCategories] = useState<LandClass[]>([]);
-
   const [districts, setDistricts] = useState<District[]>([]);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [mouzas, setMouzas] = useState<Mouza[]>([]);
   const [lots, setLots] = useState<Lot[]>([]);
-
   const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
   const [selectedCircleCode, setSelectedCircleCode] = useState('');
   const [selectedMouzaCode, setSelectedMouzaCode] = useState('');
   const [basePriceMouza, setBasePriceMouza] = useState<number | null>(null);
   const [selectedLotId, setSelectedLotId] = useState('');
   const [basePriceLot, setBasePriceLot] = useState<number | null>(null);
-
   const selectedLot = useMemo(() => {
     return lots.find(lot => lot.id === selectedLotId);
   }, [selectedLotId, lots]);
-
   const [plotNo, setPlotNo] = useState('');
   const [currentLandUse, setCurrentLandUse] = useState('');
   const [landUseChange, setLandUseChange] = useState(false);
   const [newLandUse, setNewLandUse] = useState('');
   const [currentLandType, setCurrentLandType] = useState('');
   const [areaType, setAreaType] = useState<'RURAL' | 'URBAN'>('RURAL');
+  const [marketValue, setMarketValue] = useState<number | null>(null);
+  const [perLessaValue, setPerLessaValue] = useState<number | null>(null);
   const [areaBigha, setAreaBigha] = useState('');
   const [areaKatha, setAreaKatha] = useState('');
   const [areaLessa, setAreaLessa] = useState('');
-
+  // Effect to load saved form data from sessionStorage
+  useEffect(() => {
+    const savedFormData = sessionStorage.getItem('plotFormState');
+    if (savedFormData) {
+      const formData = JSON.parse(savedFormData);
+      setSelectedDistrictCode(formData.selectedDistrictCode || '');
+      setSelectedCircleCode(formData.selectedCircleCode || '');
+      setSelectedMouzaCode(formData.selectedMouzaCode || '');
+      setSelectedLotId(formData.selectedLotId || '');
+      setPlotNo(formData.plotNo || '');
+      setCurrentLandUse(formData.currentLandUse || '');
+      setLandUseChange(formData.landUseChange || false);
+      setNewLandUse(formData.newLandUse || '');
+      setCurrentLandType(formData.currentLandType || '');
+      setAreaType(formData.areaType || 'RURAL');
+      setAreaBigha(formData.areaBigha || '');
+      setAreaKatha(formData.areaKatha || '');
+      setAreaLessa(formData.areaLessa || '');
+      setMarketValue(formData.marketValue || null);
+      setPerLessaValue(formData.perLessaValue || null);
+    }
+  }, []);
+  // Effect to save form data to sessionStorage whenever relevant state changes
+  useEffect(() => {
+    const formData = {
+      selectedDistrictCode,
+      selectedCircleCode,
+      selectedMouzaCode,
+      selectedLotId,
+      plotNo,
+      currentLandUse,
+      landUseChange,
+      newLandUse,
+      currentLandType,
+      areaType,
+      areaBigha,
+      areaKatha,
+      areaLessa,
+      marketValue,
+      perLessaValue,
+    };
+    sessionStorage.setItem('plotFormState', JSON.stringify(formData));
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue]);
+  const [totalLessa, setTotalLessa] = useState(0);
+  useEffect(() => {
+    const bigha = parseFloat(areaBigha) || 0;
+    const katha = parseFloat(areaKatha) || 0;
+    const lessa = parseFloat(areaLessa) || 0;
+    // 1 Bigha = 5 Katha, 1 Katha = 20 Lessa, so 1 Bigha = 100 Lessa
+    setTotalLessa(bigha * 100 + katha * 20 + lessa);
+  }, [areaBigha, areaKatha, areaLessa]);
   const [locationMethod, setLocationMethod] = useState('manual');
   const [onRoad, setOnRoad] = useState(false);
   const [cornerPlot, setCornerPlot] = useState(false);
   const [litigatedPlot, setLitigatedPlot] = useState(false);
   const [hasTenant, setHasTenant] = useState(false);
-
   const [roadWidth, setRoadWidth] = useState('');
   const [distanceFromRoad, setDistanceFromRoad] = useState('');
-
-  const [marketValue, setMarketValue] = useState<number | null>(null);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [mapResetTrigger, setMapResetTrigger] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
-
   const [selectedSubclauses, setSelectedSubclauses] = useState<string[]>([]);
   const [parameters, setParameters] = useState<any[]>([]);
   const [loadingParameters, setLoadingParameters] = useState<boolean>(true);
-
   // New: Daag lookup state
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
   const [daagFactorInfo, setDaagFactorInfo] = useState<import('@/types/masterData').CircleLotFactorResponse | null>(null);
-
   // Land use increase states
   const [basePriceLandUse, setBasePriceLandUse] = useState<number | null>(null);
   const [newBasePriceLandUse, setNewBasePriceLandUse] = useState<number | null>(null);
-
+  // History and cache management
+  const [calculationHistory, setCalculationHistory] = useState<CalculationHistory[]>([]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string>('');
+  const [calculationResult, setCalculationResult] = useState<any>(null);
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  // Computed selected land use code
+  const selectedLandUseCode = useMemo(() => landUseChange ? newLandUse : currentLandUse, [landUseChange, newLandUse, currentLandUse]);
+  // Computed land use increase
+  const landUseIncrease = useMemo(() => {
+    if (landUseChange) {
+      return newBasePriceLandUse ?? 0;
+    } else {
+      return basePriceLandUse ?? 0;
+    }
+  }, [landUseChange, newBasePriceLandUse, basePriceLandUse]);
   // NEW: Computed Plot Level Base Value
-  // Assuming formula: Plot Level Base = District Base (via Mouza) × (1 + Lot % / 100) × (1 + Land Use % / 100)
-  // Note: basePriceMouza acts as District Base × Geo × Conversion (pre-computed)
+  // Formula: Plot Level Base = Mouza Base × (1 + Lot % / 100) × (1 + Land Use % / 100)
+  // Note: basePriceMouza already includes District Base × Geo × Conversion (pre-computed)
   const plotLevelBaseValue = useMemo(() => {
-    if (basePriceMouza === null || basePriceLot === null || basePriceLandUse === null) {
+    // Allow landUseIncrease to be 0; still a valid calculation (multiplier = 1)
+    if (basePriceMouza === null || basePriceLot === null) {
       return null;
     }
     const lotMultiplier = 1 + (basePriceLot / 100);
-    const landUseMultiplier = 1 + (basePriceLandUse / 100);
+    const landUseMultiplier = 1 + (landUseIncrease / 100);
     return Math.round(basePriceMouza * lotMultiplier * landUseMultiplier);
-  }, [basePriceMouza, basePriceLot, basePriceLandUse]);
-
+  }, [basePriceMouza, basePriceLot, landUseIncrease]);
   const hasBaseValue = useMemo(() => {
-    return selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && currentLandUse && plotLevelBaseValue !== null;
-  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, currentLandUse, plotLevelBaseValue]);
-
+    return selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && !!selectedLandUseCode && plotLevelBaseValue !== null;
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, selectedLandUseCode, plotLevelBaseValue]);
+  // Local total value based on per lessa * total lessa
+  const localTotalValue = useMemo(() => {
+    if (perLessaValue !== null && totalLessa > 0) {
+      return Math.round(perLessaValue * totalLessa);
+    }
+    return null;
+  }, [perLessaValue, totalLessa]);
+  // Cache management functions
+  const saveToHistory = (result: any) => {
+    const historyItem: CalculationHistory = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      formData: {
+        selectedDistrictCode,
+        selectedCircleCode,
+        selectedMouzaCode,
+        selectedLotId,
+        plotNo,
+        currentLandUse,
+        landUseChange,
+        newLandUse,
+        currentLandType,
+        areaType,
+        areaBigha,
+        areaKatha,
+        areaLessa,
+        locationMethod,
+        onRoad,
+        cornerPlot,
+        litigatedPlot,
+        hasTenant,
+        roadWidth,
+        distanceFromRoad,
+        selectedSubclauses,
+      },
+      result,
+      description: `${districts.find(d => d.code === selectedDistrictCode)?.name || 'Unknown'} - ${circles.find(c => c.code === selectedCircleCode)?.name || 'Unknown'} - Plot ${plotNo || 'N/A'}`
+    };
+    const updatedHistory = [historyItem, ...calculationHistory.slice(0, 9)]; // Keep only 10 most recent
+    setCalculationHistory(updatedHistory);
+    localStorage.setItem('plot-calculation-history', JSON.stringify(updatedHistory));
+  };
+  const loadFromHistory = (historyId: string) => {
+    const historyItem = calculationHistory.find(item => item.id === historyId);
+    if (!historyItem) return;
+    const { formData } = historyItem;
+   
+    // Restore form state
+    setSelectedDistrictCode(formData.selectedDistrictCode || '');
+    setSelectedCircleCode(formData.selectedCircleCode || '');
+    setSelectedMouzaCode(formData.selectedMouzaCode || '');
+    setSelectedLotId(formData.selectedLotId || '');
+    setPlotNo(formData.plotNo || '');
+    setCurrentLandUse(formData.currentLandUse || '');
+    setLandUseChange(formData.landUseChange || false);
+    setNewLandUse(formData.newLandUse || '');
+    setCurrentLandType(formData.currentLandType || '');
+    setAreaType(formData.areaType || 'RURAL');
+    setAreaBigha(formData.areaBigha || '');
+    setAreaKatha(formData.areaKatha || '');
+    setAreaLessa(formData.areaLessa || '');
+    setLocationMethod(formData.locationMethod || 'manual');
+    setOnRoad(formData.onRoad || false);
+    setCornerPlot(formData.cornerPlot || false);
+    setLitigatedPlot(formData.litigatedPlot || false);
+    setHasTenant(formData.hasTenant || false);
+    setRoadWidth(formData.roadWidth || '');
+    setDistanceFromRoad(formData.distanceFromRoad || '');
+    setSelectedSubclauses(formData.selectedSubclauses || []);
+   
+    // Set calculation result
+    setCalculationResult(historyItem.result);
+    setMarketValue(historyItem.result.totalValue);
+  };
+  // Load history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('plot-calculation-history');
+    if (savedHistory) {
+      try {
+        setCalculationHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Error loading calculation history:', error);
+      }
+    }
+  }, []);
   // Effect to call onDataChange whenever relevant state changes
   useEffect(() => {
     if (onDataChange) {
@@ -148,9 +290,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         currentLandType,
         areaType,
         areaDetails: {
-          bigha: parseFloat(areaBigha) || 0,
-          katha: parseFloat(areaKatha) || 0,
-          lessa: parseFloat(areaLessa) || 0,
+          // bigha: parseFloat(areaBigha) || 0,
+          // katha: parseFloat(areaKatha) || 0,
+          // lessa: parseFloat(areaLessa) || 0,
+          totalLessa: totalLessa
         },
         locationMethod,
         onRoad,
@@ -186,18 +329,29 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     distanceFromRoad,
     selectedSubclauses,
   ]);
-
   // Section completion states
   const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && plotNo && currentLandUse;
-  const isLandTypeComplete = currentLandType && areaBigha;
-  const isLocationComplete = locationMethod === 'manual' ? 
-    (onRoad ? roadWidth : distanceFromRoad) : 
+  const isLandTypeComplete = !!selectedLandUseCode && totalLessa > 0;
+  const isLocationComplete = locationMethod === 'manual' ?
+    (onRoad ? roadWidth : distanceFromRoad) :
     true;
-
   const handleCalculate = async () => {
     try {
       setIsCalculating(true);
-
+      const effectiveRoadWidth = onRoad && roadWidth ? parseFloat(roadWidth) : undefined;
+      const effectiveDistanceFromRoad = !onRoad && distanceFromRoad ? parseFloat(distanceFromRoad) : undefined;
+      const landTypeDetails: any = {
+        landUseChange: landUseChange,
+        areaType: areaType,
+        areaDetails: {
+          totalLessa: totalLessa
+        }
+      };
+      if (!landUseChange) {
+        landTypeDetails.currentLandType = currentLandType;
+      } else {
+        landTypeDetails.newLandCategoryType = newLandUse;
+      }
       const payload: ComprehensiveValuationRequest = {
         jurisdictionInformation: {
           districtCode: selectedDistrictCode,
@@ -207,32 +361,23 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           plotNo: plotNo || undefined,
           currentLandUse: currentLandUse
         },
-        landTypeDetails: {
-          currentLandType: currentLandType,
-          landUseChange: landUseChange,
-          newLandCategoryType: landUseChange ? newLandUse : undefined,
-          areaType: areaType,
-          areaDetails: {
-            bigha: parseFloat(areaBigha) || 0,
-            katha: parseFloat(areaKatha) || 0,
-            lessa: parseFloat(areaLessa) || 0
-          }
-        },
+        landTypeDetails,
         plotLandDetails: {
           locationMethod: locationMethod as 'manual' | 'gis',
           onRoad: onRoad,
           cornerPlot: cornerPlot,
           litigatedPlot: litigatedPlot,
           hasTenant: hasTenant,
-          roadWidth: onRoad ? parseFloat(roadWidth) : undefined,
-          distanceFromRoad: !onRoad ? parseFloat(distanceFromRoad) : undefined,
+          roadWidth: effectiveRoadWidth,
+          distanceFromRoad: effectiveDistanceFromRoad,
           selectedParameterIds: selectedSubclauses.length > 0 ? selectedSubclauses : undefined
         }
       };
-
       const result = await calculatePlotBaseValue(payload as ComprehensiveValuationRequest);
-
       setMarketValue(result.totalValue);
+      setCalculationResult(result); // Store detailed result
+      saveToHistory(result); // Save to history
+     
       if (onCalculate) onCalculate(result.totalValue);
       toast({ title: 'Market Value Calculated', description: `Base Value: ₹${result.totalValue.toLocaleString()}` });
     } catch (err: any) {
@@ -242,11 +387,80 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setIsCalculating(false);
     }
   };
-
+  const handleCalculatePerLessa = async () => {
+    if (!hasBaseValue) {
+      toast({ title: 'Insufficient Data', description: 'Please complete Jurisdiction Information and Land Use selection first.', variant: 'destructive' });
+      return;
+    }
+    try {
+      setIsCalculating(true);
+      const effectiveRoadWidth = onRoad && roadWidth ? parseFloat(roadWidth) : undefined;
+      const effectiveDistanceFromRoad = !onRoad && distanceFromRoad ? parseFloat(distanceFromRoad) : undefined;
+      const landTypeDetails: any = {
+        landUseChange: landUseChange,
+        areaType: areaType,
+        areaDetails: {
+          totalLessa: 1
+        }
+      };
+      if (!landUseChange) {
+        landTypeDetails.currentLandType = currentLandType;
+      } else {
+        landTypeDetails.newLandCategoryType = newLandUse;
+      }
+      const payload: ComprehensiveValuationRequest = {
+        jurisdictionInformation: {
+          districtCode: selectedDistrictCode,
+          circleCode: selectedCircleCode,
+          mouzaCode: selectedMouzaCode,
+          lotCode: selectedLot?.code, // Use the code from the found lot
+          plotNo: plotNo || undefined,
+          currentLandUse: currentLandUse
+        },
+        landTypeDetails,
+        plotLandDetails: {
+          locationMethod: locationMethod as 'manual' | 'gis',
+          onRoad: onRoad,
+          cornerPlot: cornerPlot,
+          litigatedPlot: litigatedPlot,
+          hasTenant: hasTenant,
+          roadWidth: effectiveRoadWidth,
+          distanceFromRoad: effectiveDistanceFromRoad,
+          selectedParameterIds: selectedSubclauses.length > 0 ? selectedSubclauses : undefined
+        }
+      };
+      const result = await calculatePlotBaseValue(payload as ComprehensiveValuationRequest);
+      setPerLessaValue(result.totalValue);
+      toast({ title: 'Market Value per Lessa Calculated', description: `₹${result.totalValue.toLocaleString()} per Lessa` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Failed to calculate per Lessa', description: err?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+  // Auto-calculate per lessa when base value is ready
+  useEffect(() => {
+    if (hasBaseValue && !isCalculating) {
+      handleCalculatePerLessa();
+    }
+  }, [hasBaseValue]);
+  // Navigate to stamp duty page with pre-filled market value
+  const navigateToStampDuty = () => {
+    if (!marketValue) {
+      toast({
+        title: 'No Market Value',
+        description: 'Please calculate the market value first before proceeding to stamp duty calculation.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    // Navigate to stamp duty page, passing marketValue as state
+    navigate('/stamp-duty', { state: { initialMarketValue: marketValue } });
+  };
   useImperativeHandle(ref, () => ({
     handleCalculate,
   }));
-
   // New: handler to lookup daag-based geographical factor
   const handleDaagLookup = async () => {
     if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedLotId) {
@@ -268,7 +482,15 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         daagNumber: plotNo.trim(),
       });
       setDaagFactorInfo(res);
-      toast({ title: 'Daag found', description: `Geographical factor: ${res.factor} (${res.source === 'EXISTING' ? 'Existing' : 'Derived average'})` });
+      // Autofill area details (assuming res includes area info; adjust based on actual API response)
+      if (res.areaDetails) {
+        setAreaBigha(res.areaDetails.bigha?.toString() || '');
+        setAreaKatha(res.areaDetails.katha?.toString() || '');
+        setAreaLessa(res.areaDetails.lessa?.toString() || '');
+        toast({ title: 'Daag found & Area autofilled', description: `Geographical factor: ${res.factor} (${res.source === 'EXISTING' ? 'Existing' : 'Derived average'})` });
+      } else {
+        toast({ title: 'Daag found', description: `Geographical factor: ${res.factor} (${res.source === 'EXISTING' ? 'Existing' : 'Derived average'})` });
+      }
     } catch (err: any) {
       console.error('Daag lookup failed', err);
       toast({ title: 'No specific factor found', description: 'Using default Lot-level factor or auto-derived average during calculation.', variant: 'default' });
@@ -276,7 +498,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setIsDaagLookupLoading(false);
     }
   };
-
   // Fetch parameters for "Other Details"
   useEffect(() => {
     const fetchParameters = async () => {
@@ -293,15 +514,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     };
     fetchParameters();
   }, []);
-
-  const handleSubclauseChange = (parameterId: string) => {
-    setSelectedSubclauses((prevSelected) =>
-      prevSelected.includes(parameterId)
-        ? prevSelected.filter((item) => item !== parameterId)
-        : [...prevSelected, parameterId]
+  const handleSubclauseChange = (id: string) => {
+    setSelectedSubclauses(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
-
   useEffect(() => {
     const fetchLandCategories = async () => {
       try {
@@ -313,7 +530,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     };
     fetchLandCategories();
   }, []);
-
   useEffect(() => {
     const fetchDistricts = async () => {
       try {
@@ -328,7 +544,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     };
     fetchDistricts();
   }, [initialLocationData]);
-
   useEffect(() => {
     if (selectedDistrictCode) {
       const fetchCircles = async () => {
@@ -348,7 +563,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setSelectedCircleCode('');
     }
   }, [selectedDistrictCode, initialLocationData]);
-
   useEffect(() => {
     if (selectedDistrictCode && selectedCircleCode) {
       const fetchMouzas = async () => {
@@ -379,7 +593,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setBasePriceMouza(null); // Reset base price when no mouza is selected
     }
   }, [selectedDistrictCode, selectedCircleCode, initialLocationData]);
-
   useEffect(() => {
     // Fetch Lots when circle changes. Note: The API does not support filtering lots by mouza.
     const shouldFetchLots = selectedDistrictCode && selectedCircleCode;
@@ -403,10 +616,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         console.error('Error fetching lots:', error);
       }
     };
-
     loadLots();
   }, [selectedDistrictCode, selectedCircleCode]);
-
   useEffect(() => {
     if (selectedLotId) {
       const lot = lots.find((l) => l.id === selectedLotId);
@@ -419,10 +630,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setBasePriceLot(null);
     }
   }, [selectedLotId, lots]);
-
   console.log("PlotForm - lots:", lots);
   console.log("PlotForm - selectedLotId:", selectedLotId);
-
   return (
     <div className="space-y-6">
       {/* Jurisdiction Info - Neutral theme with icons */}
@@ -464,7 +673,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
                 <Layers className="w-3 h-3 text-gray-500" />
@@ -483,7 +691,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
                 <Home className="w-3 h-3 text-gray-500" />
@@ -516,7 +723,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   </p>
                 )}
             </div>
-
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
                 <Ruler className="w-3 h-3 text-gray-500" />
@@ -547,7 +753,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </p>
               )}
             </div>
-
+            {/* Current Land Use / Type - Always shown */}
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-1">
                 <Home className="w-3 h-3 text-gray-500" />
@@ -577,79 +783,17 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     ))}
                 </SelectContent>
               </Select>
-              {basePriceLandUse !== null && (
+              {/* Show old calc (basePriceLandUse) only if No change */}
+              {!landUseChange && basePriceLandUse !== null && (
                 <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                   <Home className="w-3 h-3 text-gray-500" />
                   Land Use Increase: {basePriceLandUse}%
                 </p>
               )}
             </div>
-
-            <div className="space-y-2 md:col-span-1">
-              <Label className="text-xs font-medium flex items-center gap-1">
-                <Ruler className="w-3 h-3 text-gray-500" />
-                Daag / Plot No.
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  value={plotNo}
-                  onChange={(e) => setPlotNo(e.target.value)}
-                  placeholder="Enter Daag / Plot No."
-                  className="w-full ring-1 ring-border focus:ring-gray-500" // Shorten the input field
-                />
-                <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading} className="px-3">
-                  {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
-                </Button>
-              </div>
-              {daagFactorInfo && (
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
-                </p>
-              )}
-            </div>
           </div>
-
-          {/* NEW: Base Value Calculation Display - Shown after Jurisdiction Info when fields are filled - Neutral theme */}
-          {hasBaseValue && (
-            <div className="mt-6 pt-4 border-t border-border bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-gray-600" />
-                  Calculated Plot Level Base Value
-                </h3>
-                <Badge variant="secondary" className="text-gray-600 border-gray-200 bg-gray-100">
-                  Formula: District Base × Geo Factor × Conversion
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Mouza Base</p>
-                  <p className="font-mono font-semibold text-gray-800">₹{basePriceMouza?.toLocaleString()}</p>
-                </div>
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Lot Adjustment</p>
-                  <p className={`font-mono font-semibold ${basePriceLot > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    +{basePriceLot}% 
-                  </p>
-                </div>
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Land Use Adjustment</p>
-                  <p className={`font-mono font-semibold ${basePriceLandUse > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    +{basePriceLandUse}% 
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-gray-100 text-gray-800 rounded-lg border border-gray-200">
-                <p className="text-sm opacity-90">Plot Level Base Value</p>
-                <p className="text-2xl font-bold">₹{plotLevelBaseValue.toLocaleString()}</p>
-                <p className="text-xs opacity-75 mt-1">Per unit area (ready for full valuation)</p>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
-
       {/* Land Type - Neutral theme with icons */}
       <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50`}>
         <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 bg-gray-300`} />
@@ -689,138 +833,200 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
               <p className="text-xs text-muted-foreground">Select if the plot is being used for the first time</p>
             </RadioGroup>
           </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-gray-500" />
-              Area Type
-            </Label>
-            <RadioGroup value={areaType} onValueChange={(v) => setAreaType(v as 'RURAL' | 'URBAN')} className="space-y-2">
-              <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="RURAL" id="rural" />
-                  <Label htmlFor="rural" className="text-sm">RURAL</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="URBAN" id="urban" />
-                  <Label htmlFor="urban" className="text-sm">URBAN</Label>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Current Land Type */} 
-          {!landUseChange && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-1">
-                <Home className="w-3 h-3 text-gray-500" />
-                Current Land Type
-              </Label>
-              <Select value={currentLandType} onValueChange={(val) => {
-                setCurrentLandType(val);
-                const category = landCategories.find(c => String(c.id) === val);
-                setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
-              }} disabled={landUseChange}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select Current Land Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {landCategories
-                    .filter(category => category.id != null && String(category.id).trim() !== '')
-                    .map((category) => (
-                      <SelectItem key={String(category.id)} value={String(category.id)}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {basePriceLandUse !== null && (
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  <Home className="w-3 h-3 text-gray-500" />
-                  Land Type Increase: {basePriceLandUse}%
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* New Land Use Type */}
+          {/* New Land Use Type and Area Type - Only when change */}
           {landUseChange && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-1">
-                <Home className="w-3 h-3 text-gray-500" />
-                New Land Use Type
-              </Label>
-              <Select value={newLandUse} onValueChange={(val) => {
-                setNewLandUse(val);
-                const category = landCategories.find(c => String(c.id) === val);
-                setNewBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
-              }}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select New Land Use Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {landCategories
-                    .filter(category => category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
-                    .map((category) => (
-                      <SelectItem
-                        key={String(category.id)}
-                        value={String(category.id)}
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {newBasePriceLandUse !== null && (
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1">
                   <Home className="w-3 h-3 text-gray-500" />
-                  New Land Use Increase: {newBasePriceLandUse}%
-                </p>
-              )}
+                  New Land Use Type
+                </Label>
+                <Select value={newLandUse} onValueChange={(val) => {
+                  setNewLandUse(val);
+                  const category = landCategories.find(c => String(c.id) === val);
+                  setNewBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
+                }}>
+                  <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
+                    <SelectValue placeholder="Select New Land Use Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {landCategories
+                      .filter(category => category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
+                      .map((category) => (
+                        <SelectItem
+                          key={String(category.id)}
+                          value={String(category.id)}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {/* Show new calc (newBasePriceLandUse) when Yes */}
+                {newBasePriceLandUse !== null && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <Home className="w-3 h-3 text-gray-500" />
+                    New Land Use Increase: {newBasePriceLandUse}%
+                  </p>
+                )}
+              </div>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1">
-              <Ruler className="w-3 h-3 text-gray-500" />
-              Area Details
-            </Label>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <Input
-                  placeholder="Bigha"
-                  value={areaBigha}
-                  onChange={(e) => setAreaBigha(e.target.value)}
-                  type="number"
-                  className="ring-1 ring-border focus:ring-gray-500"
-                />
-                <p className="text-xs text-muted-foreground">Bigha</p>
+          {/* NEW: Base Value Calculation Display - Moved to Land Type Details when fields are filled - Neutral theme */}
+          {hasBaseValue && (
+            <div className="mt-6 pt-4 border-t border-border bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-gray-600" />
+                  Calculated Plot Level Base Value
+                </h3>
+                <Badge variant="secondary" className="text-gray-600 border-gray-200 bg-gray-100">
+                  Formula: District Base × Geo Factor × Conversion
+                </Badge>
               </div>
-              <div className="space-y-1">
-                <Input
-                  placeholder="Katha"
-                  value={areaKatha}
-                  onChange={(e) => setAreaKatha(e.target.value)}
-                  type="number"
-                  className="ring-1 ring-border focus:ring-gray-500"
-                />
-                <p className="text-xs text-muted-foreground">Katha</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-white rounded-md p-3 shadow-sm border">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Mouza Base</p>
+                  <p className="font-mono font-semibold text-gray-800">₹{basePriceMouza?.toLocaleString()}</p>
+                </div>
+                <div className="bg-white rounded-md p-3 shadow-sm border">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Lot Adjustment</p>
+                  <p className={`font-mono font-semibold ${basePriceLot > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    +{basePriceLot}%
+                  </p>
+                </div>
+                <div className="bg-white rounded-md p-3 shadow-sm border">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Land Use Adjustment</p>
+                  <p className={`font-mono font-semibold ${landUseIncrease > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    +{landUseIncrease}%
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Input
-                  placeholder="Lessa"
-                  value={areaLessa}
-                  onChange={(e) => setAreaLessa(e.target.value)}
-                  type="number"
-                  className="ring-1 ring-border focus:ring-gray-500"
-                />
-                <p className="text-xs text-muted-foreground">Lessa</p>
+              <div className="mt-4 p-3 bg-gray-100 text-gray-800 rounded-lg border border-gray-200">
+                <p className="text-sm opacity-90">Plot Level Base Value</p>
+                <p className="text-2xl font-bold">₹{plotLevelBaseValue.toLocaleString()}</p>
+                <p className="text-xs opacity-75 mt-1">Per unit area (in lessa)</p>
               </div>
             </div>
+          )}
+          {/* Moved: Daag/Plot No, Area Details, Area Type, and Displays under Base Value */}
+          <div className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Ruler className="w-3 h-3 text-gray-500" />
+                  Daag / Plot No.
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={plotNo}
+                    onChange={(e) => setPlotNo(e.target.value)}
+                    placeholder="Enter Daag / Plot No."
+                    className="w-full ring-1 ring-border focus:ring-gray-500" // Shorten the input field
+                  />
+                  <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading} className="px-3">
+                    {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
+                  </Button>
+                </div>
+                {daagFactorInfo && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Factor: {daagFactorInfo.factor} ({daagFactorInfo.source === 'EXISTING' ? 'Existing' : 'Derived average'})
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Ruler className="w-3 h-3 text-gray-500" />
+                  Area Details
+                </Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Bigha"
+                      value={areaBigha}
+                      onChange={(e) => setAreaBigha(e.target.value)}
+                      type="number"
+                      className="ring-1 ring-border focus:ring-gray-500"
+                    />
+                    <p className="text-xs text-muted-foreground">Bigha</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Katha"
+                      value={areaKatha}
+                      onChange={(e) => setAreaKatha(e.target.value)}
+                      type="number"
+                      className="ring-1 ring-border focus:ring-gray-500"
+                    />
+                    <p className="text-xs text-muted-foreground">Katha</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Lessa"
+                      value={areaLessa}
+                      onChange={(e) => setAreaLessa(e.target.value)}
+                      type="number"
+                      className="ring-1 ring-border focus:ring-gray-500"
+                    />
+                    <p className="text-xs text-muted-foreground">Lessa</p>
+                  </div>
+                </div>
+                {totalLessa > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Total Area: {totalLessa} Lessa
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-gray-500" />
+                Area Type
+              </Label>
+              <RadioGroup value={areaType} onValueChange={(v) => setAreaType(v as 'RURAL' | 'URBAN')} className="space-y-2">
+                <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="RURAL" id="rural" />
+                    <Label htmlFor="rural" className="text-sm">RURAL</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="URBAN" id="urban" />
+                    <Label htmlFor="urban" className="text-sm">URBAN</Label>
+                  </div>
+                </div>
+              </RadioGroup>
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-gray-500" />
+                Selected Area Type: {areaType} ({areaType === 'RURAL' ? '2%' : '1%'})
+              </p>
+            </div>
+            {/* Display Per Lessa Value */}
+            {perLessaValue !== null && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Market Value per Lessa</p>
+                    <p className="text-2xl font-bold text-green-800">₹{perLessaValue.toLocaleString()}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* Display Local Total Value */}
+            {localTotalValue !== null && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Total Market Value (Area Based)</p>
+                    <p className="text-2xl font-bold text-blue-800">₹{localTotalValue.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa (without location factors)</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </CardContent>
       </Card>
-
       {/* Plot Land Details - Neutral theme with icons */}
       <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50`}>
         <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 bg-gray-300`} />
@@ -859,7 +1065,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
               </div>
             </RadioGroup>
           </div>
-
           {locationMethod === 'manual' ? (
             <div className="space-y-4">
               <Label className="text-sm font-medium flex items-center gap-1">
@@ -895,10 +1100,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                  <Checkbox 
-                    checked={onRoad} 
-                    onCheckedChange={(checked) => setOnRoad(Boolean(checked))} 
-                    id="on-road" 
+                  <Checkbox
+                    checked={onRoad}
+                    onCheckedChange={(checked) => setOnRoad(Boolean(checked))}
+                    id="on-road"
                   />
                   <Label htmlFor="on-road" className="text-sm font-medium flex items-center gap-1">
                     <Ruler className="w-3 h-3 text-gray-500" />
@@ -942,10 +1147,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </Label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                    <Checkbox 
-                      checked={cornerPlot} 
-                      onCheckedChange={(checked) => setCornerPlot(Boolean(checked))} 
-                      id="corner-plot" 
+                    <Checkbox
+                      checked={cornerPlot}
+                      onCheckedChange={(checked) => setCornerPlot(Boolean(checked))}
+                      id="corner-plot"
                     />
                     <Label htmlFor="corner-plot" className="text-sm flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -953,10 +1158,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                    <Checkbox 
-                      checked={litigatedPlot} 
-                      onCheckedChange={(checked) => setLitigatedPlot(Boolean(checked))} 
-                      id="litigated-plot" 
+                    <Checkbox
+                      checked={litigatedPlot}
+                      onCheckedChange={(checked) => setLitigatedPlot(Boolean(checked))}
+                      id="litigated-plot"
                     />
                     <Label htmlFor="litigated-plot" className="text-sm flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 text-red-500" />
@@ -964,10 +1169,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                    <Checkbox 
-                      checked={hasTenant} 
-                      onCheckedChange={(checked) => setHasTenant(Boolean(checked))} 
-                      id="has-tenant" 
+                    <Checkbox
+                      checked={hasTenant}
+                      onCheckedChange={(checked) => setHasTenant(Boolean(checked))}
+                      id="has-tenant"
                     />
                     <Label htmlFor="has-tenant" className="text-sm flex items-center gap-1">
                       <Users className="w-3 h-3 text-gray-500" />
@@ -980,14 +1185,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           )}
         </CardContent>
       </Card>
-
-
-
       {/* Calculate Button - Only show when not explicitly hidden */}
       {!hideCalculateButton && (
         <div className="flex justify-end">
-          <Button 
-            onClick={handleCalculate} 
+          <Button
+            onClick={handleCalculate}
             disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
             className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
           >
@@ -995,19 +1197,144 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           </Button>
         </div>
       )}
-
-      {/* Market Value Display - Only show when calculate button is visible */}
+      {/* Market Value Display - Enhanced with detailed breakdown and actions */}
       {!hideCalculateButton && marketValue !== null && (
-        <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 shadow-lg text-center">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center mb-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-              <CardTitle className="text-xl font-bold text-gray-800">Property Valuation Result</CardTitle>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-inner">
-              <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
-              <p className="text-3xl font-bold text-gray-800">₹{marketValue.toLocaleString('en-IN')}</p>
-              <p className="text-xs text-muted-foreground mt-2">Based on current guideline rates and property specifications</p>
+        <div className="space-y-4">
+          {/* Main Result Card */}
+          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+                <CardTitle className="text-xl font-bold text-gray-800">Property Valuation Result</CardTitle>
+              </div>
+             
+              <div className="bg-white rounded-lg p-6 shadow-inner mb-4">
+                <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
+                <p className="text-4xl font-bold text-gray-800 mb-2">₹{marketValue.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-muted-foreground">Based on current guideline rates and property specifications</p>
+              </div>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  onClick={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Calculator className="w-4 h-4" />
+                  {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
+                </Button>
+               
+                <Button
+                  onClick={navigateToStampDuty}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  <FileText className="w-4 h-4" />
+                  Calculate Stamp Duty
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Detailed Breakdown */}
+          {showDetailedBreakdown && calculationResult && (
+            <Card className="border-gray-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="w-5 h-5" />
+                  Detailed Calculation Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Base Price (Mouza):</span>
+                      <span className="font-medium">₹{basePriceMouza?.toLocaleString('en-IN') || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Lot Factor:</span>
+                      <span className="font-medium">{basePriceLot ? `${basePriceLot}%` : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Land Use Factor:</span>
+                      <span className="font-medium">{landUseIncrease ? `${landUseIncrease}%` : 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Plot Level Base:</span>
+                      <span className="font-medium">₹{plotLevelBaseValue?.toLocaleString('en-IN') || 'N/A'}</span>
+                    </div>
+                  </div>
+                 
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Area Type:</span>
+                      <span className="font-medium">{areaType}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Area:</span>
+                      <span className="font-medium">
+                        {areaBigha && `${areaBigha}B `}
+                        {areaKatha && `${areaKatha}K `}
+                        {areaLessa && `${areaLessa}L`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Location Factors:</span>
+                      <span className="font-medium">
+                        {onRoad && 'On Road'} {cornerPlot && 'Corner'} {litigatedPlot && 'Litigated'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+               
+                {calculationResult.breakdown && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">Additional Calculation Details:</h4>
+                    <pre className="text-xs text-gray-600 overflow-x-auto">
+                      {JSON.stringify(calculationResult.breakdown, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+      {/* History Dropdown */}
+      {!hideCalculateButton && calculationHistory.length > 0 && (
+        <Card className="border-gray-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Calculation History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Select value={selectedHistoryId} onValueChange={(value) => {
+                setSelectedHistoryId(value);
+                if (value) loadFromHistory(value);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Load previous calculation..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {calculationHistory.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.description}</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(item.timestamp).toLocaleDateString()} - ₹{item.result.totalValue.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+             
+              <p className="text-xs text-gray-500">
+                {calculationHistory.length} calculation{calculationHistory.length !== 1 ? 's' : ''} saved
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -1015,5 +1342,4 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     </div>
   );
 });
-
 export default PlotForm;

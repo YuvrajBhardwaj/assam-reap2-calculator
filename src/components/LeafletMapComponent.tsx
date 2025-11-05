@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-// import 'leaflet/dist/leaflet.css';
+import 'leaflet/dist/leaflet.css';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';

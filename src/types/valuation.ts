@@ -224,9 +224,7 @@ export interface ComprehensiveValuationRequest {
     newLandCategoryType?: string;
     areaType: 'RURAL' | 'URBAN';
     areaDetails: {
-      bigha: number;
-      katha: number;
-      lessa: number;
+      totalLessa: number;
     };
   };
   plotLandDetails: {

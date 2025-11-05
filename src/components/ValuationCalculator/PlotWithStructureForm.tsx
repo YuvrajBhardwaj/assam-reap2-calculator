@@ -51,7 +51,6 @@ export interface PlotWithStructureFormRef {
 
 import { District, Circle, Village } from '@/types/masterData';
 
-
 interface PlotWithStructureFormProps {
   onCalculate?: (value: number, payload: ComprehensiveValuationRequest) => void;
   hideCalculateButton?: boolean;
@@ -73,16 +72,16 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
   });
 
   const [plotFormData, setPlotFormData] = useState<any>({
-    areaDetails: { bigha: 0, katha: 0, lessa: 0 },
+    areaDetails: { totalLessa: 0 },
     selectedDistrictCode: '',
     selectedCircleCode: '',
     selectedMouzaCode: '',
-    lotCode: '',
+    selectedLotId: '',
     plotNo: '',
-    currentLandCategoryGenId: '',
-    currentLandUse: '', // Added missing property
+    currentLandUse: '',
+    currentLandType: '',
     landUseChange: false,
-    newLandCategoryGenId: '',
+    newLandUse: '',
     areaType: 'RURAL',
     locationMethod: 'manual',
     onRoad: false,
@@ -91,36 +90,30 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     hasTenant: false,
     roadWidth: '',
     distanceFromRoad: '',
-    selectedParameterIds: [],
-  }); // Initialize with default values
+    selectedSubclauses: [],
+  }); // Initialize with default values matching PlotForm onDataChange
 
   const { toast } = useToast();
 
   const plotFormRef = useRef<PlotFormRef>(null);
 
-  const [selectedDistrictCode, setSelectedDistrictCode] = useState('');
-  const [selectedCircleCode, setSelectedCircleCode] = useState('');
-  const [selectedMouzaCode, setSelectedMouzaCode] = useState('');
-
+  // Auto-calculate structure age from construction year
   useEffect(() => {
-    if (initialLocationData) {
-      if (initialLocationData.district) {
-        setSelectedDistrictCode(initialLocationData.district.code);
-      }
-      if (initialLocationData.circle) {
-        setSelectedCircleCode(initialLocationData.circle.code);
-      }
-      if (initialLocationData.village) {
-        setSelectedMouzaCode(initialLocationData.village.code);
+    if (structureData.constructionYear) {
+      const year = parseInt(structureData.constructionYear);
+      if (!isNaN(year)) {
+        const age = new Date().getFullYear() - year;
+        setStructureData((prev) => ({ ...prev, structureAge: age.toString() }));
       }
     }
-  }, [initialLocationData]);
+  }, [structureData.constructionYear]);
+
   const handleStructureChange = (field: keyof StructureData, value: string) => {
     setStructureData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCalculate = async () => {
-    if (!plotFormData) {
+    if (!plotFormData || !plotFormData.selectedDistrictCode || !plotFormData.selectedMouzaCode) {
       toast({ title: 'Error', description: 'Plot details are not yet loaded.', variant: 'destructive' });
       return;
     }
@@ -131,30 +124,28 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
           districtCode: plotFormData.selectedDistrictCode,
           circleCode: plotFormData.selectedCircleCode,
           mouzaCode: plotFormData.selectedMouzaCode,
-          lotCode: plotFormData.lotCode,
+          lotCode: plotFormData.selectedLotId,
           plotNo: plotFormData.plotNo,
-          currentLandUse: plotFormData.currentLandUse // Added missing property
+          currentLandUse: plotFormData.currentLandUse
         },
         landTypeDetails: {
-          currentLandType: plotFormData.currentLandCategoryGenId, // Corrected property name
+          currentLandType: plotFormData.currentLandType || plotFormData.currentLandUse,
           landUseChange: plotFormData.landUseChange,
-          newLandCategoryType: plotFormData.newLandCategoryGenId, // Corrected property name
+          newLandCategoryType: plotFormData.landUseChange ? plotFormData.newLandUse : undefined,
           areaType: plotFormData.areaType,
           areaDetails: {
-            bigha: plotFormData.areaDetails.bigha,
-            katha: plotFormData.areaDetails.katha,
-            lessa: plotFormData.areaDetails.lessa
+            totalLessa: plotFormData.areaDetails.totalLessa
           }
         },
         plotLandDetails: {
-          locationMethod: plotFormData.locationMethod,
+          locationMethod: plotFormData.locationMethod as 'manual' | 'gis',
           onRoad: plotFormData.onRoad,
           cornerPlot: plotFormData.cornerPlot,
           litigatedPlot: plotFormData.litigatedPlot,
           hasTenant: plotFormData.hasTenant,
-          roadWidth: plotFormData.roadWidth,
-          distanceFromRoad: plotFormData.distanceFromRoad,
-          selectedParameterIds: plotFormData.selectedParameterIds
+          roadWidth: plotFormData.onRoad ? parseFloat(plotFormData.roadWidth) || undefined : undefined,
+          distanceFromRoad: !plotFormData.onRoad ? parseFloat(plotFormData.distanceFromRoad) || undefined : undefined,
+          selectedParameterIds: plotFormData.selectedSubclauses.length > 0 ? plotFormData.selectedSubclauses : undefined
         },
         structureDetails: {
           structureType: structureData.structureType,

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchInstruments } from '../../services/stampDutyService';
 import { jurisdictionApi } from '../../services/http'; // Assuming http service is in services/http.ts
 import { Instrument, GenderOption, SelectionResponse } from '../../types/stampDuty';
@@ -15,7 +16,9 @@ interface StampDutyFormProps {
   initialMarketValue?: number;
 }
 
-function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
+function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDutyFormProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [instruments, setInstruments] = useState<Instrument[]>([]);
   const [selectedInstruments, setSelectedInstruments] = useState<number[]>([]);
   const [selectedSubInstruments, setSelectedSubInstruments] = useState<{
@@ -45,15 +48,25 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
     return new Intl.NumberFormat('en-IN').format(Math.round(value));
   };
 
-  // Pie chart data for total breakdown
+  // Load market value from props or location state
+  useEffect(() => {
+    const state = location.state as { initialMarketValue?: number };
+    if (propInitialMarketValue) {
+      setMarketValue(propInitialMarketValue);
+      setAgreementValue(propInitialMarketValue);
+    } else if (state?.initialMarketValue) {
+      setMarketValue(state.initialMarketValue);
+      setAgreementValue(state.initialMarketValue);
+    }
+  }, [propInitialMarketValue, location.state]);
+
+  // First pie data for duty breakdown
   const pieData = useMemo(() => {
-    if (!stampDuty || !surcharge || !cess || !registrationFees) return null;
-    const total = stampDuty + (surcharge || 0) + (cess || 0) + registrationFees;
     return {
       labels: ['Stamp Duty', 'Surcharge', 'Cess', 'Registration Fees'],
       datasets: [
         {
-          data: [stampDuty, surcharge || 0, cess || 0, registrationFees],
+          data: [stampDuty || 0, surcharge || 0, cess || 0, registrationFees || 0],
           backgroundColor: [
             '#FF6384',
             '#36A2EB',
@@ -165,12 +178,6 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
     loadInstruments();
   }, []);
 
-  useEffect(() => {
-    if (typeof initialMarketValue === 'number' && !isNaN(initialMarketValue)) {
-      setMarketValue(initialMarketValue);
-    }
-  }, [initialMarketValue]);
-
   const handleNumericInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const numeric = Number(value.replace(/[^0-9.]/g, '')) || 0;
@@ -280,6 +287,17 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
           <p className="text-gray-600 mb-6">
             Select one or more instruments below. If an instrument has sub-types, checkboxes will appear.
           </p>
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              Back
+            </button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Left Column: Deed Detail (Placeholder for now) */}
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -497,8 +515,8 @@ function StampDutyForm({ initialMarketValue }: StampDutyFormProps) {
                   </thead>
                   <tbody>
                     <tr className="bg-white">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Market Value (Base)</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(marketValue)}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Base Value</td>
+                      <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(baseValue)}</td>
                     </tr>
                     <tr className={stampDuty ? 'bg-white' : 'bg-gray-50'}>
                       <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Stamp Duty</td>

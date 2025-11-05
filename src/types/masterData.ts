@@ -154,10 +154,17 @@ export interface CircleLotFactorRequest {
   daagNumber: string;
 }
 
+export interface AreaDetails {
+  bigha?: number;
+  katha?: number;
+  lessa?: number;
+}
+
 export interface CircleLotFactorResponse {
   factor: number;
   source: 'EXISTING' | 'DERIVED_AVERAGE';
   parents?: Array<{ circleCode: string; lotCode: string; factor: number }>;
+  areaDetails?: AreaDetails; // Added areaDetails
 }
 
 export interface MasterDataChangeRequest {
