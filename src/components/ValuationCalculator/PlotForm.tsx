@@ -197,6 +197,16 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
     return null;
   }, [perLessaValue, totalLessa]);
+  // Rate percent based on area type
+  const ratePercent = useMemo(() => areaType === 'RURAL' ? 0.02 : 0.01, [areaType]);
+  // Total Market Valuation with Rate
+  const totalMarketValuationWithRate = useMemo(() => {
+    if (plotLevelBaseValue !== null && totalLessa > 0) {
+      const baseSubtotal = plotLevelBaseValue * totalLessa;
+      return Math.round(baseSubtotal * (1 + ratePercent));
+    }
+    return null;
+  }, [plotLevelBaseValue, totalLessa, ratePercent]);
   // Cache management functions
   const saveToHistory = (result: any) => {
     const historyItem: CalculationHistory = {
@@ -1000,6 +1010,18 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 <MapPin className="w-3 h-3 text-gray-500" />
                 Selected Area Type: {areaType} ({areaType === 'RURAL' ? '2%' : '1%'})
               </p>
+              {/* New Card: Total Market Valuation with Rate - Placed under Area Type */}
+              {totalMarketValuationWithRate !== null && (
+                <Card className="border-purple-200 bg-purple-50">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Market Valuation (incl. {areaType} Rate)</p>
+                      <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa + {ratePercent * 100}% adjustment</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
             {/* Display Per Lessa Value */}
             {perLessaValue !== null && (
