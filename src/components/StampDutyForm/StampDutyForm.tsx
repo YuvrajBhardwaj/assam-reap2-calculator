@@ -14,9 +14,13 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface StampDutyFormProps {
   initialMarketValue?: number;
+  initialLocationData?: any; // Add this line
 }
 
-function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDutyFormProps) {
+const StampDutyForm: React.FC<StampDutyFormProps> = ({
+  initialMarketValue,
+  initialLocationData, // Add this line
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [instruments, setInstruments] = useState<Instrument[]>([]);
@@ -28,7 +32,15 @@ function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDuty
     [key: number]: GenderOption;
   }>({});
   const [agreementValue, setAgreementValue] = useState<number>(0);
-  const [marketValue, setMarketValue] = useState<number>(0);
+  const [marketValue, setMarketValue] = useState<number>(initialMarketValue || 0);
+  const [isMarketValuePrefilled, setIsMarketValuePrefilled] = useState<boolean>(!!initialMarketValue);
+
+  useEffect(() => {
+    if (initialMarketValue) {
+      setMarketValue(initialMarketValue);
+      setIsMarketValuePrefilled(true);
+    }
+  }, [initialMarketValue]);
   const [baseValue, setBaseValue] = useState<number | null>(null);
   const [stampDuty, setStampDuty] = useState<number | null>(null);
   const [surcharge, setSurcharge] = useState<number | null>(null);
@@ -51,14 +63,11 @@ function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDuty
   // Load market value from props or location state
   useEffect(() => {
     const state = location.state as { initialMarketValue?: number };
-    if (propInitialMarketValue) {
-      setMarketValue(propInitialMarketValue);
-      setAgreementValue(propInitialMarketValue);
-    } else if (state?.initialMarketValue) {
-      setMarketValue(state.initialMarketValue);
-      setAgreementValue(state.initialMarketValue);
+    if (initialMarketValue) {
+      setMarketValue(initialMarketValue);
+      setAgreementValue(initialMarketValue);
     }
-  }, [propInitialMarketValue, location.state]);
+  }, [initialMarketValue, location.state]);
 
   // First pie data for duty breakdown
   const pieData = useMemo(() => {
@@ -279,7 +288,7 @@ function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDuty
 
   return (
     <div className="w-full min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8"> {/* Removed max-w-7xl mx-auto to use full width */}
         <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Assam Stamp Duty Calculator
@@ -289,7 +298,7 @@ function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDuty
           </p>
           <div className="flex items-center mb-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/', { state: { tab: 'valuation-calculator', initialLocationData: initialLocationData } })}
               className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
@@ -298,274 +307,259 @@ function StampDutyForm({ initialMarketValue: propInitialMarketValue }: StampDuty
               Back
             </button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Left Column: Deed Detail (Placeholder for now) */}
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Deed Detail</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Deed Category</label>
-                  <p className="mt-1 text-sm text-gray-900">Documents involving Immovable Property</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Deed Type</label>
-                  <p className="mt-1 text-sm text-gray-900">Conveyance</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Deed Description</label>
-                  <p className="mt-1 text-sm text-gray-900">Conveyance - not being a transfer charged or exempted under No.56 Explanation - For the purpose...</p>
-                  <a href="#" className="text-blue-600 hover:underline text-sm">Read more</a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Instrument</label>
-                  <p className="mt-1 text-sm text-gray-900">Conveyance - Related to Merger or Amalgamation</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Instrument Description</label>
-                  <p className="mt-1 text-sm text-gray-900">(a) where an instrument relates to the merger or amalgamation of companies under the orders of...</p>
-                  <a href="#" className="text-blue-600 hover:underline text-sm">Read more</a>
-                </div>
-                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-                  Show Duty Details
-                </button>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full"> {/* Ensured full width for grid */}
+          {/* Left Column: Calculate Section */}
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full"> {/* Added w-full */}
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculate</h3>
+            {/* Value Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
+                  Market Value (₹)
+                </label>
+                <input
+                  id="marketValue"
+                  type="text"
+                  value={formatIndianCurrency(marketValue)}
+                  onChange={handleNumericInput}
+                  placeholder="e.g., 1,00,00,000"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="agreementValue" className="block text-sm font-medium text-gray-700 mb-2 relative">
+                  Consideration Value (₹)
+                  <span className="ml-2 cursor-help text-gray-500" title="This value is the consideration amount for the instrument.">ℹ️</span>
+                </label>
+                <input
+                  id="agreementValue"
+                  type="text"
+                  value={formatIndianCurrency(agreementValue)}
+                  onChange={handleNumericInput}
+                  placeholder="e.g., 1,00,00,000"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             </div>
-            {/* Right Column: Calculate Section */}
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculate</h3>
-              {/* Value Inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
-                    Market Value (₹)
+            {/* Instrument Selection */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {instruments.map((inst) => (
+                  <label
+                    key={inst.id}
+                    className={`flex items-center p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
+                      selectedInstruments.includes(inst.id)
+                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedInstruments.includes(inst.id)}
+                      onChange={() => handleInstrumentChange(inst.id)}
+                      className="h-5 w-5 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-3 text-sm font-medium text-gray-900">
+                      <strong>{inst.id}.</strong> {inst.name}
+                    </span>
                   </label>
-                  <input
-                    id="marketValue"
-                    type="text"
-                    value={formatIndianCurrency(marketValue)}
-                    onChange={handleNumericInput}
-                    placeholder="e.g., 1,00,00,000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="agreementValue" className="block text-sm font-medium text-gray-700 mb-2 relative">
-                    Consideration Value (₹)
-                    <span className="ml-2 cursor-help text-gray-500" title="This value is the consideration amount for the instrument.">ℹ️</span>
-                  </label>
-                  <input
-                    id="agreementValue"
-                    type="text"
-                    value={formatIndianCurrency(agreementValue)}
-                    onChange={handleNumericInput}
-                    placeholder="e.g., 1,00,00,000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                ))}
               </div>
-              {/* Instrument Selection */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {instruments.map((inst) => (
-                    <label
-                      key={inst.id}
-                      className={`flex items-center p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
-                        selectedInstruments.includes(inst.id)
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedInstruments.includes(inst.id)}
-                        onChange={() => handleInstrumentChange(inst.id)}
-                        className="h-5 w-5 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-3 text-sm font-medium text-gray-900">
-                        <strong>{inst.id}.</strong> {inst.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {/* Gender Selections */}
-              <div className="mb-6 space-y-6">
-                {selectedInstruments.map((id) => {
-                  const instrument = instruments.find((inst) => inst.id === id);
-                  if (!instrument) return null;
-                  return (
-                    <div key={id} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Options for {instrument.name} (ID: {id})
-                      </h3>
-                      <div className="flex items-center space-x-6">
-                        <label className="text-sm font-medium text-gray-700">Select Gender:</label>
-                        <div className="flex space-x-8">
-                          {genderOptions.map((g) => (
-                            <label key={g} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`gender-${id}`}
-                                checked={instrumentGenders[id] === g}
-                                onChange={() => handleInstrumentGenderChange(id, g)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-900">{g}</span>
-                            </label>
-                          ))}
-                        </div>
+            </div>
+            {/* Gender Selections */}
+            <div className="mb-6 space-y-6">
+              {selectedInstruments.map((id) => {
+                const instrument = instruments.find((inst) => inst.id === id);
+                if (!instrument) return null;
+                return (
+                  <div key={id} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Options for {instrument.name} (ID: {id})
+                    </h3>
+                    <div className="flex items-center space-x-6">
+                      <label className="text-sm font-medium text-gray-700">Select Gender:</label>
+                      <div className="flex space-x-8">
+                        {genderOptions.map((g) => (
+                          <label key={g} className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`gender-${id}`}
+                              checked={instrumentGenders[id] === g}
+                              onChange={() => handleInstrumentGenderChange(id, g)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-900">{g}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-              {/* Calculate Button */}
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={calculateStampDuty}
-                  disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
-                  className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
-                    selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
-                      ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-lg'
-                      : 'bg-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  {loading ? 'Calculating...' : 'Calculate Duty'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()} // Simple page reload for reset
-                  className="px-8 py-3 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
-                >
-                  Reset
-                </button>
-              </div>
+                  </div>
+                );
+              })}
             </div>
+            {/* Calculate Button */}
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={calculateStampDuty}
+                disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
+                className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
+                  selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
+                    ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-lg'
+                    : 'bg-gray-300 cursor-not-allowed'
+                }`}
+              >
+                {loading ? 'Calculating...' : 'Calculate Duty'}
+              </button>
+              <button
+                type="button"
+                onClick={() => window.location.reload()} // Simple page reload for reset
+                className="px-8 py-3 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+          {/* Right Column: Bill Generation */}
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full"> {/* Added w-full for bill */}
+            {selectionResults ? (
+              <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full w-full"> {/* Added w-full */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white">
+                  <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
+                  <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
+                </div>
+                {/* Property Details */}
+                <div className="p-6 border-b border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Market Value:</span>
+                      <span className="font-semibold text-gray-900">₹{formatIndianCurrency(marketValue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Consideration Value:</span>
+                      <span className="font-semibold text-gray-900">₹{formatIndianCurrency(agreementValue)}</span>
+                    </div>
+                    <div className="flex justify-between md:col-span-2">
+                      <span className="font-medium text-gray-700">Base Value Used:</span>
+                      <span className="font-semibold text-blue-600">₹{formatIndianCurrency(baseValue)} (Higher of Market/Consideration)</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Instrument Breakdown */}
+                <div className="p-6 border-b border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Instrument Breakdown</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Instrument</th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Option</th>
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rate (%)</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectionResults.map((r, index) => {
+                          const individualAmount = Math.round((baseValue || 0) * (r.dutyValue / 100));
+                          return (
+                            <tr key={r.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.instrumentName}</td>
+                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.selectedOption}</td>
+                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.dutyValue}%</td>
+                              <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(individualAmount)}</td>
+                            </tr>
+                          );
+                        })}
+                        <tr className="bg-blue-50 font-semibold">
+                          <td colSpan={3} className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">Total Stamp Duty:</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                {/* Fees Breakdown */}
+                <div className="p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Fees & Charges</h4>
+                  <div className="overflow-x-auto mb-6">
+                    <table className="w-full table-auto border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="bg-white">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Base Value</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(baseValue)}</td>
+                        </tr>
+                        <tr className={stampDuty ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Stamp Duty</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Surcharge</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(surcharge)}</td>
+                        </tr>
+                        <tr className="bg-white">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Cess</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(cess)}</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Registration Fees</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(registrationFees)}</td>
+                        </tr>
+                        <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Grand Total Payable</td>
+                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-blue-800">₹{formatIndianCurrency(totalPayable)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Pie Charts for Breakdown */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full"> {/* Added w-full for pie grid */}
+                    {pieData && (
+                      <div className="w-full"> {/* Added w-full for pie container */}
+                        <h5 className="text-md font-semibold text-gray-900 mb-2">Duty Breakdown</h5>
+                        <div className="w-full h-64"> {/* Added w-full for pie chart */}
+                          <Pie data={pieData} options={pieOptions} />
+                        </div>
+                      </div>
+                    )}
+                    {totalPayablePieData && (
+                      <div className="w-full"> {/* Added w-full for pie container */}
+                        <h5 className="text-md font-semibold text-gray-900 mb-2">Total Payable Composition</h5>
+                        <div className="w-full h-64"> {/* Added w-full for pie chart */}
+                          <Pie data={totalPayablePieData} options={totalPayablePieOptions} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                    <p>* Calculations based on Assam Stamp Duty rules. Subject to change. Consult official sources for final verification.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center py-8 w-full"> {/* Added w-full */}
+                <div className="text-6xl mb-4">🧮</div>
+                <h4 className="text-xl font-bold text-gray-900 mb-2">Stamp Duty Calculator</h4>
+                <p className="text-gray-600 mb-4">Enter values, select instruments, and calculate to see your bill here.</p>
+                <div className="text-sm text-gray-500">
+                  <p>Quick steps:</p>
+                  <ul className="mt-2 space-y-1 list-disc list-inside">
+                    <li>Input Market & Consideration Values</li>
+                    <li>Select Instruments & Genders</li>
+                    <li>Click Calculate Duty</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        {/* Results - Stamp Duty Bill */}
-        {selectionResults && (
-          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white">
-              <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
-              <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
-            </div>
-            {/* Property Details */}
-            <div className="p-6 border-b border-gray-200">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Market Value:</span>
-                  <span className="font-semibold text-gray-900">₹{formatIndianCurrency(marketValue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-700">Consideration Value:</span>
-                  <span className="font-semibold text-gray-900">₹{formatIndianCurrency(agreementValue)}</span>
-                </div>
-                <div className="flex justify-between md:col-span-2">
-                  <span className="font-medium text-gray-700">Base Value Used:</span>
-                  <span className="font-semibold text-blue-600">₹{formatIndianCurrency(baseValue)} (Higher of Market/Consideration)</span>
-                </div>
-              </div>
-            </div>
-            {/* Instrument Breakdown */}
-            <div className="p-6 border-b border-gray-200">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Instrument Breakdown</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Instrument</th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Option</th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rate (%)</th>
-                      <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectionResults.map((r, index) => {
-                      const individualAmount = Math.round((baseValue || 0) * (r.dutyValue / 100));
-                      return (
-                        <tr key={r.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.instrumentName}</td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.selectedOption}</td>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.dutyValue}%</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(individualAmount)}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="bg-blue-50 font-semibold">
-                      <td colSpan={3} className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">Total Stamp Duty:</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {/* Fees Breakdown */}
-            <div className="p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Fees & Charges</h4>
-              <div className="overflow-x-auto mb-6">
-                <table className="w-full table-auto border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
-                      <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="bg-white">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Base Value</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(baseValue)}</td>
-                    </tr>
-                    <tr className={stampDuty ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Stamp Duty</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
-                    </tr>
-                    <tr className="bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Surcharge</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(surcharge)}</td>
-                    </tr>
-                    <tr className="bg-white">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Cess</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(cess)}</td>
-                    </tr>
-                    <tr className="bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Registration Fees</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(registrationFees)}</td>
-                    </tr>
-                    <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
-                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Grand Total Payable</td>
-                      <td className="border border-gray-300 px-4 py-3 text-right text-sm text-blue-800">₹{formatIndianCurrency(totalPayable)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              {/* Pie Charts for Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pieData && (
-                  <div>
-                    <h5 className="text-md font-semibold text-gray-900 mb-2">Duty Breakdown</h5>
-                    <div className="h-64">
-                      <Pie data={pieData} options={pieOptions} />
-                    </div>
-                  </div>
-                )}
-                {totalPayablePieData && (
-                  <div>
-                    <h5 className="text-md font-semibold text-gray-900 mb-2">Total Payable Composition</h5>
-                    <div className="h-64">
-                      <Pie data={totalPayablePieData} options={totalPayablePieOptions} />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
-                <p>* Calculations based on Assam Stamp Duty rules. Subject to change. Consult official sources for final verification.</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

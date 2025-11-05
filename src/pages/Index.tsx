@@ -1,34 +1,24 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import ValuationCalculator from '@/components/ValuationCalculator/ValuationCalculator';
-import PropertyValuationUI from '@/components/PropertyValuationUI';
-import LandingPage from '@/components/LandingPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Building,
-  Calculator,
-  Database,
-  ChartBar,
-  AlertCircle,
-} from "lucide-react";
-import { useAuth } from '@/context/AuthContext';
-import WorkflowDashboard from '@/components/admin/WorkflowDashboard';
-import StampDutyForm from '@/components/StampDutyForm/StampDutyForm';
-import ZonalView from '@/components/ZonalView/ZonalView';
+import { useAuth } from '../context/AuthContext';
+import LandingPage from '../components/LandingPage';
+import PropertyValuationUI from '../components/PropertyValuationUI';
+import ValuationCalculator from '../components/ValuationCalculator/ValuationCalculator';
+import StampDutyForm from '../components/StampDutyForm/StampDutyForm';
+import ZonalView from '../components/ZonalView/ZonalView';
+import CertifiedCopiesServices from '../components/CertifiedCopiesServices';
 import MasterDataCRUDDashboard from '@/components/admin/MasterDataCRUD/MasterDataCRUDDashboard';
-import CertifiedCopiesServices from '@/components/CertifiedCopiesServices';
+import DepartmentDashboard from '../components/department-dashboard/DepartmentDashboard';
 import DepartmentWorkflowDashboard from '@/components/department-dashboard/department-workflow/DepartmentWorkflowDashboard';
-import DepartmentDashboard from '@/components/department-dashboard/DepartmentDashboard';
+import { AlertCircle, Building, Calculator, Database, ChartBar } from 'lucide-react';
+import { getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle } from '../services/locationService';
 import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
-import { getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle } from "@/services/locationService";
-import { DistrictDetails } from "../components/building-types/plot";
-import MasterDataManagement from '@/components/department-dashboard/department-workflow/MasterDataManagement';
-import { MasterDataChangeRequest } from '@/types/masterData';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -39,14 +29,13 @@ const Index = () => {
   const [prefilledStampDuty, setPrefilledStampDuty] = useState<{ marketValue?: number } | null>(null);
 
   // ✅ Role flags (fixed logic: avoid truthy string coercion)
-const isAdmin = userRole === 'ROLE_ADMIN';
-const isDepartmentUser = 
-  userRole === 'ROLE_Manager' || 
-  userRole === 'ROLE_JuniorManager' || 
-  userRole === 'ROLE_SeniorManager';
-const isNormalUser = userRole === 'ROLE_NormalUser';
-
-const isGuest = userRole === null;
+  const isAdmin = userRole === 'ROLE_ADMIN';
+  const isDepartmentUser =
+    userRole === 'ROLE_Manager' ||
+    userRole === 'ROLE_JuniorManager' ||
+    userRole === 'ROLE_SeniorManager';
+  const isNormalUser = userRole === 'ROLE_NormalUser';
+  const isGuest = userRole === null;
 
   // ✅ Role-based allowed tabs
   const roleAccessMap = {
@@ -81,7 +70,7 @@ const isGuest = userRole === null;
       "news-updates",
     ],
     basicUser: [
-      
+
       "property-valuation",
       "valuation-calculator",
       "stamp-duty-calculator",
@@ -98,14 +87,15 @@ const isGuest = userRole === null;
   };
 
   const getAllowedTabs = () => {
-  if (isAdmin) return roleAccessMap.admin;
-  if (isDepartmentUser) return roleAccessMap.department;
-  if (isNormalUser || userRole === null) return roleAccessMap.basicUser; // guests get basic access
-  return ["landing"];
-};
+    if (isAdmin) return roleAccessMap.admin;
+    if (isDepartmentUser) return roleAccessMap.department;
+    if (isNormalUser || userRole === null) return roleAccessMap.basicUser; // guests get basic access
+    return ["landing"];
+  };
 
   // ✅ Secure tab change handler
   const handleTabChange = (value: string) => {
+    console.log("handleTabChange called with value:", value); // Add this line
     const allowedTabs = getAllowedTabs();
     if (!allowedTabs.includes(value)) {
       console.warn(`Access denied: Role "${userRole}" cannot access tab "${value}"`);
@@ -115,8 +105,9 @@ const isGuest = userRole === null;
     setActiveTab(value);
 
     // Reset state when leaving calculator
-    if (value !== "valuation-calculator") {
+    if (value !== "valuation-calculator" && value !== "stamp-duty-calculator") {
       setInitialLocationData(null);
+      setPrefilledStampDuty(null);
       window.history.pushState({}, '', '/');
     }
   };
@@ -127,27 +118,43 @@ const isGuest = userRole === null;
 
   const handleGetStarted = () => handleTabChange("property-valuation");
 
-  // ✅ Handle deep linking securely
   useEffect(() => {
-    const handleTabNavigation = (event: CustomEvent) => {
-      const { tab, locationData, stampDutyData } = event.detail || {};
-      if (tab) {
-        // Validate access before switching
-        const allowedTabs = getAllowedTabs();
-        if (allowedTabs.includes(tab)) {
-          setActiveTab(tab);
-          if (locationData) setInitialLocationData(locationData);
-          if (stampDutyData?.marketValue) {
-            setPrefilledStampDuty({ marketValue: stampDutyData.marketValue });
-          }
-        } else {
-          setActiveTab("unauthorized");
-        }
-      }
-    };
+    const state = location.state as { tab?: string; initialMarketValue?: number; initialLocationData?: any };
+    if (state?.tab) {
+      setActiveTab(state.tab);
+    }
+    if (state?.initialMarketValue) {
+      setPrefilledStampDuty({ marketValue: state.initialMarketValue });
+      setActiveTab("stamp-duty-calculator"); // Ensure stamp duty tab is active
+    }
+    if (state?.initialLocationData) {
+      setInitialLocationData(state.initialLocationData);
+      setActiveTab("valuation-calculator"); // Ensure valuation calculator tab is active
+    }
+    // Clear state after use to prevent re-triggering on subsequent visits
+    // This line was causing the issue, removing it for now.
+    // navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, navigate, location.pathname]);
 
-    const searchParams = new URLSearchParams(location.search); // Use location.search here
+  const handleTabNavigation = (event: CustomEvent) => {
+    const { tab, locationData } = event.detail;
+    if (tab) {
+      handleTabChange(tab);
+    }
+    if (locationData) {
+      setInitialLocationData(locationData);
+    }
+  };
+
+  const searchParams = new URLSearchParams(location.search);
+
+  useEffect(() => {
     const initialTab = searchParams.get('tab');
+    if (initialTab && getAllowedTabs().includes(initialTab)) {
+      handleTabChange(initialTab);
+    } else if (initialTab) {
+      handleTabChange(initialTab);
+    }
 
     // Handle deep link with location
     const districtCode = searchParams.get('district');
@@ -170,7 +177,7 @@ const isGuest = userRole === null;
             mouza = allMouzas.find(m => m.code === mouzaCode);
           }
         }
-        
+
         const locationData = {
           district: district ? { code: district.code, name: district.name } : undefined,
           circle: circle ? { code: circle.code, name: circle.name } : undefined,
@@ -346,6 +353,12 @@ const isGuest = userRole === null;
           {/* Tab Contents */}
           <TabsContent value="landing" className="space-y-4">
             <LandingPage onGetStarted={handleGetStarted} onNavigateToSection={handleNavigateToSection} />
+            <button
+              onClick={() => handleTabChange("stamp-duty-calculator")}
+              className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200"
+            >
+              Go to Stamp Duty Calculator
+            </button>
           </TabsContent>
 
           <TabsContent value="property-valuation" className="space-y-4">
@@ -357,7 +370,7 @@ const isGuest = userRole === null;
           </TabsContent>
 
           <TabsContent value="stamp-duty-calculator" className="space-y-4">
-            <StampDutyForm initialMarketValue={prefilledStampDuty?.marketValue} />
+            <StampDutyForm initialMarketValue={prefilledStampDuty?.marketValue} initialLocationData={initialLocationData} />
           </TabsContent>
 
           <TabsContent value="zonal-value-database" className="space-y-4">
@@ -437,7 +450,7 @@ const isGuest = userRole === null;
               </TabsContent>
 
               <TabsContent value="workflow" className="space-y-4">
-                <WorkflowDashboard />
+                <DepartmentWorkflowDashboard />
               </TabsContent>
 
               <TabsContent value="user-management" className="space-y-4">

@@ -465,8 +465,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       });
       return;
     }
-    // Navigate to stamp duty page, passing marketValue as state
-    navigate('/stamp-duty', { state: { initialMarketValue: marketValue } });
+    // Navigate to stamp duty page, passing marketValue as state 
+     navigate('/', { state: { tab: 'stamp-duty-calculator', initialMarketValue: marketValue } });
   };
   useImperativeHandle(ref, () => ({
     handleCalculate,
@@ -640,8 +640,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setBasePriceLot(null);
     }
   }, [selectedLotId, lots]);
-  console.log("PlotForm - lots:", lots);
-  console.log("PlotForm - selectedLotId:", selectedLotId);
+  // console.log("PlotForm - lots:", lots);
+  // console.log("PlotForm - selectedLotId:", selectedLotId);
   return (
     <div className="space-y-6">
       {/* Jurisdiction Info - Neutral theme with icons */}
@@ -1018,6 +1018,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       <p className="text-sm text-muted-foreground mb-1">Total Market Valuation (incl. {areaType} Rate)</p>
                       <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa + {ratePercent * 100}% adjustment</p>
+                      <Button
+                        onClick={() => navigate('/', { state: { tab: 'stamp-duty-calculator', initialMarketValue: totalMarketValuationWithRate } })}
+                        className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        Calculate Stamp Duty
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
