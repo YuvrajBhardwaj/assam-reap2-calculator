@@ -123,6 +123,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [distanceFromRoad, setDistanceFromRoad] = useState('');
   const [onMainRoad, setOnMainRoad] = useState(false);
   const [onMetalRoad, setOnMetalRoad] = useState(false);
+  const [onMainMarket, setOnMainMarket] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [selectedSubclauses, setSelectedSubclauses] = useState<FullParameter[]>([]);
   const [parameters, setParameters] = useState<FullParameter[]>([]);
@@ -270,6 +271,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setLocationMethod(formData.locationMethod || 'manual');
       setOnMainRoad(formData.onMainRoad || false);
       setOnMetalRoad(formData.onMetalRoad || false);
+      setOnMainMarket(formData.onMainMarket || false);
     }
   }, []);
 
@@ -332,6 +334,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       distanceFromRoad,
       onMainRoad,
       onMetalRoad,
+      onMainMarket,
     };
     sessionStorage.setItem('plotFormState', JSON.stringify(formData));
   }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad]);
@@ -1368,10 +1371,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   </p>
                 )}
               </div>
-              {/* Main Market Group - Always shown */}
+              {/* Main Market Group */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Distance from Main Market</Label>
-                {paramGroups.mainMarket.bands.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="onMainMarket"
+                    checked={onMainMarket}
+                    onCheckedChange={(checked) => {
+                      setOnMainMarket(Boolean(checked));
+                      if (!checked && mainMarketBand) {
+                        setMainMarketBand(null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="onMainMarket" className="text-sm">Distance from Main Market</Label>
+                </div>
+                {onMainMarket && paramGroups.mainMarket.bands.length > 0 && (
                   <Select
                     value={mainMarketBand?.parameterId?.toString() || ''}
                     onValueChange={(val) => {
@@ -1391,7 +1406,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     </SelectContent>
                   </Select>
                 )}
-                {mainMarketBand && (
+                {onMainMarket && mainMarketBand && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Selected: {mainMarketBand.parameter} ({mainMarketBand.minMaxRange}) - Weight: {bandWeights[mainMarketBand.parameterId] || 0}%
                   </p>
