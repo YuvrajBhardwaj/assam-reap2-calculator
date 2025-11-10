@@ -269,13 +269,56 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
       // Total payable: base value + stamp duty + additional fees
       const totalPayableAmount = currentBaseValue + totalDutyAmount + totalAdditionalFees;
       setTotalPayable(totalPayableAmount); // set Total Payable = base value + stamp duty + additional fees
-      setAgreementValue(totalPayableAmount); // set Consideration Value as Total Payable
     } catch (e) {
       setError('Failed to calculate stamp duty. Please try again.');
       console.error(e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveCalculation = () => {
+    if (!selectionResults) {
+      alert('No calculation to save. Please calculate first.');
+      return;
+    }
+    const calcData = {
+      marketValue,
+      agreementValue,
+      selectedInstruments,
+      instrumentGenders,
+      selectionResults,
+      baseValue,
+      stampDuty,
+      surcharge,
+      cess,
+      registrationFees,
+      totalFees,
+      totalPayable,
+    };
+    localStorage.setItem('stampDutyCalculation', JSON.stringify(calcData));
+    alert('Calculation saved successfully!');
+  };
+
+  const printBill = () => {
+    window.print();
+  };
+
+  const resetForm = () => {
+    setSelectedInstruments([]);
+    setSelectedSubInstruments({});
+    setInstrumentGenders({});
+    setAgreementValue(0);
+    setMarketValue(0);
+    setBaseValue(null);
+    setStampDuty(null);
+    setSurcharge(null);
+    setCess(null);
+    setRegistrationFees(null);
+    setTotalFees(null);
+    setTotalPayable(null);
+    setSelectionResults(null);
+    setError(null);
   };
 
   if (loading) {
@@ -414,7 +457,19 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => window.location.reload()} // Simple page reload for reset
+                onClick={saveCalculation}
+                disabled={!selectionResults}
+                className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
+                  selectionResults
+                    ? 'bg-green-600 hover:bg-green-700 hover:scale-105 shadow-lg'
+                    : 'bg-gray-300 cursor-not-allowed'
+                }`}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
                 className="px-8 py-3 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
               >
                 Reset
@@ -425,9 +480,17 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full"> {/* Added w-full for bill */}
             {selectionResults ? (
               <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full w-full"> {/* Added w-full */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white">
-                  <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
-                  <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
+                <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
+                    <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
+                  </div>
+                  <button
+                    onClick={printBill}
+                    className="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                  >
+                    🖨️ Print
+                  </button>
                 </div>
                 {/* Property Details */}
                 <div className="p-6 border-b border-gray-200">

@@ -32,6 +32,26 @@ import { getParameterDetails, type Parameter } from "@/services/parameterService
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
 import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink } from 'lucide-react'; // Assuming Lucide React for icons
+
+interface FullParameter extends Parameter {
+  parameterId: number;
+  parameter: string;
+  parameterType: string | null;
+  areaTypeId: number;
+  minRangeInMeters: number;
+  maxRangeInMeters: number;
+  minMaxRange: string;
+  active: boolean;
+  createdBy: string;
+  createdDtm: string;
+  updatedBy: string;
+  updatedDtm: string;
+  approvedBy: string;
+  approvedDtm: string;
+  status: string;
+  statusCode: string;
+}
+
 interface DistrictDetails {
   id: number;
   name: string;
@@ -65,6 +85,8 @@ export interface PlotFormRef {
 const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange }, ref) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // All states grouped at the top
   const [landCategories, setLandCategories] = useState<LandClass[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [circles, setCircles] = useState<Circle[]>([]);
@@ -76,9 +98,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [basePriceMouza, setBasePriceMouza] = useState<number | null>(null);
   const [selectedLotId, setSelectedLotId] = useState('');
   const [basePriceLot, setBasePriceLot] = useState<number | null>(null);
-  const selectedLot = useMemo(() => {
-    return lots.find(lot => lot.id === selectedLotId);
-  }, [selectedLotId, lots]);
   const [plotNo, setPlotNo] = useState('');
   const [currentLandUse, setCurrentLandUse] = useState('');
   const [landUseChange, setLandUseChange] = useState(false);
@@ -90,57 +109,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [areaBigha, setAreaBigha] = useState('');
   const [areaKatha, setAreaKatha] = useState('');
   const [areaLessa, setAreaLessa] = useState('');
-  // Effect to load saved form data from sessionStorage
-  useEffect(() => {
-    const savedFormData = sessionStorage.getItem('plotFormState');
-    if (savedFormData) {
-      const formData = JSON.parse(savedFormData);
-      setSelectedDistrictCode(formData.selectedDistrictCode || '');
-      setSelectedCircleCode(formData.selectedCircleCode || '');
-      setSelectedMouzaCode(formData.selectedMouzaCode || '');
-      setSelectedLotId(formData.selectedLotId || '');
-      setPlotNo(formData.plotNo || '');
-      setCurrentLandUse(formData.currentLandUse || '');
-      setLandUseChange(formData.landUseChange || false);
-      setNewLandUse(formData.newLandUse || '');
-      setCurrentLandType(formData.currentLandType || '');
-      setAreaType(formData.areaType || 'RURAL');
-      setAreaBigha(formData.areaBigha || '');
-      setAreaKatha(formData.areaKatha || '');
-      setAreaLessa(formData.areaLessa || '');
-      setMarketValue(formData.marketValue || null);
-      setPerLessaValue(formData.perLessaValue || null);
-    }
-  }, []);
-  // Effect to save form data to sessionStorage whenever relevant state changes
-  useEffect(() => {
-    const formData = {
-      selectedDistrictCode,
-      selectedCircleCode,
-      selectedMouzaCode,
-      selectedLotId,
-      plotNo,
-      currentLandUse,
-      landUseChange,
-      newLandUse,
-      currentLandType,
-      areaType,
-      areaBigha,
-      areaKatha,
-      areaLessa,
-      marketValue,
-      perLessaValue,
-    };
-    sessionStorage.setItem('plotFormState', JSON.stringify(formData));
-  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue]);
+  // Updated: Band selections now hold FullParameter objects
+  const [mainRoadBand, setMainRoadBand] = useState<FullParameter | null>(null);
+  const [metalRoadBand, setMetalRoadBand] = useState<FullParameter | null>(null);
+  const [mainMarketBand, setMainMarketBand] = useState<FullParameter | null>(null);
   const [totalLessa, setTotalLessa] = useState(0);
-  useEffect(() => {
-    const bigha = parseFloat(areaBigha) || 0;
-    const katha = parseFloat(areaKatha) || 0;
-    const lessa = parseFloat(areaLessa) || 0;
-    // 1 Bigha = 5 Katha, 1 Katha = 20 Lessa, so 1 Bigha = 100 Lessa
-    setTotalLessa(bigha * 100 + katha * 20 + lessa);
-  }, [areaBigha, areaKatha, areaLessa]);
   const [locationMethod, setLocationMethod] = useState('manual');
   const [onRoad, setOnRoad] = useState(false);
   const [cornerPlot, setCornerPlot] = useState(false);
@@ -148,11 +121,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [hasTenant, setHasTenant] = useState(false);
   const [roadWidth, setRoadWidth] = useState('');
   const [distanceFromRoad, setDistanceFromRoad] = useState('');
-  const [mapDialogOpen, setMapDialogOpen] = useState(false);
-  const [mapResetTrigger, setMapResetTrigger] = useState(0);
+  const [onMainRoad, setOnMainRoad] = useState(false);
+  const [onMetalRoad, setOnMetalRoad] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [selectedSubclauses, setSelectedSubclauses] = useState<string[]>([]);
-  const [parameters, setParameters] = useState<any[]>([]);
+  const [selectedSubclauses, setSelectedSubclauses] = useState<FullParameter[]>([]);
+  const [parameters, setParameters] = useState<FullParameter[]>([]);
   const [loadingParameters, setLoadingParameters] = useState<boolean>(true);
   // New: Daag lookup state
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
@@ -165,6 +138,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [selectedHistoryId, setSelectedHistoryId] = useState<string>('');
   const [calculationResult, setCalculationResult] = useState<any>(null);
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+
+  const selectedLot = useMemo(() => {
+    return lots.find(lot => lot.id === selectedLotId);
+  }, [selectedLotId, lots]);
+
   // Computed selected land use code
   const selectedLandUseCode = useMemo(() => landUseChange ? newLandUse : currentLandUse, [landUseChange, newLandUse, currentLandUse]);
   // Computed land use increase
@@ -207,73 +185,165 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
     return null;
   }, [plotLevelBaseValue, totalLessa, ratePercent]);
-  // Cache management functions
-  const saveToHistory = (result: any) => {
-    const historyItem: CalculationHistory = {
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      formData: {
-        selectedDistrictCode,
-        selectedCircleCode,
-        selectedMouzaCode,
-        selectedLotId,
-        plotNo,
-        currentLandUse,
-        landUseChange,
-        newLandUse,
-        currentLandType,
-        areaType,
-        areaBigha,
-        areaKatha,
-        areaLessa,
-        locationMethod,
-        onRoad,
-        cornerPlot,
-        litigatedPlot,
-        hasTenant,
-        roadWidth,
-        distanceFromRoad,
-        selectedSubclauses,
-      },
-      result,
-      description: `${districts.find(d => d.code === selectedDistrictCode)?.name || 'Unknown'} - ${circles.find(c => c.code === selectedCircleCode)?.name || 'Unknown'} - Plot ${plotNo || 'N/A'}`
+  // NEW: Band weights map (hardcoded based on business logic; can be fetched from API if added)
+  const bandWeights = useMemo(() => ({
+    // Main Road bands (areaTypeId 1 - Rural example)
+    12: 15, // 1st band Distance from Main Road (0-150m)
+    13: 10, // 2nd band (150-450m)
+    // Assume 14: 5 for 3rd band if exists
+    // Metal Road bands (areaTypeId 2 - Urban example)
+    5: 10, // 1st band Distance from Main Road (0-500m)
+    // Assume more for 2nd/3rd
+    // Main Market bands (mixed areaTypeId)
+    18: 5, // 1st band Distance from Main Market (0-100m)
+    19: 2.5, // 2nd band (100-200m)
+    2: 1, // 3rd band (200-400m)
+    // Approach road width bands
+    15: 15, // 1st band width (0-10ft) - assume weight
+    16: 10, // 2nd band (10-20ft)
+    // Add more as per business rules or API enhancement
+  }), []);
+  // NEW: Grouped bands for cascading
+  const paramGroups = useMemo(() => ({
+    mainRoad: {
+      label: 'Whether on Main Road',
+      bands: parameters
+        .filter(p => p.parameter.includes('Distance from Main Road') && p.areaTypeId === 1)
+        .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
+    },
+    metalRoad: {
+      label: 'Whether on Metal Road',
+      bands: parameters
+        .filter(p => p.parameter.includes('Distance from Main Road') && p.areaTypeId === 2)
+        .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
+    },
+    mainMarket: {
+      label: null, // Always visible
+      bands: parameters
+        .filter(p => p.parameter.includes('Distance from Main Market'))
+        .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
+    }
+    // Add more groups e.g., approachRoadWidth if replacing input with bands
+  }), [parameters]);
+  // NEW: Flat parameters excluding cascading ones
+  const flatParameters = useMemo(() =>
+    parameters.filter(p =>
+      !p.parameter.includes('band') &&
+      !p.parameter.startsWith('Whether on') &&
+      !p.parameter.includes('Distance from Main') &&
+      !p.parameter.includes('width of approach road')
+    ), [parameters]);
+
+  // Section completion states
+  const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && plotNo && currentLandUse;
+  const isLandTypeComplete = !!selectedLandUseCode && totalLessa > 0;
+  const isLocationComplete = locationMethod === 'manual' ?
+    (onRoad ? roadWidth : distanceFromRoad) :
+    true;
+
+  // Effect to load saved form data from sessionStorage
+  useEffect(() => {
+    const savedFormData = sessionStorage.getItem('plotFormState');
+    if (savedFormData) {
+      const formData = JSON.parse(savedFormData);
+      setSelectedDistrictCode(formData.selectedDistrictCode || '');
+      setSelectedCircleCode(formData.selectedCircleCode || '');
+      setSelectedMouzaCode(formData.selectedMouzaCode || '');
+      setSelectedLotId(formData.selectedLotId || '');
+      setPlotNo(formData.plotNo || '');
+      setCurrentLandUse(formData.currentLandUse || '');
+      setLandUseChange(formData.landUseChange || false);
+      setNewLandUse(formData.newLandUse || '');
+      setCurrentLandType(formData.currentLandType || '');
+      setAreaType(formData.areaType || 'RURAL');
+      setAreaBigha(formData.areaBigha || '');
+      setAreaKatha(formData.areaKatha || '');
+      setAreaLessa(formData.areaLessa || '');
+      setMarketValue(formData.marketValue || null);
+      setPerLessaValue(formData.perLessaValue || null);
+      setOnRoad(formData.onRoad || false);
+      setCornerPlot(formData.cornerPlot || false);
+      setLitigatedPlot(formData.litigatedPlot || false);
+      setHasTenant(formData.hasTenant || false);
+      setRoadWidth(formData.roadWidth || '');
+      setDistanceFromRoad(formData.distanceFromRoad || '');
+      setLocationMethod(formData.locationMethod || 'manual');
+      setOnMainRoad(formData.onMainRoad || false);
+      setOnMetalRoad(formData.onMetalRoad || false);
+    }
+  }, []);
+
+  // Effect to load parameter-related saved data after parameters are loaded
+  useEffect(() => {
+    if (parameters.length === 0) return;
+    const savedFormData = sessionStorage.getItem('plotFormState');
+    if (savedFormData) {
+      const formData = JSON.parse(savedFormData);
+      if (formData.mainRoadBandId) {
+        const param = parameters.find(p => p.parameterId.toString() === formData.mainRoadBandId);
+        setMainRoadBand(param || null);
+      }
+      if (formData.metalRoadBandId) {
+        const param = parameters.find(p => p.parameterId.toString() === formData.metalRoadBandId);
+        setMetalRoadBand(param || null);
+      }
+      if (formData.mainMarketBandId) {
+        const param = parameters.find(p => p.parameterId.toString() === formData.mainMarketBandId);
+        setMainMarketBand(param || null);
+      }
+      if (formData.selectedSubclauseIds) {
+        const params = formData.selectedSubclauseIds
+          .map(idStr => parameters.find(p => p.parameterId.toString() === idStr))
+          .filter((p): p is FullParameter => p !== null);
+        setSelectedSubclauses(params);
+      }
+    }
+  }, [parameters]);
+
+  // Effect to save form data to sessionStorage whenever relevant state changes
+  useEffect(() => {
+    const formData = {
+      selectedDistrictCode,
+      selectedCircleCode,
+      selectedMouzaCode,
+      selectedLotId,
+      plotNo,
+      currentLandUse,
+      landUseChange,
+      newLandUse,
+      currentLandType,
+      areaType,
+      areaBigha,
+      areaKatha,
+      areaLessa,
+      marketValue,
+      perLessaValue,
+      // Save parameter IDs
+      mainRoadBandId: mainRoadBand?.parameterId?.toString() || '',
+      metalRoadBandId: metalRoadBand?.parameterId?.toString() || '',
+      mainMarketBandId: mainMarketBand?.parameterId?.toString() || '',
+      selectedSubclauseIds: selectedSubclauses.map(p => p.parameterId.toString()),
+      locationMethod,
+      onRoad,
+      cornerPlot,
+      litigatedPlot,
+      hasTenant,
+      roadWidth,
+      distanceFromRoad,
+      onMainRoad,
+      onMetalRoad,
     };
-    const updatedHistory = [historyItem, ...calculationHistory.slice(0, 9)]; // Keep only 10 most recent
-    setCalculationHistory(updatedHistory);
-    localStorage.setItem('plot-calculation-history', JSON.stringify(updatedHistory));
-  };
-  const loadFromHistory = (historyId: string) => {
-    const historyItem = calculationHistory.find(item => item.id === historyId);
-    if (!historyItem) return;
-    const { formData } = historyItem;
-   
-    // Restore form state
-    setSelectedDistrictCode(formData.selectedDistrictCode || '');
-    setSelectedCircleCode(formData.selectedCircleCode || '');
-    setSelectedMouzaCode(formData.selectedMouzaCode || '');
-    setSelectedLotId(formData.selectedLotId || '');
-    setPlotNo(formData.plotNo || '');
-    setCurrentLandUse(formData.currentLandUse || '');
-    setLandUseChange(formData.landUseChange || false);
-    setNewLandUse(formData.newLandUse || '');
-    setCurrentLandType(formData.currentLandType || '');
-    setAreaType(formData.areaType || 'RURAL');
-    setAreaBigha(formData.areaBigha || '');
-    setAreaKatha(formData.areaKatha || '');
-    setAreaLessa(formData.areaLessa || '');
-    setLocationMethod(formData.locationMethod || 'manual');
-    setOnRoad(formData.onRoad || false);
-    setCornerPlot(formData.cornerPlot || false);
-    setLitigatedPlot(formData.litigatedPlot || false);
-    setHasTenant(formData.hasTenant || false);
-    setRoadWidth(formData.roadWidth || '');
-    setDistanceFromRoad(formData.distanceFromRoad || '');
-    setSelectedSubclauses(formData.selectedSubclauses || []);
-   
-    // Set calculation result
-    setCalculationResult(historyItem.result);
-    setMarketValue(historyItem.result.totalValue);
-  };
+    sessionStorage.setItem('plotFormState', JSON.stringify(formData));
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad]);
+
+  useEffect(() => {
+    const bigha = parseFloat(areaBigha) || 0;
+    const katha = parseFloat(areaKatha) || 0;
+    const lessa = parseFloat(areaLessa) || 0;
+    // 1 Bigha = 5 Katha, 1 Katha = 20 Lessa, so 1 Bigha = 100 Lessa
+    setTotalLessa(bigha * 100 + katha * 20 + lessa);
+  }, [areaBigha, areaKatha, areaLessa]);
+
   // Load history from localStorage on component mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('plot-calculation-history');
@@ -285,6 +355,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       }
     }
   }, []);
+
   // Effect to call onDataChange whenever relevant state changes
   useEffect(() => {
     if (onDataChange) {
@@ -300,9 +371,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         currentLandType,
         areaType,
         areaDetails: {
-          // bigha: parseFloat(areaBigha) || 0,
-          // katha: parseFloat(areaKatha) || 0,
-          // lessa: parseFloat(areaLessa) || 0,
           totalLessa: totalLessa
         },
         locationMethod,
@@ -339,12 +407,156 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     distanceFromRoad,
     selectedSubclauses,
   ]);
-  // Section completion states
-  const isJurisdictionComplete = selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && plotNo && currentLandUse;
-  const isLandTypeComplete = !!selectedLandUseCode && totalLessa > 0;
-  const isLocationComplete = locationMethod === 'manual' ?
-    (onRoad ? roadWidth : distanceFromRoad) :
-    true;
+
+  useEffect(() => {
+    const fetchLandCategories = async () => {
+      try {
+        const categories = await getAllLandCategories();
+        setLandCategories(categories);
+      } catch (error) {
+        console.error('Error fetching land categories:', error);
+      }
+    };
+    fetchLandCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const data = await getAllDistricts();
+        setDistricts(data);
+        if (initialLocationData?.district?.code) {
+          setSelectedDistrictCode(initialLocationData.district.code);
+        }
+      } catch (error) {
+        console.error('Error fetching districts:', error);
+      }
+    };
+    fetchDistricts();
+  }, [initialLocationData]);
+
+  useEffect(() => {
+    if (selectedDistrictCode) {
+      const fetchCircles = async () => {
+        try {
+          const data = await getCirclesByDistrict(selectedDistrictCode);
+          setCircles(data);
+          if (initialLocationData?.circle?.code) {
+            setSelectedCircleCode(initialLocationData.circle.code);
+          }
+        } catch (error) {
+          console.error('Error fetching circles:', error);
+        }
+      };
+      fetchCircles();
+    } else {
+      setCircles([]);
+      setSelectedCircleCode('');
+    }
+  }, [selectedDistrictCode, initialLocationData]);
+
+  useEffect(() => {
+    if (selectedDistrictCode && selectedCircleCode) {
+      const fetchMouzas = async () => {
+        let mouzaCode = initialLocationData?.mouza?.code || initialLocationData?.village?.code;
+        try {
+          const data = await getMouzasByDistrictAndCircle(selectedDistrictCode, selectedCircleCode);
+          setMouzas(data);
+          if (mouzaCode) {
+            setSelectedMouzaCode(mouzaCode);
+            const selectedMouza = data.find(m => m.code === mouzaCode);
+            if (selectedMouza) {
+              setBasePriceMouza(selectedMouza.basePriceMouza || null);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching mouzas:', error);
+        } finally {
+          // Ensure basePriceMouza is reset if no mouza is selected or an error occurs
+          if (!selectedMouzaCode) {
+            setBasePriceMouza(null);
+          }
+        }
+      };
+      fetchMouzas();
+    } else {
+      setMouzas([]);
+      setSelectedMouzaCode('');
+      setBasePriceMouza(null); // Reset base price when no mouza is selected
+    }
+  }, [selectedDistrictCode, selectedCircleCode, initialLocationData]);
+
+  useEffect(() => {
+    // Fetch Lots when circle changes. Note: The API does not support filtering lots by mouza.
+    const shouldFetchLots = selectedDistrictCode && selectedCircleCode;
+    if (!shouldFetchLots) {
+      setLots([]);
+      setSelectedLotId('');
+      return;
+    }
+    const loadLots = async () => {
+      try {
+        const data = await fetchLots(selectedDistrictCode, selectedCircleCode);
+        setLots(data);
+        console.log("Fetched Lots:", data); // Log the fetched lots
+        // Auto-select if only one lot
+        if (data.length === 1) {
+          setSelectedLotId(data[0].id);
+          setBasePriceLot(data[0].basePriceIncreaseLot);
+        }
+        toast({ title: 'Lots Loaded', description: 'Please select a lot. The list is not filtered by mouza.' });
+      } catch (error) {
+        console.error('Error fetching lots:', error);
+      }
+    };
+    loadLots();
+  }, [selectedDistrictCode, selectedCircleCode]);
+
+  useEffect(() => {
+    if (selectedLotId) {
+      const lot = lots.find((l) => l.id === selectedLotId);
+      if (lot) {
+        setBasePriceLot(lot.basePriceIncreaseLot);
+      } else {
+        setBasePriceLot(null);
+      }
+    } else {
+      setBasePriceLot(null);
+    }
+  }, [selectedLotId, lots]);
+
+  // Fetch parameters for "Other Details"
+  useEffect(() => {
+    const fetchParameters = async () => {
+      try {
+        setLoadingParameters(true);
+        const response = await getParameterDetails(0, 500);
+        if (response.data) setParameters(response.data as FullParameter[]);
+      } catch (error) {
+        console.error('Failed to fetch parameters:', error);
+        setParameters([]);
+      } finally {
+        setLoadingParameters(false);
+      }
+    };
+    fetchParameters();
+  }, []);
+
+  // Auto-calculate per lessa when base value is ready
+  useEffect(() => {
+    if (hasBaseValue && !isCalculating) {
+      handleCalculatePerLessa();
+    }
+  }, [hasBaseValue]);
+
+  const handleSubclauseChange = (param: FullParameter) => {
+    setSelectedSubclauses(prev =>
+      prev.some(p => p.parameterId === param.parameterId)
+        ? prev.filter(p => p.parameterId !== param.parameterId)
+        : [...prev, param]
+    );
+  };
+
   const handleCalculate = async () => {
     try {
       setIsCalculating(true);
@@ -362,6 +574,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       } else {
         landTypeDetails.newLandCategoryType = newLandUse;
       }
+      // Updated: All selected parameter IDs (flat + cascading bands)
+      const allSelectedParams = [...selectedSubclauses, mainRoadBand, metalRoadBand, mainMarketBand].filter((p): p is FullParameter => p !== null);
+      const allSelectedParamIds = allSelectedParams.map(p => p.parameterId.toString());
       const payload: ComprehensiveValuationRequest = {
         jurisdictionInformation: {
           districtCode: selectedDistrictCode,
@@ -380,14 +595,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           hasTenant: hasTenant,
           roadWidth: effectiveRoadWidth,
           distanceFromRoad: effectiveDistanceFromRoad,
-          selectedParameterIds: selectedSubclauses.length > 0 ? selectedSubclauses : undefined
+          selectedParameterIds: allSelectedParamIds.length > 0 ? allSelectedParamIds : undefined
         }
       };
       const result = await calculatePlotBaseValue(payload as ComprehensiveValuationRequest);
       setMarketValue(result.totalValue);
       setCalculationResult(result); // Store detailed result
       saveToHistory(result); // Save to history
-     
+   
       if (onCalculate) onCalculate(result.totalValue);
       toast({ title: 'Market Value Calculated', description: `Base Value: ₹${result.totalValue.toLocaleString()}` });
     } catch (err: any) {
@@ -397,6 +612,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setIsCalculating(false);
     }
   };
+
   const handleCalculatePerLessa = async () => {
     if (!hasBaseValue) {
       toast({ title: 'Insufficient Data', description: 'Please complete Jurisdiction Information and Land Use selection first.', variant: 'destructive' });
@@ -418,6 +634,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       } else {
         landTypeDetails.newLandCategoryType = newLandUse;
       }
+      // Updated: Include cascading bands in per-lessa calc too
+      const allSelectedParams = [...selectedSubclauses, mainRoadBand, metalRoadBand, mainMarketBand].filter((p): p is FullParameter => p !== null);
+      const allSelectedParamIds = allSelectedParams.map(p => p.parameterId.toString());
       const payload: ComprehensiveValuationRequest = {
         jurisdictionInformation: {
           districtCode: selectedDistrictCode,
@@ -436,7 +655,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           hasTenant: hasTenant,
           roadWidth: effectiveRoadWidth,
           distanceFromRoad: effectiveDistanceFromRoad,
-          selectedParameterIds: selectedSubclauses.length > 0 ? selectedSubclauses : undefined
+          selectedParameterIds: allSelectedParamIds.length > 0 ? allSelectedParamIds : undefined
         }
       };
       const result = await calculatePlotBaseValue(payload as ComprehensiveValuationRequest);
@@ -449,12 +668,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setIsCalculating(false);
     }
   };
-  // Auto-calculate per lessa when base value is ready
-  useEffect(() => {
-    if (hasBaseValue && !isCalculating) {
-      handleCalculatePerLessa();
-    }
-  }, [hasBaseValue]);
+
   // Navigate to stamp duty page with pre-filled market value
   const navigateToStampDuty = () => {
     if (!marketValue) {
@@ -465,12 +679,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       });
       return;
     }
-    // Navigate to stamp duty page, passing marketValue as state 
+    // Navigate to stamp duty page, passing marketValue as state
      navigate('/', { state: { tab: 'stamp-duty-calculator', initialMarketValue: marketValue } });
   };
+
   useImperativeHandle(ref, () => ({
     handleCalculate,
   }));
+
   // New: handler to lookup daag-based geographical factor
   const handleDaagLookup = async () => {
     if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedLotId) {
@@ -508,140 +724,110 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setIsDaagLookupLoading(false);
     }
   };
-  // Fetch parameters for "Other Details"
-  useEffect(() => {
-    const fetchParameters = async () => {
-      try {
-        setLoadingParameters(true);
-        const response = await getParameterDetails(0, 500);
-        if (response.data) setParameters(response.data);
-      } catch (error) {
-        console.error('Failed to fetch parameters:', error);
-        setParameters([]);
-      } finally {
-        setLoadingParameters(false);
-      }
+
+  // Cache management functions
+  const saveToHistory = (result: any) => {
+    const historyItem: CalculationHistory = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      formData: {
+        selectedDistrictCode,
+        selectedCircleCode,
+        selectedMouzaCode,
+        selectedLotId,
+        plotNo,
+        currentLandUse,
+        landUseChange,
+        newLandUse,
+        currentLandType,
+        areaType,
+        areaBigha,
+        areaKatha,
+        areaLessa,
+        locationMethod,
+        onRoad,
+        cornerPlot,
+        litigatedPlot,
+        hasTenant,
+        roadWidth,
+        distanceFromRoad,
+        selectedSubclauseIds: selectedSubclauses.map(p => p.parameterId.toString()),
+        // Include cascading bands
+        mainRoadBandId: mainRoadBand?.parameterId?.toString() || '',
+        metalRoadBandId: metalRoadBand?.parameterId?.toString() || '',
+        mainMarketBandId: mainMarketBand?.parameterId?.toString() || '',
+        onMainRoad,
+        onMetalRoad,
+      },
+      result,
+      description: `${districts.find(d => d.code === selectedDistrictCode)?.name || 'Unknown'} - ${circles.find(c => c.code === selectedCircleCode)?.name || 'Unknown'} - Plot ${plotNo || 'N/A'}`
     };
-    fetchParameters();
-  }, []);
-  const handleSubclauseChange = (id: string) => {
-    setSelectedSubclauses(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+    const updatedHistory = [historyItem, ...calculationHistory.slice(0, 9)]; // Keep only 10 most recent
+    setCalculationHistory(updatedHistory);
+    localStorage.setItem('plot-calculation-history', JSON.stringify(updatedHistory));
   };
-  useEffect(() => {
-    const fetchLandCategories = async () => {
-      try {
-        const categories = await getAllLandCategories();
-        setLandCategories(categories);
-      } catch (error) {
-        console.error('Error fetching land categories:', error);
-      }
-    };
-    fetchLandCategories();
-  }, []);
-  useEffect(() => {
-    const fetchDistricts = async () => {
-      try {
-        const data = await getAllDistricts();
-        setDistricts(data);
-        if (initialLocationData?.district?.code) {
-          setSelectedDistrictCode(initialLocationData.district.code);
-        }
-      } catch (error) {
-        console.error('Error fetching districts:', error);
-      }
-    };
-    fetchDistricts();
-  }, [initialLocationData]);
-  useEffect(() => {
-    if (selectedDistrictCode) {
-      const fetchCircles = async () => {
-        try {
-          const data = await getCirclesByDistrict(selectedDistrictCode);
-          setCircles(data);
-          if (initialLocationData?.circle?.code) {
-            setSelectedCircleCode(initialLocationData.circle.code);
-          }
-        } catch (error) {
-          console.error('Error fetching circles:', error);
-        }
-      };
-      fetchCircles();
-    } else {
-      setCircles([]);
-      setSelectedCircleCode('');
+
+  const loadFromHistory = (historyId: string) => {
+    const historyItem = calculationHistory.find(item => item.id === historyId);
+    if (!historyItem) return;
+    const { formData } = historyItem;
+ 
+    // Restore form state
+    setSelectedDistrictCode(formData.selectedDistrictCode || '');
+    setSelectedCircleCode(formData.selectedCircleCode || '');
+    setSelectedMouzaCode(formData.selectedMouzaCode || '');
+    setSelectedLotId(formData.selectedLotId || '');
+    setPlotNo(formData.plotNo || '');
+    setCurrentLandUse(formData.currentLandUse || '');
+    setLandUseChange(formData.landUseChange || false);
+    setNewLandUse(formData.newLandUse || '');
+    setCurrentLandType(formData.currentLandType || '');
+    setAreaType(formData.areaType || 'RURAL');
+    setAreaBigha(formData.areaBigha || '');
+    setAreaKatha(formData.areaKatha || '');
+    setAreaLessa(formData.areaLessa || '');
+    setLocationMethod(formData.locationMethod || 'manual');
+    setOnRoad(formData.onRoad || false);
+    setCornerPlot(formData.cornerPlot || false);
+    setLitigatedPlot(formData.litigatedPlot || false);
+    setHasTenant(formData.hasTenant || false);
+    setRoadWidth(formData.roadWidth || '');
+    setDistanceFromRoad(formData.distanceFromRoad || '');
+    setOnMainRoad(formData.onMainRoad || false);
+    setOnMetalRoad(formData.onMetalRoad || false);
+ 
+    // Restore parameters
+    if (formData.selectedSubclauseIds && parameters.length > 0) {
+      const params = formData.selectedSubclauseIds
+        .map(idStr => parameters.find(p => p.parameterId.toString() === idStr))
+        .filter((p): p is FullParameter => p !== null);
+      setSelectedSubclauses(params);
     }
-  }, [selectedDistrictCode, initialLocationData]);
-  useEffect(() => {
-    if (selectedDistrictCode && selectedCircleCode) {
-      const fetchMouzas = async () => {
-        let mouzaCode = initialLocationData?.mouza?.code || initialLocationData?.village?.code;
-        try {
-          const data = await getMouzasByDistrictAndCircle(selectedDistrictCode, selectedCircleCode);
-          setMouzas(data);
-          if (mouzaCode) {
-            setSelectedMouzaCode(mouzaCode);
-            const selectedMouza = data.find(m => m.code === mouzaCode);
-            if (selectedMouza) {
-              setBasePriceMouza(selectedMouza.basePriceMouza || null);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching mouzas:', error);
-        } finally {
-          // Ensure basePriceMouza is reset if no mouza is selected or an error occurs
-          if (!selectedMouzaCode) {
-            setBasePriceMouza(null);
-          }
-        }
-      };
-      fetchMouzas();
-    } else {
-      setMouzas([]);
-      setSelectedMouzaCode('');
-      setBasePriceMouza(null); // Reset base price when no mouza is selected
+    if (formData.mainRoadBandId && parameters.length > 0) {
+      const param = parameters.find(p => p.parameterId.toString() === formData.mainRoadBandId);
+      setMainRoadBand(param || null);
     }
-  }, [selectedDistrictCode, selectedCircleCode, initialLocationData]);
-  useEffect(() => {
-    // Fetch Lots when circle changes. Note: The API does not support filtering lots by mouza.
-    const shouldFetchLots = selectedDistrictCode && selectedCircleCode;
-    if (!shouldFetchLots) {
-      setLots([]);
-      setSelectedLotId('');
-      return;
+    if (formData.metalRoadBandId && parameters.length > 0) {
+      const param = parameters.find(p => p.parameterId.toString() === formData.metalRoadBandId);
+      setMetalRoadBand(param || null);
     }
-    const loadLots = async () => {
-      try {
-        const data = await fetchLots(selectedDistrictCode, selectedCircleCode);
-        setLots(data);
-        console.log("Fetched Lots:", data); // Log the fetched lots
-        // Auto-select if only one lot
-        if (data.length === 1) {
-          setSelectedLotId(data[0].id);
-          setBasePriceLot(data[0].basePriceIncreaseLot);
-        }
-        toast({ title: 'Lots Loaded', description: 'Please select a lot. The list is not filtered by mouza.' });
-      } catch (error) {
-        console.error('Error fetching lots:', error);
-      }
-    };
-    loadLots();
-  }, [selectedDistrictCode, selectedCircleCode]);
-  useEffect(() => {
-    if (selectedLotId) {
-      const lot = lots.find((l) => l.id === selectedLotId);
-      if (lot) {
-        setBasePriceLot(lot.basePriceIncreaseLot);
-      } else {
-        setBasePriceLot(null);
-      }
-    } else {
-      setBasePriceLot(null);
+    if (formData.mainMarketBandId && parameters.length > 0) {
+      const param = parameters.find(p => p.parameterId.toString() === formData.mainMarketBandId);
+      setMainMarketBand(param || null);
     }
-  }, [selectedLotId, lots]);
-  // console.log("PlotForm - lots:", lots);
-  // console.log("PlotForm - selectedLotId:", selectedLotId);
+ 
+    // Set calculation result
+    setCalculationResult(historyItem.result);
+    setMarketValue(historyItem.result.totalValue);
+  };
+
+  // Helper to get band suffix (1st, 2nd, 3rd)
+  const getBandSuffix = (index: number) => {
+    if (index === 0) return '1st';
+    if (index === 1) return '2nd';
+    return '3rd';
+  };
+
   return (
     <div className="space-y-6">
       {/* Jurisdiction Info - Neutral theme with icons */}
@@ -672,7 +858,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
               </Label>
               <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
                 <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select District" />
+                  <SelectValue placeholder="Select Districts" />
                 </SelectTrigger>
                 <SelectContent>
                   {districts.map((dist) => (
@@ -1078,7 +1264,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           <div className="space-y-2">
             <Label className="text-sm font-medium flex items-center gap-1">
               <MapPin className="w-3 h-3 text-gray-500" />
-              Location Method
+              Geographical Characteristics of the Land
             </Label>
             <RadioGroup value={locationMethod} onValueChange={setLocationMethod} className="space-y-2">
               <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
@@ -1099,28 +1285,141 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 <Layers className="w-3 h-3 text-gray-500" />
                 Select Parameters
               </Label>
+              {/* NEW: Cascading Parameters - Replace hardcoded with dynamic groups */}
+              {/* Main Road Group */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="onMainRoad"
+                    checked={onMainRoad}
+                    onCheckedChange={(checked) => {
+                      setOnMainRoad(Boolean(checked));
+                      if (!checked && mainRoadBand) {
+                        setMainRoadBand(null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="onMainRoad" className="text-sm">Whether on Main Road</Label>
+                </div>
+                {onMainRoad && paramGroups.mainRoad.bands.length > 0 && (
+                  <Select
+                    value={mainRoadBand?.parameterId?.toString() || ''}
+                    onValueChange={(val) => {
+                      const param = paramGroups.mainRoad.bands.find(p => p.parameterId.toString() === val);
+                      setMainRoadBand(param || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Distance Band" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paramGroups.mainRoad.bands.map((p) => (
+                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
+                          {p.parameter}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {mainRoadBand && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selected: {mainRoadBand.parameter} ({mainRoadBand.minMaxRange}) - Weight: {bandWeights[mainRoadBand.parameterId] || 0}%
+                  </p>
+                )}
+              </div>
+              {/* Metal Road Group */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="onMetalRoad"
+                    checked={onMetalRoad}
+                    onCheckedChange={(checked) => {
+                      setOnMetalRoad(Boolean(checked));
+                      if (!checked && metalRoadBand) {
+                        setMetalRoadBand(null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="onMetalRoad" className="text-sm">Whether on Metal Road</Label>
+                </div>
+                {onMetalRoad && paramGroups.metalRoad.bands.length > 0 && (
+                  <Select
+                    value={metalRoadBand?.parameterId?.toString() || ''}
+                    onValueChange={(val) => {
+                      const param = paramGroups.metalRoad.bands.find(p => p.parameterId.toString() === val);
+                      setMetalRoadBand(param || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Distance Band" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paramGroups.metalRoad.bands.map((p) => (
+                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
+                          {p.parameter}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {metalRoadBand && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selected: {metalRoadBand.parameter} ({metalRoadBand.minMaxRange}) - Weight: {bandWeights[metalRoadBand.parameterId] || 0}%
+                  </p>
+                )}
+              </div>
+              {/* Main Market Group - Always shown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Distance from Main Market</Label>
+                {paramGroups.mainMarket.bands.length > 0 && (
+                  <Select
+                    value={mainMarketBand?.parameterId?.toString() || ''}
+                    onValueChange={(val) => {
+                      const param = paramGroups.mainMarket.bands.find(p => p.parameterId.toString() === val);
+                      setMainMarketBand(param || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Distance Band" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paramGroups.mainMarket.bands.map((p) => (
+                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
+                          {p.parameter}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {mainMarketBand && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selected: {mainMarketBand.parameter} ({mainMarketBand.minMaxRange}) - Weight: {bandWeights[mainMarketBand.parameterId] || 0}%
+                  </p>
+                )}
+              </div>
+              {/* Flat Parameters (non-cascading) */}
               {loadingParameters ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="text-muted-foreground">Loading parameters...</div>
                 </div>
-              ) : parameters.length > 0 ? (
+              ) : flatParameters.length > 0 ? (
                 <div className="space-y-3 p-2 border rounded-md">
-                  {parameters.map((param) => (
+                  {flatParameters.map((param) => (
                     <div key={param.parameterId} className="flex items-start space-x-3 p-3 hover:bg-muted/50 rounded-lg transition-colors">
                       <Checkbox
                         id={`parameter-${param.parameterId}`}
-                        checked={selectedSubclauses.includes(param.parameterId.toString())}
-                        onCheckedChange={() => handleSubclauseChange(param.parameterId.toString())}
+                        checked={selectedSubclauses.some(p => p.parameterId === param.parameterId)}
+                        onCheckedChange={() => handleSubclauseChange(param)}
                       />
                       <Label htmlFor={`parameter-${param.parameterId}`} className="text-sm text-foreground cursor-pointer flex-1">
-                        {param.parameter}
+                        {param.parameter} {param.minMaxRange ? `(${param.minMaxRange})` : ''}
                       </Label>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No parameters available. Please check your connection.
+                  No additional parameters available.
                 </div>
               )}
             </div>
@@ -1235,7 +1534,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
                 <CardTitle className="text-xl font-bold text-gray-800">Property Valuation Result</CardTitle>
               </div>
-             
+           
               <div className="bg-white rounded-lg p-6 shadow-inner mb-4">
                 <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
                 <p className="text-4xl font-bold text-gray-800 mb-2">₹{marketValue.toLocaleString('en-IN')}</p>
@@ -1251,7 +1550,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   <Calculator className="w-4 h-4" />
                   {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
                 </Button>
-               
+             
                 <Button
                   onClick={navigateToStampDuty}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
@@ -1292,7 +1591,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       <span className="font-medium">₹{plotLevelBaseValue?.toLocaleString('en-IN') || 'N/A'}</span>
                     </div>
                   </div>
-                 
+               
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Area Type:</span>
@@ -1314,7 +1613,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     </div>
                   </div>
                 </div>
-               
+             
                 {calculationResult.breakdown && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-semibold mb-2">Additional Calculation Details:</h4>
@@ -1359,7 +1658,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   ))}
                 </SelectContent>
               </Select>
-             
+           
               <p className="text-xs text-gray-500">
                 {calculationHistory.length} calculation{calculationHistory.length !== 1 ? 's' : ''} saved
               </p>
@@ -1370,4 +1669,5 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     </div>
   );
 });
+
 export default PlotForm;
