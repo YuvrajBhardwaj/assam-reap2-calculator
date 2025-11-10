@@ -1434,7 +1434,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No additional parameters available.
                 </div>
               )}
             </div>
