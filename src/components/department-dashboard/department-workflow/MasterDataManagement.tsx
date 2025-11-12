@@ -1,64 +1,113 @@
-// Top-level imports in module scope
-import React, { useEffect, useState } from 'react';
-import { AuditService } from '@/services/auditService';
-import type { WorkflowActionRequest } from '@/services/auditService';
-import { createAreaType, createCircle, createDistrict, createLandClass, createLot, createMouza, createVillage, deactivateCircle, deactivateDistrict, deactivateLandClass, deactivateLot, deactivateMouza, deactivateVillage, deleteAreaType, submitChangeRequest, updateAreaType, updateCircle, updateDistrict, updateLot, updateMouza, updateVillage } from '@/services/masterDataService';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useEffect, useState } from "react";
+import { AuditService } from "@/services/auditService";
+import type { WorkflowActionRequest } from "@/services/auditService";
+import {
+  createAreaType,
+  createCircle,
+  createDistrict,
+  createLandClass,
+  createLot,
+  createMouza,
+  createVillage,
+  deactivateCircle,
+  deactivateDistrict,
+  deactivateLandClass,
+  deactivateLot,
+  deactivateMouza,
+  deactivateVillage,
+  deleteAreaType,
+  submitChangeRequest,
+  updateAreaType,
+  updateCircle,
+  updateDistrict,
+  updateLot,
+  updateMouza,
+  updateVillage,
+} from "@/services/masterDataService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   Building,
   Database,
   Home,
   Layers,
   MapPin,
-  Plus,
   RefreshCw,
-  Settings,
+  CheckCircle,
   Check,
   Send,
-  X
-} from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
+  X,
+} from "lucide-react";
 
-import { MasterDataChangeRequest } from '@/types/masterData';
-import DistrictCRUD from '@/components/admin/MasterDataCRUD/DistrictCRUD';
-import CircleCRUD from '@/components/admin/MasterDataCRUD/CircleCRUD';
-import MouzaCRUD from '@/components/admin/MasterDataCRUD/MouzaCRUD';
-import VillageCRUD from '@/components/admin/MasterDataCRUD/VillageCRUD';
-import LotCRUD from '@/components/admin/MasterDataCRUD/LotCRUD';
-import LandClassCRUD from '@/components/admin/MasterDataCRUD/LandClassCRUD';
-import AreaTypeCRUD from '@/components/admin/MasterDataCRUD/AreaTypeCRUD';
-import SROCascadingCRUD from '@/components/admin/MasterDataCRUD/SROCascadingCRUD';
+import { MasterDataChangeRequest } from "@/types/masterData";
+import DistrictCRUD from "@/components/admin/MasterDataCRUD/DistrictCRUD";
+import CircleCRUD from "@/components/admin/MasterDataCRUD/CircleCRUD";
+import MouzaCRUD from "@/components/admin/MasterDataCRUD/MouzaCRUD";
+import VillageCRUD from "@/components/admin/MasterDataCRUD/VillageCRUD";
+import LotCRUD from "@/components/admin/MasterDataCRUD/LotCRUD";
+import LandClassCRUD from "@/components/admin/MasterDataCRUD/LandClassCRUD";
+import AreaTypeCRUD from "@/components/admin/MasterDataCRUD/AreaTypeCRUD";
+import SROCascadingCRUD from "@/components/admin/MasterDataCRUD/SROCascadingCRUD";
+
+export type EntityType =
+  | "Districts"
+  | "Circles"
+  | "Mouzas"
+  | "Villages"
+  | "Lots"
+  | "Land Classes"
+  | "Area Types"
+  | "SRO Hierarchy"
+  | "Parameters";
 
 interface MasterDataManagementProps {
   userRole: string | null;
-  toast: ReturnType<typeof useToast>['toast'];
-  selectedMasterDataEntity: string;
-  setSelectedMasterDataEntity: (entity: string) => void;
+  toast: ReturnType<typeof useToast>["toast"];
+  selectedMasterDataEntity: EntityType;
+  setSelectedMasterDataEntity: React.Dispatch<React.SetStateAction<EntityType>>;
   showMasterDataRequestDialog: boolean;
   setShowMasterDataRequestDialog: (show: boolean) => void;
   selectedMasterDataRequest: MasterDataChangeRequest | null;
   setSelectedMasterDataRequest: (request: MasterDataChangeRequest | null) => void;
-  masterDataRequestType: 'create' | 'update' | 'deactivate';
-  setMasterDataRequestType: (type: 'create' | 'update' | 'deactivate') => void;
+  masterDataRequestType: "create" | "update" | "deactivate";
+  setMasterDataRequestType: (type: "create" | "update" | "deactivate") => void;
   masterDataRequestReason: string;
   setMasterDataRequestReason: (reason: string) => void;
   masterDataChangeRequests: MasterDataChangeRequest[];
-  handleMasterDataChangeRequest: (entityType: string, operation: 'create' | 'update' | 'deactivate', payload: any, reason: string) => void;
-  handleMasterDataActionSelect: (request: MasterDataChangeRequest, action: 'approve' | 'send-back' | 'reject') => void;
+  handleMasterDataChangeRequest: (
+    entityType: string,
+    operation: "create" | "update" | "deactivate",
+    payload: any,
+    reason: string
+  ) => void;
+  handleMasterDataActionSelect: (
+    request: MasterDataChangeRequest,
+    action: "approve" | "send-back" | "reject"
+  ) => void;
   handleConfirmMasterDataAction: () => void;
   handleRefreshData: () => void;
   getStatusColor: (status: string) => string;
-  actionType: 'approve' | 'send-back' | 'reject';
+  actionType: "approve" | "send-back" | "reject";
   setShowActionDialog: (show: boolean) => void;
   setActionReason: (reason: string) => void;
 }
@@ -79,137 +128,75 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   masterDataChangeRequests,
   handleMasterDataChangeRequest,
   handleMasterDataActionSelect,
-
   handleRefreshData,
   getStatusColor,
-  actionType,
-  setShowActionDialog,
-  setActionReason,
 }) => {
-
-
-
-  // Local state to hold fetched pending requests
   const [requests, setRequests] = useState<MasterDataChangeRequest[]>([]);
-  // Add missing state hooks for request inputs
-  const [requestEntityId, setRequestEntityId] = useState<string>('');
-  const [requestPayloadText, setRequestPayloadText] = useState<string>('{}');
+  const [requestEntityId, setRequestEntityId] = useState<string>("");
+  const [requestPayloadText, setRequestPayloadText] = useState<string>("{}");
   const { loginId } = useAuth();
   const [showDeptApprovalsDialog, setShowDeptApprovalsDialog] = useState(false);
-  const [activeEntityTab, setActiveEntityTab] = useState<'District' | 'Circle' | 'Lot'>('District');
+  const [activeEntityTab, setActiveEntityTab] = useState<"District" | "Circle" | "Lot">("District");
   const [pendingDistrict, setPendingDistrict] = useState<any[]>([]);
   const [pendingCircle, setPendingCircle] = useState<any[]>([]);
   const [pendingLot, setPendingLot] = useState<any[]>([]);
 
   useEffect(() => {
-    // seed with incoming props initially
     setRequests(masterDataChangeRequests);
   }, [masterDataChangeRequests]);
 
-  // Map tab labels to audit masterType param
-  const toMasterTypeParam = (entity: string) => {
+  // Map display name to backend masterType
+  const toMasterTypeParam = (entity: string): string => {
     switch (entity) {
-      case 'Districts': return 'District';
-      case 'Circles': return 'Circle';
-      case 'Mouzas': return 'Mouza';
-      case 'Villages': return 'Village';
-      case 'Lots': return 'Lot';
-      case 'Land Classes': return 'LandCategory';
-      case 'Area Types': return 'AreaType';
-      case 'SRO Hierarchy': return 'SRO';
-      case 'Parameters': return 'Parameter';
-      default: return 'District';
+      case "Districts": return "District";
+      case "Circles": return "Circle";
+      case "Mouzas": return "Mouza";
+      case "Villages": return "Village";
+      case "Lots": return "Lot";
+      case "Land Classes": return "LandCategory";
+      case "Area Types": return "AreaType";
+      case "SRO Hierarchy": return "SRO";
+      case "Parameters": return "Parameter";
+      default: return "District";
     }
   };
 
-  // Fetch pending approvals for selected tab
   const fetchPendingRequests = async () => {
     try {
       const masterType = toMasterTypeParam(selectedMasterDataEntity);
-      // statusCode 22-3 per your workflow for pending on management
-      const items = await AuditService.getPendingAuditManagement(masterType, '22-3');
+      const items = await AuditService.getPendingAuditManagement(masterType, "22-3");
       const mapped: MasterDataChangeRequest[] = (items || []).map((it: any) => ({
         id: Number(it.id),
-        entityType: selectedMasterDataEntity as MasterDataChangeRequest['entityType'],
-        operation: (it?.payload?.operation ?? 'update') as MasterDataChangeRequest['operation'],
-        requestedBy: it.requestorName ?? '',
-        requestDate: it.requestDate ?? '',
-        status: 'Under Review',
-        currentApprover: (it.currentApprover ?? 'N/A') as MasterDataChangeRequest['currentApprover'],
+        entityType: selectedMasterDataEntity,
+        operation: (it?.payload?.operation ?? "update") as MasterDataChangeRequest["operation"],
+        requestedBy: it.requestorName ?? "",
+        requestDate: it.requestDate ?? "",
+        status: "Under Review",
+        currentApprover: (it.currentApprover ?? "N/A") as MasterDataChangeRequest["currentApprover"],
         approvalLevel: Number(it.approvalLevel ?? 1),
-        reason: it.reason ?? '',
+        reason: it.reason ?? "",
         payload: it.payload ?? {},
         daysPending: Number(it.daysPending ?? 0),
       }));
       setRequests(mapped);
-      toast({ title: 'Pending requests refreshed' });
+      toast({ title: "Pending requests refreshed" });
     } catch (err) {
-      console.error('Pending request fetch failed', err);
-      toast({ title: 'Failed to fetch pending approvals', variant: 'destructive' });
+      console.error("Pending request fetch failed", err);
+      toast({ title: "Failed to fetch pending approvals", variant: "destructive" });
     }
   };
 
-  const fetchDeptPending = async (entity: 'District' | 'Circle' | 'Lot') => {
-    try {
-      const res = await AuditService.getControllerPending('jm', entity, '22-3');
-      if (entity === 'District') setPendingDistrict(res);
-      if (entity === 'Circle') setPendingCircle(res);
-      if (entity === 'Lot') setPendingLot(res);
-    } catch (e) {
-      toast({ title: 'Failed to load pending approvals', description: String(e), variant: 'destructive' });
-    }
-  };
-
-  useEffect(() => {
-    if (showDeptApprovalsDialog) {
-      fetchDeptPending('District');
-      fetchDeptPending('Circle');
-      fetchDeptPending('Lot');
-    }
-  }, [showDeptApprovalsDialog]);
-
-  const sendToManager = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
-    try {
-      await AuditService.juniorManagerAction({ loginId: loginId ?? 'system', id: String(item.id), masterType, action: 'approve', statusCode: '22-2' });
-      toast({ title: 'Sent to Manager', description: `${masterType} #${item.id} escalated` });
-      fetchDeptPending(masterType);
-    } catch (e) {
-      toast({ title: 'Failed to escalate', description: String(e), variant: 'destructive' });
-    }
-  };
-
-  const sendToSeniorManager = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
-    try {
-      await AuditService.managerAction({ loginId: loginId ?? 'system', id: String(item.id), masterType, action: 'approve', statusCode: '22-3' });
-      toast({ title: 'Sent to Senior Manager', description: `${masterType} #${item.id} escalated` });
-      fetchDeptPending(masterType);
-    } catch (e) {
-      toast({ title: 'Failed to escalate', description: String(e), variant: 'destructive' });
-    }
-  };
-
-  const approveBySrManagerOrAdmin = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
-    try {
-      await AuditService.updateAuditAction({ id: String(item.id), masterType, action: 'approve', statusCode: '22-1' });
-      toast({ title: 'Approved', description: `${masterType} #${item.id} approved` });
-      fetchDeptPending(masterType);
-    } catch (e) {
-      toast({ title: 'Failed to approve', description: String(e), variant: 'destructive' });
-    }
-  };
-
-  // New: submit the change request to start the workflow
   const handleSubmitMasterDataRequest = async () => {
     try {
       const entityType = toMasterTypeParam(selectedMasterDataEntity);
-      const operation = masterDataRequestType.toUpperCase() as 'CREATE' | 'UPDATE' | 'DEACTIVATE';
+      const operation = masterDataRequestType.toUpperCase() as "CREATE" | "UPDATE" | "DEACTIVATE";
 
       let payloadObj: Record<string, any> = {};
       if (requestPayloadText.trim()) {
         try {
           payloadObj = JSON.parse(requestPayloadText);
         } catch {
-          toast({ title: 'Invalid JSON in payload', variant: 'destructive' });
+          toast({ title: "Invalid JSON in payload", variant: "destructive" });
           return;
         }
       }
@@ -222,114 +209,28 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
         reason: masterDataRequestReason.trim(),
       });
 
-      toast({ title: 'Change request submitted', description: `ID: ${res.requestId}` });
+      toast({ title: "Change request submitted", description: `ID: ${res.requestId}` });
       setShowMasterDataRequestDialog(false);
-      setRequestEntityId('');
-      setRequestPayloadText('{}');
-      setMasterDataRequestReason('');
+      setRequestEntityId("");
+      setRequestPayloadText("{}");
+      setMasterDataRequestReason("");
       fetchPendingRequests();
     } catch (err) {
-      console.error('Submit change request failed', err);
-      toast({ title: 'Failed to submit change request', variant: 'destructive' });
+      console.error("Submit change request failed", err);
+      toast({ title: "Failed to submit change request", variant: "destructive" });
     }
   };
 
-  // Approve/Reject via role endpoints (jm/man/sman/admin). Send Back => reject.
-  const applyFinalChange = async (request: MasterDataChangeRequest) => {
-    const op = request.operation;
-    const p = request.payload || {};
-
-    switch (request.entityType) {
-      case 'Districts':
-        if (op === 'create') await createDistrict({ districtName: p.districtName });
-        else if (op === 'update') await updateDistrict(p.districtCode, p.districtName);
-        else if (op === 'deactivate') await deactivateDistrict(p.districtCode);
-        break;
-
-      case 'Circles':
-        if (op === 'create') await createCircle({ name: p.circleName, districtCode: p.districtCode } as any);
-        else if (op === 'update') await updateCircle(p.circleCode, { name: p.circleName, districtCode: p.districtCode });
-        else if (op === 'deactivate') await deactivateCircle(p.circleCode);
-        break;
-
-      case 'Mouzas':
-        if (op === 'create') await createMouza(p);
-        else if (op === 'update') await updateMouza(p.mouzaCode, p);
-        else if (op === 'deactivate') await deactivateMouza(p.mouzaCode);
-        break;
-
-      case 'Villages':
-        if (op === 'create') await createVillage(p);
-        else if (op === 'update') await updateVillage(p.villageCode, p);
-        else if (op === 'deactivate') await deactivateVillage(p.villageCode);
-        break;
-
-      case 'Lots':
-        if (op === 'create') await createLot(p);
-        else if (op === 'update') await updateLot(p.lotCode, p);
-        else if (op === 'deactivate') await deactivateLot(p.lotCode);
-        break;
-
-      case 'Land Classes':
-        if (op === 'create') await createLandClass({ landCategoryName: p.landCategoryName } as any);
-        else if (op === 'deactivate') await deactivateLandClass(p.landCategoryGenId);
-        break;
-
-      case 'Area Types':
-        if (op === 'create') await createAreaType({ areaType: p.areaType });
-        else if (op === 'update') await updateAreaType(p.areaTypesGenId || p.id, { areaType: p.areaType });
-        else if (op === 'deactivate') await deleteAreaType(p.areaTypesGenId || p.id);
-        break;
-
-      default:
-        throw new Error(`Unsupported entity type: ${request.entityType}`);
-    }
-  };
-
-  const confirmWorkflowAction = async (request: MasterDataChangeRequest, action: 'approve' | 'send-back' | 'reject') => {
-    try {
-      const masterType = toMasterTypeParam(request.entityType);
-      const roleAction: 'approve' | 'reject' = action === 'approve' ? 'approve' : 'reject';
-      const payload: WorkflowActionRequest = {
-        loginId: loginId ?? 'system',
-        id: String(request.id),
-        masterType,
-        action: roleAction,
-        statusCode: roleAction === 'approve' ? '22-1' : '22-2',
-      };
-
-      if (userRole === 'ROLE_JuniorManager') {
-        await AuditService.juniorManagerAction(payload);
-      } else if (userRole === 'ROLE_Manager') {
-        await AuditService.managerAction(payload);
-      } else if (userRole === 'ROLE_SeniorManager') {
-        await AuditService.seniorManagerAction(payload);
-      } else if (userRole === 'ROLE_ADMIN') {
-        await AuditService.adminAction(payload);
-      } else {
-        toast({ title: 'Insufficient role to act on workflow', variant: 'destructive' });
-        return;
-      }
-
-      toast({ title: `Request ${roleAction}d successfully` });
-      fetchPendingRequests();
-    } catch (err) {
-      console.error('Workflow action failed', err);
-      toast({ title: 'Failed to perform workflow action', variant: 'destructive' });
-    }
-  };
-
-  // Move renderDeptView inside the component to access selectedMasterDataEntity
   const renderDeptView = () => {
     switch (selectedMasterDataEntity) {
-      case 'Districts': return <DistrictCRUD />;
-      case 'Circles': return <CircleCRUD />;
-      case 'Mouzas': return <MouzaCRUD />;
-      case 'Villages': return <VillageCRUD />;
-      case 'Lots': return <LotCRUD />;
-      case 'Land Classes': return <LandClassCRUD />;
-      case 'Area Types': return <AreaTypeCRUD />;
-      case 'SRO Hierarchy': return <SROCascadingCRUD />;
+      case "Districts": return <DistrictCRUD />;
+      case "Circles": return <CircleCRUD />;
+      case "Mouzas": return <MouzaCRUD />;
+      case "Villages": return <VillageCRUD />;
+      case "Lots": return <LotCRUD />;
+      case "Land Classes": return <LandClassCRUD />;
+      case "Area Types": return <AreaTypeCRUD />;
+      case "SRO Hierarchy": return <SROCascadingCRUD />;
       default: return null;
     }
   };
@@ -339,179 +240,102 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
       {/* Entity Selection */}
       <div className="grid grid-cols-3 md:grid-cols-9 gap-2 mb-6">
         {[
-          { id: 'Districts', icon: MapPin, label: 'Districts' },
-          { id: 'Circles', icon: MapPin, label: 'Circles' },
-          { id: 'Mouzas', icon: MapPin, label: 'Mouzas' },
-          { id: 'Villages', icon: Home, label: 'Villages' },
-          { id: 'Lots', icon: MapPin, label: 'Lots' },
-          { id: 'Land Classes', icon: Layers, label: 'Land Classes' },
-          { id: 'Area Types', icon: Layers, label: 'Area Types' },
-          { id: 'SRO Hierarchy', icon: Building, label: 'SRO Hierarchy' },
-          { id: 'Parameters', icon: Settings, label: 'Parameters' }
+          "Districts",
+          "Circles",
+          "Mouzas",
+          "Villages",
+          "Lots",
+          "Land Classes",
+          "Area Types",
+          "SRO Hierarchy",
+          "Parameters",
         ].map((entity) => (
           <Card
-            key={entity.id}
-            className={`cursor-pointer transition-all duration-200 ${selectedMasterDataEntity === entity.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-              }`}
-            onClick={() => setSelectedMasterDataEntity(entity.id)}
+            key={entity}
+            className={`cursor-pointer transition-all duration-200 ${
+              selectedMasterDataEntity === entity ? "ring-2 ring-blue-500 bg-blue-50" : ""
+            }`}
+            onClick={() =>
+              setSelectedMasterDataEntity(entity as EntityType)
+            }
           >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center text-center">
-                <entity.icon className="w-6 h-6 mb-2 text-blue-600" />
-                <span className="text-xs font-medium">{entity.label}</span>
-              </div>
+            <CardContent className="p-3 text-center text-sm font-medium">
+              {entity}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Optional: show the embedded dept view to browse current master data */}
+      {/* Render CRUD view */}
       <div className="mb-6">{renderDeptView()}</div>
 
-      {/* Master Data Change Requests Table */}
+      {/* Requests Table */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Database className="w-5 h-5" />
-              Master Data Change Requests - {selectedMasterDataEntity}
-            </CardTitle>
-            <div className="flex space-x-2">
-              {/* <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMasterDataRequestDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                New Request
-              </Button> */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchPendingRequests}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDeptApprovalsDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Dept Approvals
-              </Button>
-            </div>
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" /> Dept Workflow Management - {selectedMasterDataEntity}
+          </CardTitle>
+          <div className="flex gap-2">
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeptApprovalsDialog(true)}
+            >
+              <CheckCircle className="w-4 h-4" /> Dept Approvals
+            </Button>
           </div>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Entity Type</TableHead>
+                <TableHead>Entity</TableHead>
                 <TableHead>Operation</TableHead>
-                <TableHead>Requested By</TableHead>
-                <TableHead>Request Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Current Approver</TableHead>
-                <TableHead>Approval Level</TableHead>
-                <TableHead>Days Pending</TableHead>
-                {userRole && <TableHead>Action</TableHead>}
+                <TableHead>Requested By</TableHead>
+                <TableHead>Approver</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>{request.id}</TableCell>
-                  <TableCell>{request.entityType}</TableCell>
+              {requests.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.id}</TableCell>
+                  <TableCell>{r.entityType}</TableCell>
+                  <TableCell>{r.operation}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">
-                      {request.operation}
-                    </Badge>
+                    <Badge className={getStatusColor(r.status)}>{r.status}</Badge>
                   </TableCell>
-                  <TableCell>{request.requestedBy}</TableCell>
-                  <TableCell>{request.requestDate}</TableCell>
+                  <TableCell>{r.requestedBy}</TableCell>
+                  <TableCell>{r.currentApprover}</TableCell>
+                  <TableCell>{r.approvalLevel}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(request.status)}>
-                      {request.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{request.currentApprover}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span>{request.approvalLevel}/4</span>
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${(request.approvalLevel / 4) * 100}%` }}
-                        ></div>
+                    {r.status === "Pending" && (
+                      <div className="flex gap-2">
+                        <Button size="sm" className="bg-green-600 text-white" onClick={() => handleMasterDataActionSelect(r, "approve")}>
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleMasterDataActionSelect(r, "send-back")}>
+                          Send Back
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleMasterDataActionSelect(r, "reject")}>
+                          Reject
+                        </Button>
                       </div>
-                    </div>
+                    )}
                   </TableCell>
-                  <TableCell>{request.daysPending}</TableCell>
-                  {userRole && (
-                    <TableCell>
-                      {request.status === 'Pending' || request.status === 'Under Review' ? (
-                        <div className="flex gap-1">
-                          {((userRole === 'ROLE_JuniorManager' && request.currentApprover === 'Junior Manager') ||
-                            (userRole === 'ROLE_Manager' && request.currentApprover === 'Manager') ||
-                            (userRole === 'ROLE_SeniorManager' && request.currentApprover === 'Senior Manager') ||
-                            (userRole === 'ROLE_ADMIN' && request.currentApprover === 'Role Admin')) && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-xs"
-                                  onClick={() => confirmWorkflowAction(request, 'approve')}
-                                >
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-orange-500 text-orange-600 hover:bg-orange-50 px-2 py-1 text-xs"
-                                  onClick={() => confirmWorkflowAction(request, 'send-back')}
-                                >
-                                  <Send className="w-3 h-3 mr-1" />
-                                  Send Back
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="px-2 py-1 text-xs"
-                                  onClick={() => confirmWorkflowAction(request, 'reject')}
-                                >
-                                  <X className="w-3 h-3 mr-1" />
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">No action required</span>
-                      )}
-                    </TableCell>
-                  )}
                 </TableRow>
               ))}
-              {!requests.filter(req => selectedMasterDataEntity === 'All' || req.entityType === selectedMasterDataEntity).length && (
-                <TableRow>
-                  <TableCell colSpan={10} className="h-24 text-center">
-                    No change requests found for {selectedMasterDataEntity}.
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Master Data Request Dialog */}
+      {/* Request Dialog */}
       <Dialog open={showMasterDataRequestDialog} onOpenChange={setShowMasterDataRequestDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -520,217 +344,55 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Entity Type</label>
-              <Select value={selectedMasterDataEntity} onValueChange={setSelectedMasterDataEntity}>
+              <Select
+                value={selectedMasterDataEntity}
+                onValueChange={(value) =>
+                  setSelectedMasterDataEntity(value as EntityType)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select entity type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Districts">Districts</SelectItem>
-                  <SelectItem value="Circles">Circles</SelectItem>
-                  <SelectItem value="Mouzas">Mouzas</SelectItem>
-                  <SelectItem value="Villages">Villages</SelectItem>
-                  <SelectItem value="Lots">Lots</SelectItem>
-                  <SelectItem value="Land Classes">Land Classes</SelectItem>
-                  <SelectItem value="Area Types">Area Types</SelectItem>
-                  <SelectItem value="SRO Hierarchy">SRO Hierarchy</SelectItem>
-                  <SelectItem value="Parameters">Parameters</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Operation Type</label>
-              <Select value={masterDataRequestType} onValueChange={(value: 'create' | 'update' | 'deactivate') => setMasterDataRequestType(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select operation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="create">Create New</SelectItem>
-                  <SelectItem value="update">Update Existing</SelectItem>
-                  <SelectItem value="deactivate">Deactivate</SelectItem>
+                  {[
+                    "Districts",
+                    "Circles",
+                    "Mouzas",
+                    "Villages",
+                    "Lots",
+                    "Land Classes",
+                    "Area Types",
+                    "SRO Hierarchy",
+                    "Parameters",
+                  ].map((e) => (
+                    <SelectItem key={e} value={e}>
+                      {e}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* New: Target ID/Code to act upon (optional for Create) */}
             <div>
-              <label className="block text-sm font-medium mb-2">Target ID/Code (optional for Create)</label>
-              <Input
-                value={requestEntityId}
-                onChange={(e) => setRequestEntityId(e.target.value)}
-                placeholder="e.g., DIST-001 or internal ID"
-              />
-            </div>
-
-            {/* New: JSON payload to describe the change */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Change Payload (JSON)</label>
-              <Textarea
-                value={requestPayloadText}
-                onChange={(e) => setRequestPayloadText(e.target.value)}
-                placeholder='e.g., {"name":"New District Name"}'
-                className="font-mono text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Reason for Change</label>
+              <label className="block text-sm font-medium mb-2">Reason</label>
               <Textarea
                 value={masterDataRequestReason}
                 onChange={(e) => setMasterDataRequestReason(e.target.value)}
-                placeholder="Enter detailed reason for this master data change request..."
-                required
               />
             </div>
-            <div className="p-3 bg-blue-50 rounded text-sm">
-              <p className="font-medium text-blue-800 mb-1">Approval Workflow:</p>
-              <p className="text-blue-600">Junior Manager → Manager → Senior Manager → Role Admin</p>
-            </div>
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowMasterDataRequestDialog(false)}>
                 Cancel
               </Button>
               <Button
+                className="bg-blue-600 text-white"
                 onClick={handleSubmitMasterDataRequest}
-                disabled={!masterDataRequestReason.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
               >
-                Submit Request
+                Submit
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dept Approvals Dialog */}
-      <Dialog open={showDeptApprovalsDialog} onOpenChange={setShowDeptApprovalsDialog}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>Department Approvals</DialogTitle>
-          </DialogHeader>
-          <Tabs value={activeEntityTab} onValueChange={(v) => setActiveEntityTab(v as any)}>
-            <TabsList>
-              <TabsTrigger value="District">District</TabsTrigger>
-              <TabsTrigger value="Circle">Circle</TabsTrigger>
-              <TabsTrigger value="Lot">Lot</TabsTrigger>
-            </TabsList>
-            <TabsContent value="District">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pending (JM) - District</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Master Type</TableHead>
-                        <TableHead>Status Code</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingDistrict.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.id}</TableCell>
-                          <TableCell>{item.masterType || 'District'}</TableCell>
-                          <TableCell>{item.statusCode}</TableCell>
-                          <TableCell>
-                            {userRole === 'ROLE_JuniorManager' && (
-                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'District')}>Send to Manager</Button>
-                            )}
-                            {userRole === 'ROLE_Manager' && (
-                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'District')}>Send to Sr. Manager</Button>
-                            )}
-                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'District')}>Approve</Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="Circle">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pending (JM) - Circle</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Master Type</TableHead>
-                        <TableHead>Status Code</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingCircle.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.id}</TableCell>
-                          <TableCell>{item.masterType || 'Circle'}</TableCell>
-                          <TableCell>{item.statusCode}</TableCell>
-                          <TableCell>
-                            {userRole === 'ROLE_JuniorManager' && (
-                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'Circle')}>Send to Manager</Button>
-                            )}
-                            {userRole === 'ROLE_Manager' && (
-                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'Circle')}>Send to Sr. Manager</Button>
-                            )}
-                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'Circle')}>Approve</Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="Lot">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pending (JM) - Lot</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Master Type</TableHead>
-                        <TableHead>Status Code</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingLot.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.id}</TableCell>
-                          <TableCell>{item.masterType || 'Lot'}</TableCell>
-                          <TableCell>{item.statusCode}</TableCell>
-                          <TableCell>
-                            {userRole === 'ROLE_JuniorManager' && (
-                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'Lot')}>Send to Manager</Button>
-                            )}
-                            {userRole === 'ROLE_Manager' && (
-                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'Lot')}>Send to Sr. Manager</Button>
-                            )}
-                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'Lot')}>Approve</Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
         </DialogContent>
       </Dialog>
     </div>

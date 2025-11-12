@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import {
   Table,
   TableBody,
@@ -41,7 +42,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import ApprovalInbox from "@/components/admin/ApprovalInbox";
-import MasterDataManagement from "./MasterDataManagement";
+import MasterDataManagement, { EntityType } from "./MasterDataManagement";
+
 import { useAuth } from "@/context/AuthContext";
 import { getAuditLogs } from "@/services/masterDataService";
 import type { AuditLog, MasterDataChangeRequest } from "@/types/masterData";
@@ -96,7 +98,7 @@ const DepartmentWorkflowDashboard = () => {
   });
 
   // ---------- Master Data: Missing State & Helpers ----------
-  const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<string>("Districts");
+const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityType>("Districts");
   const [showMasterDataRequestDialog, setShowMasterDataRequestDialog] = useState(false);
   const [selectedMasterDataRequest, setSelectedMasterDataRequest] = useState<MasterDataChangeRequest | null>(null);
   const [masterDataRequestType, setMasterDataRequestType] = useState<"create" | "update" | "deactivate">("create");
