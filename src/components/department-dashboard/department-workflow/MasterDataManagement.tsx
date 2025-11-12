@@ -137,13 +137,63 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   const { loginId } = useAuth();
   const [showDeptApprovalsDialog, setShowDeptApprovalsDialog] = useState(false);
   const [activeEntityTab, setActiveEntityTab] = useState<"District" | "Circle" | "Lot">("District");
-  const [pendingDistrict, setPendingDistrict] = useState<any[]>([]);
-  const [pendingCircle, setPendingCircle] = useState<any[]>([]);
-  const [pendingLot, setPendingLot] = useState<any[]>([]);
+  const [pendingDistrict, setPendingDistrict] = useState<MasterDataChangeRequest[]>([]);
+  const [pendingCircle, setPendingCircle] = useState<MasterDataChangeRequest[]>([]);
+  const [pendingLot, setPendingLot] = useState<MasterDataChangeRequest[]>([]);
 
   useEffect(() => {
     setRequests(masterDataChangeRequests);
   }, [masterDataChangeRequests]);
+
+  const getStatusCodeForRole = (role: string | null): string => {
+    switch (role) {
+      case "JR_MANAGER":
+        return "22-2";
+      case "MANAGER":
+        return "22-3";
+      case "SR_MANAGER":
+      case "ADMIN":
+        return "22-1";
+      default:
+        return "22-1";
+    }
+  };
+
+  const fetchDeptPendingRequests = async (masterType: "District" | "Circle" | "Lot") => {
+    try {
+      const statusCode = getStatusCodeForRole(userRole);
+      const items = await AuditService.getPendingAuditManagement(masterType, statusCode);
+      const mapped: MasterDataChangeRequest[] = (items || []).map((it: any) => ({
+        id: Number(it.id),
+        entityType: masterType as EntityType,
+        operation: (it?.payload?.operation ?? "update") as MasterDataChangeRequest["operation"],
+        requestedBy: it.requestorName ?? "",
+        requestDate: it.requestDate ?? "",
+        status: "Pending",
+        currentApprover: (it.currentApprover ?? "N/A") as MasterDataChangeRequest["currentApprover"],
+        approvalLevel: Number(it.approvalLevel ?? 1),
+        reason: it.reason ?? "",
+        payload: it.payload ?? {},
+        daysPending: Number(it.daysPending ?? 0),
+      }));
+      return mapped;
+    } catch (err) {
+      console.error(`Failed to fetch pending ${masterType} approvals`, err);
+      toast({ title: `Failed to fetch pending ${masterType} approvals`, variant: "destructive" });
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    if (showDeptApprovalsDialog) {
+      const loadRequests = async () => {
+        setPendingDistrict(await fetchDeptPendingRequests("District"));
+        setPendingCircle(await fetchDeptPendingRequests("Circle"));
+        setPendingLot(await fetchDeptPendingRequests("Lot"));
+      };
+      loadRequests();
+    }
+  }, [showDeptApprovalsDialog, userRole]);
 
   // Map display name to backend masterType
   const toMasterTypeParam = (entity: string): string => {
