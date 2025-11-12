@@ -5,6 +5,7 @@ import type { WorkflowActionRequest } from '@/services/auditService';
 import { createAreaType, createCircle, createDistrict, createLandClass, createLot, createMouza, createVillage, deactivateCircle, deactivateDistrict, deactivateLandClass, deactivateLot, deactivateMouza, deactivateVillage, deleteAreaType, submitChangeRequest, updateAreaType, updateCircle, updateDistrict, updateLot, updateMouza, updateVillage } from '@/services/masterDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,7 @@ import {
   Send,
   X
 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 import { MasterDataChangeRequest } from '@/types/masterData';
 import DistrictCRUD from '@/components/admin/MasterDataCRUD/DistrictCRUD';
@@ -93,6 +95,11 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   const [requestEntityId, setRequestEntityId] = useState<string>('');
   const [requestPayloadText, setRequestPayloadText] = useState<string>('{}');
   const { loginId } = useAuth();
+  const [showDeptApprovalsDialog, setShowDeptApprovalsDialog] = useState(false);
+  const [activeEntityTab, setActiveEntityTab] = useState<'District' | 'Circle' | 'Lot'>('District');
+  const [pendingDistrict, setPendingDistrict] = useState<any[]>([]);
+  const [pendingCircle, setPendingCircle] = useState<any[]>([]);
+  const [pendingLot, setPendingLot] = useState<any[]>([]);
 
   useEffect(() => {
     // seed with incoming props initially
@@ -139,6 +146,55 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
     } catch (err) {
       console.error('Pending request fetch failed', err);
       toast({ title: 'Failed to fetch pending approvals', variant: 'destructive' });
+    }
+  };
+
+  const fetchDeptPending = async (entity: 'District' | 'Circle' | 'Lot') => {
+    try {
+      const res = await AuditService.getControllerPending('jm', entity, '22-3');
+      if (entity === 'District') setPendingDistrict(res);
+      if (entity === 'Circle') setPendingCircle(res);
+      if (entity === 'Lot') setPendingLot(res);
+    } catch (e) {
+      toast({ title: 'Failed to load pending approvals', description: String(e), variant: 'destructive' });
+    }
+  };
+
+  useEffect(() => {
+    if (showDeptApprovalsDialog) {
+      fetchDeptPending('District');
+      fetchDeptPending('Circle');
+      fetchDeptPending('Lot');
+    }
+  }, [showDeptApprovalsDialog]);
+
+  const sendToManager = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
+    try {
+      await AuditService.juniorManagerAction({ loginId: loginId ?? 'system', id: String(item.id), masterType, action: 'approve', statusCode: '22-2' });
+      toast({ title: 'Sent to Manager', description: `${masterType} #${item.id} escalated` });
+      fetchDeptPending(masterType);
+    } catch (e) {
+      toast({ title: 'Failed to escalate', description: String(e), variant: 'destructive' });
+    }
+  };
+
+  const sendToSeniorManager = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
+    try {
+      await AuditService.managerAction({ loginId: loginId ?? 'system', id: String(item.id), masterType, action: 'approve', statusCode: '22-3' });
+      toast({ title: 'Sent to Senior Manager', description: `${masterType} #${item.id} escalated` });
+      fetchDeptPending(masterType);
+    } catch (e) {
+      toast({ title: 'Failed to escalate', description: String(e), variant: 'destructive' });
+    }
+  };
+
+  const approveBySrManagerOrAdmin = async (item: any, masterType: 'District' | 'Circle' | 'Lot') => {
+    try {
+      await AuditService.updateAuditAction({ id: String(item.id), masterType, action: 'approve', statusCode: '22-1' });
+      toast({ title: 'Approved', description: `${masterType} #${item.id} approved` });
+      fetchDeptPending(masterType);
+    } catch (e) {
+      toast({ title: 'Failed to approve', description: String(e), variant: 'destructive' });
     }
   };
 
@@ -339,6 +395,15 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
                 <RefreshCw className="w-4 h-4" />
                 Refresh
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeptApprovalsDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Dept Approvals
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -533,6 +598,139 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dept Approvals Dialog */}
+      <Dialog open={showDeptApprovalsDialog} onOpenChange={setShowDeptApprovalsDialog}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Department Approvals</DialogTitle>
+          </DialogHeader>
+          <Tabs value={activeEntityTab} onValueChange={(v) => setActiveEntityTab(v as any)}>
+            <TabsList>
+              <TabsTrigger value="District">District</TabsTrigger>
+              <TabsTrigger value="Circle">Circle</TabsTrigger>
+              <TabsTrigger value="Lot">Lot</TabsTrigger>
+            </TabsList>
+            <TabsContent value="District">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending (JM) - District</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Master Type</TableHead>
+                        <TableHead>Status Code</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingDistrict.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.masterType || 'District'}</TableCell>
+                          <TableCell>{item.statusCode}</TableCell>
+                          <TableCell>
+                            {userRole === 'ROLE_JuniorManager' && (
+                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'District')}>Send to Manager</Button>
+                            )}
+                            {userRole === 'ROLE_Manager' && (
+                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'District')}>Send to Sr. Manager</Button>
+                            )}
+                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'District')}>Approve</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="Circle">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending (JM) - Circle</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Master Type</TableHead>
+                        <TableHead>Status Code</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingCircle.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.masterType || 'Circle'}</TableCell>
+                          <TableCell>{item.statusCode}</TableCell>
+                          <TableCell>
+                            {userRole === 'ROLE_JuniorManager' && (
+                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'Circle')}>Send to Manager</Button>
+                            )}
+                            {userRole === 'ROLE_Manager' && (
+                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'Circle')}>Send to Sr. Manager</Button>
+                            )}
+                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'Circle')}>Approve</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="Lot">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending (JM) - Lot</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Master Type</TableHead>
+                        <TableHead>Status Code</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingLot.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.id}</TableCell>
+                          <TableCell>{item.masterType || 'Lot'}</TableCell>
+                          <TableCell>{item.statusCode}</TableCell>
+                          <TableCell>
+                            {userRole === 'ROLE_JuniorManager' && (
+                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700" onClick={() => sendToManager(item, 'Lot')}>Send to Manager</Button>
+                            )}
+                            {userRole === 'ROLE_Manager' && (
+                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => sendToSeniorManager(item, 'Lot')}>Send to Sr. Manager</Button>
+                            )}
+                            {(userRole === 'ROLE_SeniorManager' || userRole === 'ROLE_ADMIN') && (
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => approveBySrManagerOrAdmin(item, 'Lot')}>Approve</Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>

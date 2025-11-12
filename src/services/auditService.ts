@@ -93,4 +93,16 @@ export class AuditService {
     });
     return res.data;
   }
+
+  // Controller-based endpoint for pending by role (e.g., jm/man/sman/admin)
+  static async getControllerPending(
+    role: ApprovalRole,
+    masterType: string,
+    statusCode: string
+  ): Promise<AuditItem[]> {
+    const res = await coreApi.get(`/auditController/${role}/pending`, {
+      params: { masterType, statusCode },
+    });
+    return res.data;
+  }
 }
