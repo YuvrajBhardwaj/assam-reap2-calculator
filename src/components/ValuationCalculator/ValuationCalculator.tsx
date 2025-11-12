@@ -66,16 +66,6 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
         <CardContent className="pt-2">
           {selectedType === 'plot' && <PlotForm ref={plotFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
           {selectedType === 'plot-with-structure' && <PlotWithStructureForm ref={plotWithStructureFormRef} onCalculate={calculateMarketValue} hideCalculateButton={true} initialLocationData={initialLocationData} />}
-
-          {/* Show Market Value Button */}
-          <div className="flex justify-center mt-6">
-            <Button 
-              onClick={handleShowMarketValue}
-              className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
-            >
-              Show Market Value
-            </Button>
-          </div>
           
         </CardContent>
 

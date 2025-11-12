@@ -113,6 +113,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [mainRoadBand, setMainRoadBand] = useState<FullParameter | null>(null);
   const [metalRoadBand, setMetalRoadBand] = useState<FullParameter | null>(null);
   const [mainMarketBand, setMainMarketBand] = useState<FullParameter | null>(null);
+  // New: Approach Road Width Band states
+  const [onApproachRoadWidth, setOnApproachRoadWidth] = useState(false);
+  const [approachRoad1stBand, setApproachRoad1stBand] = useState<FullParameter | null>(null);
+  const [approachRoad2ndBand, setApproachRoad2ndBand] = useState<FullParameter | null>(null);
+  const [onApproachRoad1stBand, setOnApproachRoad1stBand] = useState(false);
+  const [onApproachRoad2ndBand, setOnApproachRoad2ndBand] = useState(false);
   const [totalLessa, setTotalLessa] = useState(0);
   const [locationMethod, setLocationMethod] = useState('manual');
   const [onRoad, setOnRoad] = useState(false);
@@ -154,6 +160,26 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       return basePriceLandUse ?? 0;
     }
   }, [landUseChange, newBasePriceLandUse, basePriceLandUse]);
+  const bandWeights = useMemo(() => ({
+    12: 15,
+    13: 10,
+    5: 10,
+    18: 5,
+    19: 2.5,
+    2: 1,
+    15: 15,
+    16: 10,
+  }), []);
+  const parameterWeightPercent = useMemo(() => {
+    const selectedIds: number[] = [];
+    selectedSubclauses.forEach(p => selectedIds.push(p.parameterId));
+    if (onMainRoad && mainRoadBand) selectedIds.push(mainRoadBand.parameterId);
+    if (onMetalRoad && metalRoadBand) selectedIds.push(metalRoadBand.parameterId);
+    if (onMainMarket && mainMarketBand) selectedIds.push(mainMarketBand.parameterId);
+    if (onApproachRoadWidth && onApproachRoad1stBand && approachRoad1stBand) selectedIds.push(approachRoad1stBand.parameterId);
+    if (onApproachRoadWidth && onApproachRoad2ndBand && approachRoad2ndBand) selectedIds.push(approachRoad2ndBand.parameterId);
+    return selectedIds.reduce((sum, id) => sum + ((bandWeights as any)[id] || 0), 0);
+  }, [selectedSubclauses, onMainRoad, mainRoadBand, onMetalRoad, metalRoadBand, onMainMarket, mainMarketBand, onApproachRoadWidth, onApproachRoad1stBand, approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, bandWeights]);
   // NEW: Computed Plot Level Base Value
   // Formula: Plot Level Base = Mouza Base × (1 + Lot % / 100) × (1 + Land Use % / 100)
   // Note: basePriceMouza already includes District Base × Geo × Conversion (pre-computed)
@@ -164,8 +190,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
     const lotMultiplier = 1 + (basePriceLot / 100);
     const landUseMultiplier = 1 + (landUseIncrease / 100);
-    return Math.round(basePriceMouza * lotMultiplier * landUseMultiplier);
-  }, [basePriceMouza, basePriceLot, landUseIncrease]);
+    const parameterMultiplier = 1 + ((parameterWeightPercent || 0) / 100);
+    return Math.round(basePriceMouza * lotMultiplier * landUseMultiplier * parameterMultiplier);
+  }, [basePriceMouza, basePriceLot, landUseIncrease, parameterWeightPercent]);
   const hasBaseValue = useMemo(() => {
     return selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLotId && !!selectedLandUseCode && plotLevelBaseValue !== null;
   }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, selectedLandUseCode, plotLevelBaseValue]);
@@ -186,24 +213,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
     return null;
   }, [plotLevelBaseValue, totalLessa, ratePercent]);
-  // NEW: Band weights map (hardcoded based on business logic; can be fetched from API if added)
-  const bandWeights = useMemo(() => ({
-    // Main Road bands (areaTypeId 1 - Rural example)
-    12: 15, // 1st band Distance from Main Road (0-150m)
-    13: 10, // 2nd band (150-450m)
-    // Assume 14: 5 for 3rd band if exists
-    // Metal Road bands (areaTypeId 2 - Urban example)
-    5: 10, // 1st band Distance from Main Road (0-500m)
-    // Assume more for 2nd/3rd
-    // Main Market bands (mixed areaTypeId)
-    18: 5, // 1st band Distance from Main Market (0-100m)
-    19: 2.5, // 2nd band (100-200m)
-    2: 1, // 3rd band (200-400m)
-    // Approach road width bands
-    15: 15, // 1st band width (0-10ft) - assume weight
-    16: 10, // 2nd band (10-20ft)
-    // Add more as per business rules or API enhancement
-  }), []);
   // NEW: Grouped bands for cascading
   const paramGroups = useMemo(() => ({
     mainRoad: {
@@ -222,6 +231,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       label: null, // Always visible
       bands: parameters
         .filter(p => p.parameter.includes('Distance from Main Market'))
+        .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
+    },
+    approachRoadWidth: {
+      label: 'Width of Approach Road',
+      bands: parameters
+        .filter(p => p.parameter.includes('width of approach road'))
         .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
     }
     // Add more groups e.g., approachRoadWidth if replacing input with bands
@@ -272,6 +287,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setOnMainRoad(formData.onMainRoad || false);
       setOnMetalRoad(formData.onMetalRoad || false);
       setOnMainMarket(formData.onMainMarket || false);
+      setOnApproachRoadWidth(formData.onApproachRoadWidth || false);
+      setOnApproachRoad1stBand(formData.onApproachRoad1stBand || false);
+      setOnApproachRoad2ndBand(formData.onApproachRoad2ndBand || false);
     }
   }, []);
 
@@ -292,6 +310,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       if (formData.mainMarketBandId) {
         const param = parameters.find(p => p.parameterId.toString() === formData.mainMarketBandId);
         setMainMarketBand(param || null);
+      }
+      if (formData.approachRoad1stBandId) {
+        const param = parameters.find(p => p.parameterId.toString() === formData.approachRoad1stBandId);
+        setApproachRoad1stBand(param || null);
+      }
+      if (formData.approachRoad2ndBandId) {
+        const param = parameters.find(p => p.parameterId.toString() === formData.approachRoad2ndBandId);
+        setApproachRoad2ndBand(param || null);
       }
       if (formData.selectedSubclauseIds) {
         const params = formData.selectedSubclauseIds
@@ -324,6 +350,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       mainRoadBandId: mainRoadBand?.parameterId?.toString() || '',
       metalRoadBandId: metalRoadBand?.parameterId?.toString() || '',
       mainMarketBandId: mainMarketBand?.parameterId?.toString() || '',
+      approachRoad1stBandId: approachRoad1stBand?.parameterId?.toString() || '',
+      approachRoad2ndBandId: approachRoad2ndBand?.parameterId?.toString() || '',
       selectedSubclauseIds: selectedSubclauses.map(p => p.parameterId.toString()),
       locationMethod,
       onRoad,
@@ -335,9 +363,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       onMainRoad,
       onMetalRoad,
       onMainMarket,
+      onApproachRoadWidth,
+      onApproachRoad1stBand,
+      onApproachRoad2ndBand,
     };
     sessionStorage.setItem('plotFormState', JSON.stringify(formData));
-  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad]);
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, approachRoad1stBand, approachRoad2ndBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad, onMainMarket, onApproachRoadWidth, onApproachRoad1stBand, onApproachRoad2ndBand]);
 
   useEffect(() => {
     const bigha = parseFloat(areaBigha) || 0;
@@ -579,6 +610,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       }
       // Updated: All selected parameter IDs (flat + cascading bands)
       const allSelectedParams = [...selectedSubclauses, mainRoadBand, metalRoadBand, mainMarketBand].filter((p): p is FullParameter => p !== null);
+      if (onApproachRoadWidth) {
+        if (onApproachRoad1stBand && approachRoad1stBand) allSelectedParams.push(approachRoad1stBand);
+        if (onApproachRoad2ndBand && approachRoad2ndBand) allSelectedParams.push(approachRoad2ndBand);
+      }
       const allSelectedParamIds = allSelectedParams.map(p => p.parameterId.toString());
       const payload: ComprehensiveValuationRequest = {
         jurisdictionInformation: {
@@ -639,6 +674,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       }
       // Updated: Include cascading bands in per-lessa calc too
       const allSelectedParams = [...selectedSubclauses, mainRoadBand, metalRoadBand, mainMarketBand].filter((p): p is FullParameter => p !== null);
+      if (onApproachRoadWidth) {
+        if (onApproachRoad1stBand && approachRoad1stBand) allSelectedParams.push(approachRoad1stBand);
+        if (onApproachRoad2ndBand && approachRoad2ndBand) allSelectedParams.push(approachRoad2ndBand);
+      }
       const allSelectedParamIds = allSelectedParams.map(p => p.parameterId.toString());
       const payload: ComprehensiveValuationRequest = {
         jurisdictionInformation: {
@@ -1090,14 +1129,20 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm border">
                   <p className="text-gray-500 text-xs uppercase tracking-wide">Lot Adjustment</p>
-                  <p className={`font-mono font-semibold ${basePriceLot > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                  <p className={`font-mono font-semibold ${basePriceLot > 0 ? 'text-green-600' : 'text-gray-600'}`}> 
                     +{basePriceLot}%
                   </p>
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm border">
                   <p className="text-gray-500 text-xs uppercase tracking-wide">Land Use Adjustment</p>
-                  <p className={`font-mono font-semibold ${landUseIncrease > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                  <p className={`font-mono font-semibold ${landUseIncrease > 0 ? 'text-green-600' : 'text-gray-600'}`}> 
                     +{landUseIncrease}%
+                  </p>
+                </div>
+                <div className="bg-white rounded-md p-3 shadow-sm border">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide">Parameter Adjustment</p>
+                  <p className={`font-mono font-semibold ${parameterWeightPercent > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    +{parameterWeightPercent}%
                   </p>
                 </div>
               </div>
@@ -1199,24 +1244,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 <MapPin className="w-3 h-3 text-gray-500" />
                 Selected Area Type: {areaType} ({areaType === 'RURAL' ? '2%' : '1%'})
               </p>
-              {/* New Card: Total Market Valuation with Rate - Placed under Area Type */}
-              {totalMarketValuationWithRate !== null && (
-                <Card className="border-purple-200 bg-purple-50">
-                  <CardContent className="p-4">
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground mb-1">Total Market Valuation (incl. {areaType} Rate)</p>
-                      <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa + {ratePercent * 100}% adjustment</p>
-                      <Button
-                        onClick={() => navigate('/', { state: { tab: 'stamp-duty-calculator', initialMarketValue: totalMarketValuationWithRate } })}
-                        className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        Calculate Stamp Duty
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              
             </div>
             {/* Display Per Lessa Value */}
             {perLessaValue !== null && (
@@ -1412,6 +1440,71 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   </p>
                 )}
               </div>
+              {/* Width of Approach Road */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="onApproachRoadWidth"
+                    checked={onApproachRoadWidth}
+                    onCheckedChange={(checked) => {
+                      setOnApproachRoadWidth(Boolean(checked));
+                      if (!checked) {
+                        setOnApproachRoad1stBand(false);
+                        setOnApproachRoad2ndBand(false);
+                        setApproachRoad1stBand(null);
+                        setApproachRoad2ndBand(null);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="onApproachRoadWidth" className="text-sm">Width of Approach Road</Label>
+                </div>
+                {onApproachRoadWidth && (
+                  <div className="space-y-2">
+                    <Select
+                      value={approachRoad1stBand?.parameterId?.toString() || approachRoad2ndBand?.parameterId?.toString() || ''}
+                      onValueChange={(val) => {
+                        const param = paramGroups.approachRoadWidth.bands.find(p => p.parameterId.toString() === val);
+                        if (!param) {
+                          setOnApproachRoad1stBand(false);
+                          setApproachRoad1stBand(null);
+                          setOnApproachRoad2ndBand(false);
+                          setApproachRoad2ndBand(null);
+                          return;
+                        }
+                        if (param.parameterId === 15) {
+                          setOnApproachRoad1stBand(true);
+                          setApproachRoad1stBand(param);
+                          setOnApproachRoad2ndBand(false);
+                          setApproachRoad2ndBand(null);
+                        } else if (param.parameterId === 16) {
+                          setOnApproachRoad2ndBand(true);
+                          setApproachRoad2ndBand(param);
+                          setOnApproachRoad1stBand(false);
+                          setApproachRoad1stBand(null);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Width of Approach Road Band" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paramGroups.approachRoadWidth.bands
+                          .filter(p => p.parameterId === 15 || p.parameterId === 16)
+                          .map((p) => (
+                            <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
+                              {p.parameter}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {(approachRoad1stBand || approachRoad2ndBand) && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Selected: {(approachRoad1stBand || approachRoad2ndBand)?.parameter} {((approachRoad1stBand || approachRoad2ndBand)?.minMaxRange) ? `(${(approachRoad1stBand || approachRoad2ndBand)?.minMaxRange})` : ''} - Weight: {bandWeights[(approachRoad1stBand || approachRoad2ndBand)!.parameterId] || 0}%
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               {/* Flat Parameters (non-cascading) */}
               {loadingParameters ? (
                 <div className="flex items-center justify-center py-8">
@@ -1434,6 +1527,135 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
+                </div>
+              )}
+              {totalMarketValuationWithRate !== null && (
+                <Card className="border-purple-200 bg-purple-50 mt-4">
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Total Market Valuation (incl. {areaType} Rate)</p>
+                      <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa + {ratePercent * 100}% adjustment</p>
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <Button
+                          onClick={handleCalculate}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          onClick={() => navigate('/', { state: { tab: 'stamp-duty-calculator', initialMarketValue: totalMarketValuationWithRate } })}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          Calculate Stamp Duty
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!hideCalculateButton && marketValue !== null && (
+                <div className="space-y-4 pt-4">
+                  <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-center mb-4">
+                        <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+                        <CardTitle className="text-xl font-bold text-gray-800">Property Valuation Result</CardTitle>
+                      </div>
+                      <div className="bg-white rounded-lg p-6 shadow-inner mb-4">
+                        <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
+                        <p className="text-4xl font-bold text-gray-800 mb-2">₹{marketValue.toLocaleString('en-IN')}</p>
+                        <p className="text-xs text-muted-foreground">Based on current guideline rates and property specifications</p>
+                      </div>
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        <Button
+                          onClick={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
+                        </Button>
+                        <Button
+                          onClick={handleCalculate}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          onClick={navigateToStampDuty}
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Calculate Stamp Duty
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  {showDetailedBreakdown && calculationResult && (
+                    <Card className="border-gray-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Calculator className="w-5 h-5" />
+                          Detailed Calculation Breakdown
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Base Price (Mouza):</span>
+                              <span className="font-medium">₹{basePriceMouza?.toLocaleString('en-IN') || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Lot Factor:</span>
+                              <span className="font-medium">{basePriceLot ? `${basePriceLot}%` : 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Land Use Factor:</span>
+                              <span className="font-medium">{landUseIncrease ? `${landUseIncrease}%` : 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Plot Level Base:</span>
+                              <span className="font-medium">₹{plotLevelBaseValue?.toLocaleString('en-IN') || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Area Type:</span>
+                              <span className="font-medium">{areaType}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Total Area:</span>
+                              <span className="font-medium">
+                                {areaBigha && `${areaBigha}B `}
+                                {areaKatha && `${areaKatha}K `}
+                                {areaLessa && `${areaLessa}L`}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Location Factors:</span>
+                              <span className="font-medium">
+                                {onRoad && 'On Road'} {cornerPlot && 'Corner'} {litigatedPlot && 'Litigated'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {calculationResult.breakdown && (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <h4 className="font-semibold mb-2">Additional Calculation Details:</h4>
+                            <pre className="text-xs text-gray-600 overflow-x-auto">
+                              {JSON.stringify(calculationResult.breakdown, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </div>
@@ -1526,121 +1748,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
           )}
         </CardContent>
       </Card>
-      {/* Calculate Button - Only show when not explicitly hidden */}
-      {!hideCalculateButton && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleCalculate}
-            disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
-            className="px-8 py-3 text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
-          >
-            {isCalculating ? 'Calculating...' : 'Show Market Value'}
-          </Button>
-        </div>
-      )}
-      {/* Market Value Display - Enhanced with detailed breakdown and actions */}
-      {!hideCalculateButton && marketValue !== null && (
-        <div className="space-y-4">
-          {/* Main Result Card */}
-          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-center mb-4">
-                <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
-                <CardTitle className="text-xl font-bold text-gray-800">Property Valuation Result</CardTitle>
-              </div>
-           
-              <div className="bg-white rounded-lg p-6 shadow-inner mb-4">
-                <p className="text-sm text-muted-foreground mb-2">Total Market Value</p>
-                <p className="text-4xl font-bold text-gray-800 mb-2">₹{marketValue.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-muted-foreground">Based on current guideline rates and property specifications</p>
-              </div>
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button
-                  onClick={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Calculator className="w-4 h-4" />
-                  {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
-                </Button>
-             
-                <Button
-                  onClick={navigateToStampDuty}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                >
-                  <FileText className="w-4 h-4" />
-                  Calculate Stamp Duty
-                  <ExternalLink className="w-3 h-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Detailed Breakdown */}
-          {showDetailedBreakdown && calculationResult && (
-            <Card className="border-gray-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="w-5 h-5" />
-                  Detailed Calculation Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Base Price (Mouza):</span>
-                      <span className="font-medium">₹{basePriceMouza?.toLocaleString('en-IN') || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Lot Factor:</span>
-                      <span className="font-medium">{basePriceLot ? `${basePriceLot}%` : 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Land Use Factor:</span>
-                      <span className="font-medium">{landUseIncrease ? `${landUseIncrease}%` : 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Plot Level Base:</span>
-                      <span className="font-medium">₹{plotLevelBaseValue?.toLocaleString('en-IN') || 'N/A'}</span>
-                    </div>
-                  </div>
-               
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Area Type:</span>
-                      <span className="font-medium">{areaType}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Area:</span>
-                      <span className="font-medium">
-                        {areaBigha && `${areaBigha}B `}
-                        {areaKatha && `${areaKatha}K `}
-                        {areaLessa && `${areaLessa}L`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Location Factors:</span>
-                      <span className="font-medium">
-                        {onRoad && 'On Road'} {cornerPlot && 'Corner'} {litigatedPlot && 'Litigated'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-             
-                {calculationResult.breakdown && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">Additional Calculation Details:</h4>
-                    <pre className="text-xs text-gray-600 overflow-x-auto">
-                      {JSON.stringify(calculationResult.breakdown, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
       {/* History Dropdown */}
       {!hideCalculateButton && calculationHistory.length > 0 && (
         <Card className="border-gray-200">
