@@ -56,11 +56,11 @@ interface WorkflowItem {
   location: string;
   submittedDate: string;
   status:
-    | "pending"
-    | "in-progress"
-    | "approved"
-    | "rejected"
-    | "on-hold";
+  | "pending"
+  | "in-progress"
+  | "approved"
+  | "rejected"
+  | "on-hold";
   assignedTo: string;
   priority: "low" | "medium" | "high";
   daysElapsed: number;
@@ -168,10 +168,10 @@ const DepartmentWorkflowDashboard = () => {
       prev.map((r) =>
         r.id === selectedMasterDataRequest.id
           ? {
-              ...r,
-              status: actionType === "approve" ? "Approved" : "Rejected",
-              approvalLevel: actionType === "approve" ? Math.min(4, r.approvalLevel + 1) : r.approvalLevel,
-            }
+            ...r,
+            status: actionType === "approve" ? "Approved" : "Rejected",
+            approvalLevel: actionType === "approve" ? Math.min(4, r.approvalLevel + 1) : r.approvalLevel,
+          }
           : r
       )
     );
@@ -644,8 +644,8 @@ const DepartmentWorkflowDashboard = () => {
         </TabsContent>
 
 
-        
-           
+
+
       </Tabs>
     </div>
   );

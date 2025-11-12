@@ -316,7 +316,7 @@ export default function DepartmentDashboard() {
           }
           toast({
             title: "Request Approved",
-            description: `Request ${req.id} has been approved and moved to the next stage.`, 
+            description: `Request ${req.id} has been approved and moved to the next stage.`,
           });
         } else if (actionType === 'send-back') {
           newStatus = 'Pending';
@@ -324,7 +324,7 @@ export default function DepartmentDashboard() {
           newApprovalLevel = 0; // Reset approval level
           toast({
             title: "Request Sent Back",
-            description: `Request ${req.id} has been sent back for revisions.`, 
+            description: `Request ${req.id} has been sent back for revisions.`,
           });
         } else if (actionType === 'reject') {
           newStatus = 'Rejected';
@@ -332,7 +332,7 @@ export default function DepartmentDashboard() {
           newApprovalLevel = -1; // Indicate rejection
           toast({
             title: "Request Rejected",
-            description: `Request ${req.id} has been rejected.`, 
+            description: `Request ${req.id} has been rejected.`,
           });
         }
 
@@ -367,7 +367,7 @@ export default function DepartmentDashboard() {
     }
   };
 
-const subModules = [
+  const subModules = [
     { id: 'dashboards', label: 'Dashboards', color: 'bg-teal-500' },
     { id: 'databases', label: 'Databases', color: 'bg-teal-500' }
   ];
