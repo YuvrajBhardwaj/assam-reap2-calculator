@@ -1,5 +1,5 @@
 // StampDutyForm.tsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchInstruments } from '../../services/stampDutyService';
 import { jurisdictionApi } from '../../services/http';
