@@ -1,3 +1,4 @@
+// StampDutyForm.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchInstruments } from '../../services/stampDutyService';
@@ -10,6 +11,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface StampDutyFormProps {
@@ -62,8 +64,11 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
 
   // Load market value from props or location state
   useEffect(() => {
-    const state = location.state as { initialMarketValue?: number };
-    if (initialMarketValue) {
+    const state = location.state as { initialMarketValue?: number } | undefined;
+    if (state?.initialMarketValue) {
+      setMarketValue(state.initialMarketValue);
+      setAgreementValue(state.initialMarketValue);
+    } else if (initialMarketValue) {
       setMarketValue(initialMarketValue);
       setAgreementValue(initialMarketValue);
     }
@@ -341,10 +346,17 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
           </p>
           <div className="flex items-center mb-4">
             <button
-              onClick={() => navigate('/', { state: { tab: 'valuation-calculator', initialLocationData: initialLocationData } })}
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('navigate-to-tab', {
+                    detail: { tab: 'valuation-calculator', locationData: initialLocationData },
+                  })
+                );
+              }}
               className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
               </svg>
               Back

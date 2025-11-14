@@ -137,12 +137,16 @@ const Index = () => {
   }, [location.state, navigate, location.pathname]);
 
   const handleTabNavigation = (event: CustomEvent) => {
-    const { tab, locationData } = event.detail;
+    const { tab, locationData, initialMarketValue } = event.detail as { tab?: string; locationData?: any; initialMarketValue?: number };
     if (tab) {
       handleTabChange(tab);
     }
     if (locationData) {
       setInitialLocationData(locationData);
+    }
+    if (typeof initialMarketValue === 'number') {
+      setPrefilledStampDuty({ marketValue: initialMarketValue });
+      setActiveTab('stamp-duty-calculator');
     }
   };
 

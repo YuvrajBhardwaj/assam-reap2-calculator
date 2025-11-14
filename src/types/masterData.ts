@@ -73,6 +73,7 @@ export interface Village extends BaseEntity {
   circleCode: string;
   mouzaCode: string;
   isUrban: boolean;
+  areaType?: 'RURAL' | 'URBAN';
 }
 
 export interface Zone extends BaseEntity {}
@@ -150,6 +151,8 @@ export interface LandSubClassMapping {
 export interface CircleLotFactorRequest {
   districtCode: string;
   circleCode: string;
+  mouzaCode?: string;
+  villageCode?: string;
   lotCode: string;
   daagNumber: string;
 }

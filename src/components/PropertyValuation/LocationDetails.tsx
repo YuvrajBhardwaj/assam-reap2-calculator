@@ -77,6 +77,9 @@ const LocationDetails = ({
   const [selectedCircleCode, setSelectedCircleCode] = useState<string | undefined>(undefined);
   const [selectedMouzaCode, setSelectedMouzaCode] = useState<string | undefined>(undefined);
 
+  // Compute current district name for display
+  const currentDistrictName = districts.find(d => d.districtCode === selectedDistrictCode)?.name || propDistrict;
+
   // keep prop in sync
   useEffect(() => {
     setSelectedDistrictCode(propDistrictCode);
@@ -202,19 +205,19 @@ const LocationDetails = ({
               <div className="flex gap-2">
                 <span className="font-semibold w-32">District:</span>
                 <Select
-                  value={selectedDistrictCode || ""}
+                  value={currentDistrictName}
                   onValueChange={(value) => {
-                    setSelectedDistrictCode(value);
-                    setSelectedCircleCode(undefined);
-                    setSelectedMouzaCode(undefined);
-                    if (onDistrictChange) {
-                      const d = districts.find(d => d.districtCode === value);
-                      if (d) {
+                    const selectedD = districts.find(d => d.name === value);
+                    if (selectedD) {
+                      setSelectedDistrictCode(selectedD.districtCode);
+                      setSelectedCircleCode(undefined);
+                      setSelectedMouzaCode(undefined);
+                      if (onDistrictChange) {
                         const districtDetails: DistrictDetails = {
-                          districtCode: d.districtCode,
-                          name: d.name,
-                          lat: d.lat, // Assuming 'lat' and 'lng' exist on District
-                          lng: d.lng, // Assuming 'lat' and 'lng' exist on District
+                          districtCode: selectedD.districtCode,
+                          name: selectedD.name,
+                          lat: selectedD.lat, // Assuming 'lat' and 'lng' exist on District
+                          lng: selectedD.lng, // Assuming 'lat' and 'lng' exist on District
                         };
                         onDistrictChange(districtDetails);
                       }
@@ -240,7 +243,7 @@ const LocationDetails = ({
                       <SelectItem value="no-data" disabled>No districts</SelectItem>
                     ) : (
                       districts.map(d => (
-                        <SelectItem key={d.districtCode || d.name} value={d.districtCode || d.name}>
+                        <SelectItem key={d.districtCode || d.name} value={d.name}>
                           {d.name}
                         </SelectItem>
                       ))

@@ -214,6 +214,7 @@ export interface ComprehensiveValuationRequest {
     districtCode: string;
     circleCode: string;
     mouzaCode: string;
+    villageCode?: string;
     lotCode: string;
     plotNo?: string;
     currentLandUse: string;

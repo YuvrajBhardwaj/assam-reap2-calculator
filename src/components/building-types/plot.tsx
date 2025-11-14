@@ -4,7 +4,7 @@ import { MASTER_DATA_API_BASE_URL } from "../../services/http";
 
 export interface DistrictDetails {
   name: string;
-  districtCode: string;
+  districtCode?: string;
   lat: number;
   lng: number;
   areaType?: string;
@@ -133,7 +133,7 @@ export const useAssamDistrictDetails = () => {
             } else {
               enriched.push({
                 name: districtName,
-                districtCode: undefined, // No backend code available
+                districtCode: "", // No backend code available
                 lat: geo.lat,
                 lng: geo.lng,
                 areaType: "Urban",
