@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchInstruments } from '../../services/stampDutyService';
-import { jurisdictionApi } from '../../services/http'; // Assuming http service is in services/http.ts
+import { jurisdictionApi } from '../../services/http';
 import { Instrument, GenderOption, SelectionResponse } from '../../types/stampDuty';
 import {
   Chart as ChartJS,
@@ -16,12 +16,12 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface StampDutyFormProps {
   initialMarketValue?: number;
-  initialLocationData?: any; // Add this line
+  initialLocationData?: any;
 }
 
 const StampDutyForm: React.FC<StampDutyFormProps> = ({
   initialMarketValue,
-  initialLocationData, // Add this line
+  initialLocationData,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,6 +43,7 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
       setIsMarketValuePrefilled(true);
     }
   }, [initialMarketValue]);
+
   const [baseValue, setBaseValue] = useState<number | null>(null);
   const [stampDuty, setStampDuty] = useState<number | null>(null);
   const [surcharge, setSurcharge] = useState<number | null>(null);
@@ -93,18 +94,20 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
     };
   }, [stampDuty, surcharge, cess, registrationFees]);
 
-  // Second pie data for total payable composition
+  // ✅ FIXED: Second pie shows Property Value vs Total Duty & Fees
   const totalPayablePieData = useMemo(() => {
-    if (!totalPayable || !marketValue) return null;
+    if (baseValue === null || totalPayable === null || baseValue <= 0 || totalPayable <= 0) {
+      return null;
+    }
     return {
-      labels: ['Base Value', 'Total Duty & Fees'],
+      labels: ['Property Value', 'Stamp Duty & Fees'],
       datasets: [{
-        data: [marketValue, (totalPayable || 0) - marketValue],
+        data: [baseValue, totalPayable],
         backgroundColor: ['#E5E7EB', '#3B82F6'],
         borderWidth: 1,
       }],
     };
-  }, [totalPayable, marketValue]);
+  }, [baseValue, totalPayable]);
 
   // Common tooltip callback for currency formatting
   const currencyTooltipCallback = (context: any) => {
@@ -158,22 +161,49 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
     },
   }), []);
 
-  // Options for the second pie
+  // ✅ FIXED: Updated title and logic for second pie
   const totalPayablePieOptions = useMemo(() => ({
-    ...pieOptions,
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      ...pieOptions.plugins,
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+        callbacks: {
+          label: function(context: any) {
+            let label = context.label || '';
+            if (label) label += ': ';
+            label += formatIndianCurrency(context.parsed);
+            return label;
+          },
+          afterLabel: function(context: any) {
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const percentage = ((context.parsed / total) * 100).toFixed(1);
+            return `(${percentage}%)`;
+          }
+        }
+      },
       title: {
         display: true,
-        text: 'Total Payable Composition',
+        text: 'Property Value vs Duty & Fees',
         font: {
           size: 16,
-          weight: 700,  // Fixed: Use number 700 instead of string 'bold'
+          weight: 700,
         },
         color: '#374151'
       },
     },
-  }), [pieOptions]);
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
+  }), [baseValue, totalPayable, formatIndianCurrency]);
 
   useEffect(() => {
     const loadInstruments = async () => {
@@ -202,7 +232,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
   const handleInstrumentChange = (id: number) => {
     setSelectedInstruments((prev) => {
       if (prev.includes(id)) {
-        // If instrument is deselected, remove its sub-instruments and genders
         setSelectedSubInstruments((prevSub) => {
           const newSub = { ...prevSub };
           delete newSub[id];
@@ -244,7 +273,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
       alert('Please select at least one instrument and choose a gender for each.');
       return;
     }
-    // Base value is max(marketValue, agreementValue)
     const currentBaseValue = Math.max(marketValue, agreementValue);
     setBaseValue(currentBaseValue);
     const payload = selectedInstruments.map((id) => ({
@@ -254,15 +282,12 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
     try {
       setLoading(true);
       setError(null);
-      // Fetch rates from backend
       const res = await jurisdictionApi.post('/jurisdictionInfo/selections', payload);
       const results: SelectionResponse[] = res.data;
       setSelectionResults(results);
-      // Calculate individual duty amounts and total stamp duty
       const individualAmounts = results.map(r => Math.round(currentBaseValue * (r.dutyValue / 100)));
       const totalDutyAmount = individualAmounts.reduce((sum, amount) => sum + amount, 0);
       setStampDuty(totalDutyAmount);
-      // Calculate additional fees (based on Assam rules; adjust as needed from Excel data)
       const surcharge = 0;
       setSurcharge(surcharge);
       const cess = 0;
@@ -271,9 +296,8 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
       setRegistrationFees(registrationFeesAmount);
       const totalAdditionalFees = surcharge + cess + registrationFeesAmount;
       setTotalFees(totalAdditionalFees);
-      // Total payable: base value + stamp duty + additional fees
-      const totalPayableAmount = currentBaseValue + totalDutyAmount + totalAdditionalFees;
-      setTotalPayable(totalPayableAmount); // set Total Payable = base value + stamp duty + additional fees
+      const totalPayableAmount = totalDutyAmount + totalAdditionalFees;
+      setTotalPayable(totalPayableAmount);
     } catch (e) {
       setError('Failed to calculate stamp duty. Please try again.');
       console.error(e);
@@ -336,7 +360,7 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
 
   return (
     <div className="w-full min-h-screen bg-gray-50 py-8">
-      <div className="w-full px-4 sm:px-6 lg:px-8"> {/* Removed max-w-7xl mx-auto to use full width */}
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Assam Stamp Duty Calculator
@@ -363,11 +387,10 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full"> {/* Ensured full width for grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full">
           {/* Left Column: Calculate Section */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full"> {/* Added w-full */}
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculate</h3>
-            {/* Value Inputs */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
@@ -397,7 +420,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 />
               </div>
             </div>
-            {/* Instrument Selection */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -423,7 +445,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 ))}
               </div>
             </div>
-            {/* Gender Selections */}
             <div className="mb-6 space-y-6">
               {selectedInstruments.map((id) => {
                 const instrument = instruments.find((inst) => inst.id === id);
@@ -454,7 +475,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 );
               })}
             </div>
-            {/* Calculate Button */}
             <div className="flex justify-center space-x-4">
               <button
                 onClick={calculateStampDuty}
@@ -489,9 +509,9 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
             </div>
           </div>
           {/* Right Column: Bill Generation */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full"> {/* Added w-full for bill */}
+          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full">
             {selectionResults ? (
-              <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full w-full"> {/* Added w-full */}
+              <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full w-full">
                 <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white flex justify-between items-center">
                   <div>
                     <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
@@ -504,7 +524,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                     🖨️ Print
                   </button>
                 </div>
-                {/* Property Details */}
                 <div className="p-6 border-b border-gray-200">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -517,12 +536,11 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                       <span className="font-semibold text-gray-900">₹{formatIndianCurrency(agreementValue)}</span>
                     </div>
                     <div className="flex justify-between md:col-span-2">
-                      <span className="font-medium text-gray-700">Base Value Used:</span>
+                      <span className="font-medium text-gray-700">Final Amount Used:</span>
                       <span className="font-semibold text-blue-600">₹{formatIndianCurrency(baseValue)} (Higher of Market/Consideration)</span>
                     </div>
                   </div>
                 </div>
-                {/* Instrument Breakdown */}
                 <div className="p-6 border-b border-gray-200">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Instrument Breakdown</h4>
                   <div className="overflow-x-auto">
@@ -555,7 +573,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                     </table>
                   </div>
                 </div>
-                {/* Fees Breakdown */}
                 <div className="p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Fees & Charges</h4>
                   <div className="overflow-x-auto mb-6">
@@ -567,10 +584,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="bg-white">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Base Value</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(baseValue)}</td>
-                        </tr>
                         <tr className={stampDuty ? 'bg-white' : 'bg-gray-50'}>
                           <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Stamp Duty</td>
                           <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
@@ -588,26 +601,26 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                           <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(registrationFees)}</td>
                         </tr>
                         <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Grand Total Payable</td>
+                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Total Amount</td>
                           <td className="border border-gray-300 px-4 py-3 text-right text-sm text-blue-800">₹{formatIndianCurrency(totalPayable)}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
-                  {/* Pie Charts for Breakdown */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full"> {/* Added w-full for pie grid */}
+                  {/* ✅ Pie Charts - Now Fixed */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     {pieData && (
-                      <div className="w-full"> {/* Added w-full for pie container */}
+                      <div className="w-full">
                         <h5 className="text-md font-semibold text-gray-900 mb-2">Duty Breakdown</h5>
-                        <div className="w-full h-64"> {/* Added w-full for pie chart */}
+                        <div className="w-full h-64">
                           <Pie data={pieData} options={pieOptions} />
                         </div>
                       </div>
                     )}
                     {totalPayablePieData && (
-                      <div className="w-full"> {/* Added w-full for pie container */}
-                        <h5 className="text-md font-semibold text-gray-900 mb-2">Total Payable Composition</h5>
-                        <div className="w-full h-64"> {/* Added w-full for pie chart */}
+                      <div className="w-full">
+                        <h5 className="text-md font-semibold text-gray-900 mb-2">Property Value vs Duty & Fees</h5>
+                        <div className="w-full h-64">
                           <Pie data={totalPayablePieData} options={totalPayablePieOptions} />
                         </div>
                       </div>
@@ -619,7 +632,7 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-8 w-full"> {/* Added w-full */}
+              <div className="flex flex-col items-center justify-center h-full text-center py-8 w-full">
                 <div className="text-6xl mb-4">🧮</div>
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Stamp Duty Calculator</h4>
                 <p className="text-gray-600 mb-4">Enter values, select instruments, and calculate to see your bill here.</p>
@@ -638,6 +651,6 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
       </div>
     </div>
   );
-}
+};
 
 export default StampDutyForm;

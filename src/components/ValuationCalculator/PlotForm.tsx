@@ -33,7 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getParameterDetails, type Parameter } from "@/services/parameterService";
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
-import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink } from 'lucide-react';
+import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink, Copy, RotateCcw, Loader2 } from 'lucide-react';
 
 interface FullParameter extends Parameter {
   parameterId: number;
@@ -411,6 +411,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     // 1 Bigha = 5 Katha, 1 Katha = 20 Lessa, so 1 Bigha = 100 Lessa
     setTotalLessa(bigha * 100 + katha * 20 + lessa);
   }, [areaBigha, areaKatha, areaLessa]);
+
+  const areaBighaInvalid = useMemo(() => areaBigha !== '' && (isNaN(parseFloat(areaBigha)) || parseFloat(areaBigha) < 0), [areaBigha]);
+  const areaKathaInvalid = useMemo(() => areaKatha !== '' && (isNaN(parseFloat(areaKatha)) || parseFloat(areaKatha) < 0), [areaKatha]);
+  const areaLessaInvalid = useMemo(() => areaLessa !== '' && (isNaN(parseFloat(areaLessa)) || parseFloat(areaLessa) < 0), [areaLessa]);
 
   // Load history from localStorage on component mount
   useEffect(() => {
@@ -993,9 +997,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 District
               </Label>
               <Select value={selectedDistrictCode} onValueChange={setSelectedDistrictCode}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select Districts" />
-                </SelectTrigger>
+              <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
+                <SelectValue placeholder="Select Districts" />
+              </SelectTrigger>
                 <SelectContent>
                   {districts.map((dist) => (
                     <SelectItem key={dist.code} value={dist.code}>
@@ -1011,9 +1015,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 Circle
               </Label>
               <Select value={selectedCircleCode} onValueChange={setSelectedCircleCode}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select Circle" />
-                </SelectTrigger>
+              <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
+                <SelectValue placeholder="Select Circle" />
+              </SelectTrigger>
                 <SelectContent>
                   {circles.map((circ) => (
                     <SelectItem key={circ.code} value={circ.code}>
@@ -1037,7 +1041,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   setBasePriceMouza(null);
                 }
               }}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
+                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
                   <SelectValue placeholder="Select Mouza" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1064,12 +1068,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 // Removed console.log for production
                 setSelectedLotId(val);
               }}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue>
-                    {lots.find((lot) => lot.id === selectedLotId)?.name ||
+              <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
+                <SelectValue>
+                  {lots.find((lot) => lot.id === selectedLotId)?.name ||
                       "Select Lot"}
-                  </SelectValue>
-                </SelectTrigger>
+                </SelectValue>
+              </SelectTrigger>
                 <SelectContent>
                   {lots.map((lot) => (
                     <SelectItem key={lot.id} value={lot.id}>
@@ -1091,9 +1095,9 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 Village
               </Label>
               <Select value={selectedVillageCode} onValueChange={setSelectedVillageCode}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
-                  <SelectValue placeholder="Select Village" />
-                </SelectTrigger>
+              <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
+                <SelectValue placeholder="Select Village" />
+              </SelectTrigger>
                 <SelectContent>
                   {villages.map((village) => (
                     <SelectItem key={village.code} value={village.code}>
@@ -1116,7 +1120,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 // Removed console.logs for production
                 setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
               }}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500">
+                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
                   <SelectValue placeholder="Select Current Land Use" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1153,10 +1157,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                     value={plotNo}
                     onChange={(e) => setPlotNo(e.target.value)}
                     placeholder="Enter Daag / Plot No."
-                    className="w-full ring-1 ring-border focus:ring-gray-500" // Shorten the input field
+                    className="w-full ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring"
                   />
-                  <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading} className="px-3">
-                    {isDaagLookupLoading ? 'Looking...' : 'Lookup'}
+                  <Button variant="secondary" onClick={handleDaagLookup} disabled={isDaagLookupLoading} className="px-3 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto">
+                    {isDaagLookupLoading ? (<span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Looking...</span>) : 'Lookup'}
                   </Button>
                 </div>
                 {daagFactorInfo && (
@@ -1178,9 +1182,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       value={areaBigha}
                       onChange={(e) => setAreaBigha(e.target.value)}
                       type="number"
-                      className="ring-1 ring-border focus:ring-gray-500"
+                      aria-invalid={areaBighaInvalid}
+                      className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive"
                     />
                     <p className="text-xs text-muted-foreground">Bigha</p>
+                    {areaBighaInvalid && (<p className="text-xs text-destructive">Enter a valid non-negative number</p>)}
                   </div>
                   <div className="space-y-1">
                     <Input
@@ -1188,9 +1194,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       value={areaKatha}
                       onChange={(e) => setAreaKatha(e.target.value)}
                       type="number"
-                      className="ring-1 ring-border focus:ring-gray-500"
+                      aria-invalid={areaKathaInvalid}
+                      className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive"
                     />
                     <p className="text-xs text-muted-foreground">Katha</p>
+                    {areaKathaInvalid && (<p className="text-xs text-destructive">Enter a valid non-negative number</p>)}
                   </div>
                   <div className="space-y-1">
                     <Input
@@ -1198,9 +1206,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       value={areaLessa}
                       onChange={(e) => setAreaLessa(e.target.value)}
                       type="number"
-                      className="ring-1 ring-border focus:ring-gray-500"
+                      aria-invalid={areaLessaInvalid}
+                      className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive"
                     />
                     <p className="text-xs text-muted-foreground">Lessa</p>
+                    {areaLessaInvalid && (<p className="text-xs text-destructive">Enter a valid non-negative number</p>)}
                   </div>
                 </div>
                 {totalLessa > 0 && (
@@ -1314,7 +1324,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* NEW: Base Value Calculation Display - Moved to Land Type Details when fields are filled - Neutral theme */}
           {hasBaseValue && plotLevelBaseValue !== null && (
-            <div className="mt-6 pt-4 border-t border-border bg-gray-50 rounded-lg p-4">
+            <div className="mt-6 pt-4 border-t border-border bg-gray-50 rounded-lg p-4 animate-in fade-in slide-in-from-bottom-1">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                   <Info className="w-4 h-4 text-gray-600" />
@@ -1358,7 +1368,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* Display Per Lessa Value */}
           {perLessaValue !== null && (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="border-green-200 bg-green-50 animate-in fade-in slide-in-from-bottom-1">
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Market Value per Lessa</p>
@@ -1370,7 +1380,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* Display Local Total Value */}
           {localTotalValue !== null && (
-            <Card className="border-blue-200 bg-blue-50">
+            <Card className="border-blue-200 bg-blue-50 animate-in fade-in slide-in-from-bottom-1">
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Total Market Value (Area Based)</p>
@@ -1649,7 +1659,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
               ) : null}
 
               {totalMarketValuationWithRate !== null && (
-                <Card className="border-purple-200 bg-purple-50 mt-4">
+                <Card className="border-purple-200 bg-purple-50 mt-4 animate-in fade-in slide-in-from-bottom-1">
                   <CardContent className="p-4">
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground mb-1">Total Market Valuation</p>
@@ -1657,14 +1667,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       <div className="mt-4 flex items-center justify-center gap-3">
                         <Button
                           onClick={handleCalculate}
-                          className="bg-green-600 hover:bg-green-700 text-white"
+                          className="bg-maroon-700 hover:bg-maroon-800 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
                           disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
                         >
-                          Save
+                          {isCalculating ? (<span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Calculating...</span>) : 'Calculate'}
                         </Button>
                         <Button
                           onClick={() => navigateToStampDuty()} // Changed to use the dedicated function
-                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                          className="bg-purple-600 hover:bg-purple-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
                         >
                           Calculate Stamp Duty
                         </Button>
@@ -1676,7 +1686,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
               {!hideCalculateButton && marketValue !== null && (
                 <div className="space-y-4 pt-4">
-                  <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 shadow-lg">
+                  <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 shadow-lg animate-in fade-in slide-in-from-bottom-1">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-center mb-4">
                         <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
@@ -1691,25 +1701,86 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                         <Button
                           onClick={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
                           variant="outline"
-                          className="flex items-center gap-2"
+                          className="flex items-center gap-2 transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
                         >
                           <Calculator className="w-4 h-4" />
                           {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
                         </Button>
                         <Button
                           onClick={handleCalculate}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          className="flex items-center gap-2 bg-maroon-700 hover:bg-maroon-800 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
                           disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
                         >
-                          Save
+                          {isCalculating ? (<span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Calculating...</span>) : 'Calculate'}
                         </Button>
                         <Button
                           onClick={navigateToStampDuty} // Use the dedicated function here too
-                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
                         >
                           <FileText className="w-4 h-4" />
                           Calculate Stamp Duty
                           <ExternalLink className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const valueToCopy = marketValue || totalMarketValuationWithRate || localTotalValue;
+                            if (!valueToCopy) {
+                              toast({ title: 'No value to copy', description: 'Calculate a value first.', variant: 'destructive' });
+                              return;
+                            }
+                            navigator.clipboard.writeText(String(valueToCopy));
+                            toast({ title: 'Copied', description: `₹${valueToCopy.toLocaleString('en-IN')} copied to clipboard` });
+                          }}
+                          variant="secondary"
+                          className="flex items-center gap-2 transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
+                        >
+                          <Copy className="w-4 h-4" /> Copy Result
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setSelectedDistrictCode('');
+                            setSelectedCircleCode('');
+                            setSelectedMouzaCode('');
+                            setSelectedVillageCode('');
+                            setSelectedLotId('');
+                            setPlotNo('');
+                            setCurrentLandUse('');
+                            setLandUseChange(false);
+                            setNewLandUse('');
+                            setCurrentLandType('');
+                            setAreaType('RURAL');
+                            setAreaBigha('');
+                            setAreaKatha('');
+                            setAreaLessa('');
+                            setMarketValueState(null);
+                            setPerLessaValueState(null);
+                            setOnRoad(false);
+                            setCornerPlot(false);
+                            setLitigatedPlot(false);
+                            setHasTenant(false);
+                            setRoadWidth('');
+                            setDistanceFromRoad('');
+                            setLocationMethod('manual');
+                            setOnMainRoad(false);
+                            setOnMetalRoad(false);
+                            setOnMainMarket(false);
+                            setOnApproachRoadWidth(false);
+                            setOnApproachRoad1stBand(false);
+                            setOnApproachRoad2ndBand(false);
+                            setMainRoadBand(null);
+                            setMetalRoadBand(null);
+                            setMainMarketBand(null);
+                            setApproachRoad1stBand(null);
+                            setApproachRoad2ndBand(null);
+                            setSelectedSubclauses([]);
+                            setCalculationResult(null);
+                            setShowDetailedBreakdown(false);
+                            toast({ title: 'Form reset', description: 'All inputs cleared.' });
+                          }}
+                          variant="outline"
+                          className="flex items-center gap-2 transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
+                        >
+                          <RotateCcw className="w-4 h-4" /> Reset
                         </Button>
                       </div>
                     </CardContent>
@@ -1803,7 +1874,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       value={roadWidth}
                       onChange={(e) => setRoadWidth(e.target.value)}
                       placeholder="Enter road width"
-                      className="ring-1 ring-border focus:ring-gray-500"
+                      className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring"
                     />
                   </div>
                 ) : (
@@ -1817,7 +1888,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       value={distanceFromRoad}
                       onChange={(e) => setDistanceFromRoad(e.target.value)}
                       placeholder="Enter distance from road"
-                      className="ring-1 ring-border focus:ring-gray-500"
+                      className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring"
                     />
                   </div>
                 )}
