@@ -133,8 +133,6 @@ export async function deactivateMouza(id: string): Promise<void> {
   await masterDataApi.post(`/delete/mouza?mouzaCode=${id}`);
 }
 
-
-
 // ===== LOT MANAGEMENT =====
 export async function fetchLots(districtCode?: string, circleCode?: string, mouzaCode?: string): Promise<Lot[]> {
   // Require minimum selections similar to village fetch
@@ -144,7 +142,8 @@ export async function fetchLots(districtCode?: string, circleCode?: string, mouz
 
   try {
     const params: any = { districtCode, circleCode };
-    const res = await masterDataApi.get('/getLotByDistrictAndCircle', { params });
+    if (mouzaCode) params.mouzaCode = mouzaCode;
+    const res = await masterDataApi.get('/getLotByDistrictAndCircleAndMouza', { params });
 
     // Normalize payload shape: support { data: [] } or []
     const raw = Array.isArray(res?.data?.data)
@@ -159,7 +158,7 @@ export async function fetchLots(districtCode?: string, circleCode?: string, mouz
       name: lot.lotName ?? lot.name ?? '',
       districtCode: lot.districtCode ?? districtCode,
       circleCode: lot.circleCode ?? circleCode,
-      mouzaCode: lot.mouzaCode ?? '',
+      mouzaCode: lot.mouzaCode ?? mouzaCode ?? '',
       isActive: lot.active ?? lot.isActive ?? true,
       createdAt: lot.createdDtm ?? lot.createdAt ?? '',
       updatedAt: lot.updatedDtm ?? lot.updatedAt ?? '',
@@ -177,6 +176,7 @@ export async function fetchLots(districtCode?: string, circleCode?: string, mouz
     return [];
   }
 }
+
 export async function fetchLotsByDistrictAndCircle(districtCode: string, circleCode: string): Promise<Lot[]> {
   try {
     const res = await masterDataApi.get(`/getLotByDistrictAndCircle?districtCode=${districtCode}&circleCode=${circleCode}`);
@@ -225,29 +225,65 @@ export async function deactivateLot(id: string): Promise<void> {
 // ===== VILLAGE MANAGEMENT =====
 export async function createVillage(village: any): Promise<Village> {
   const payload = {
-    villageName: village.villageName || village.name,
+    districtCode: village.districtCode,
     circleCode: village.circleCode,
-    districtCode: village.districtCode
+    mouzaCode: village.mouzaCode,
+    lotCode: village.lotCode,
+    villageName: village.villageName || village.name,
+    areaType: village.areaType
   };
   console.log('createVillage API payload:', payload);
-  const res = await masterDataApi.post('/village/add', payload);
+  const res = await masterDataApi.post('/add/village', payload);
   return res.data;
 }
 
 export async function updateVillage(id: string, updates: any): Promise<Village> {
   const payload = {
     villageCode: id,
-    villageName: updates.villageName || updates.name,
     districtCode: updates.districtCode,
-    circleCode: updates.circleCode
+    circleCode: updates.circleCode,
+    mouzaCode: updates.mouzaCode,
+    lotCode: updates.lotCode,
+    villageName: updates.villageName || updates.name,
+    areaType: updates.areaType
   };
   console.log('updateVillage API payload:', payload);
-  const res = await masterDataApi.post('/village/update', payload);
+  const res = await masterDataApi.post('/update/village', payload);
   return res.data;
 }
 
 export async function deactivateVillage(id: string): Promise<void> {
-  await masterDataApi.post(`/village/delete?villageCode=${id}`);
+  await masterDataApi.post(`/delete/village?villageCode=${id}`);
+}
+
+export async function getVillagesByDistrictAndCircleAndMouzaAndLot(districtCode: string, circleCode: string, mauzaCode: string, lotCode: string): Promise<Village[]> {
+  try {
+    const params: any = { districtCode, circleCode, mauzaCode, lotCode };
+    const res = await masterDataApi.get('/getVillageByDistrictAndCircleAndMauzaAndLot', { params });
+    // Normalize payload
+    const villageData = Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+        ? res.data
+        : [];
+    // Map API response to Village interface
+    return villageData.map((village: any) => ({
+      id: village.villageGenId?.toString() || '',
+      code: village.villageCode || '',
+      name: village.villageName || '',
+      villageName: village.villageName || '',
+      districtCode: village.districtCode || '',
+      circleCode: village.circleCode || '',
+      mouzaCode: village.mouzaCode || '',
+      isActive: village.active ?? village.isActive ?? true,
+      isUrban: village.isUrban ?? false,
+      createdAt: village.createdDtm || '',
+      updatedAt: village.updatedDtm || ''
+    }));
+  } catch (err) {
+    console.error('Failed to fetch villages', { districtCode, circleCode, mauzaCode, lotCode, err });
+    return [];
+  }
 }
 
 // ===== ZONE MANAGEMENT =====
@@ -305,6 +341,32 @@ export async function getLandClassHistory(id: string): Promise<AuditLog[]> {
   return res.data;
 }
 
+export async function getAllLandCategoriesByMouza(mouzaCode: string): Promise<LandClass[]> {
+  try {
+    const res = await masterDataApi.get(`/getAllLandCategoriesByMouza?mouzaCode=${mouzaCode}`);
+    const items = Array.isArray(res?.data?.data) ? res.data.data : Array.isArray(res?.data) ? res.data : [];
+    return items.map((lc: any) => ({
+      id: (lc.landCategoryGenId ?? lc.id ?? '').toString(),
+      code: lc.landCategoryGenId?.toString() ?? lc.code ?? '',
+      name: lc.landCategoryName ?? lc.name ?? '',
+      isActive: lc.active ?? lc.isActive ?? true,
+      landCategoryGenId: lc.landCategoryGenId,
+      landCategoryName: lc.landCategoryName,
+      active: lc.active,
+      createdBy: lc.createdBy,
+      createdDtm: lc.createdDtm,
+      updatedBy: lc.updatedBy,
+      updatedDtm: lc.updatedDtm,
+      status: lc.status,
+      statusCode: lc.statusCode,
+      basePriceMouzaIncrease: lc.basePriceMouzaIncrease ?? 0,
+    }));
+  } catch (err) {
+    console.error('Failed to fetch land categories by mouza', { mouzaCode, err });
+    return [];
+  }
+}
+
 // ===== AREA TYPE MANAGEMENT =====
 export async function fetchAreaTypes(): Promise<{ data: any[] }> {
   const res = await masterDataApi.get('/getAreaType');
@@ -353,8 +415,22 @@ export async function reassignSubClass(subClassId: string, newParentClassCode: s
 
 // ===== PARAMETERS =====
 export async function getAllParameters(): Promise<Parameter[]> {
-  const res = await masterDataApi.get('/parameters');
-  return res.data;
+  const res = await masterDataApi.get('/getParameterDetailsAll');
+  const rawData = res.data.data || []; // Assuming the structure { message: "", data: [...] }
+  return rawData.map((item: any) => ({
+    id: item.parameterGenId?.toString() || '',
+    code: item.parameterCode || '',
+    name: item.parameterName || '',
+    isActive: item.active ?? false,
+    createdAt: item.createdDtm || '',
+    updatedAt: item.updatedDtm || '',
+    createdBy: item.createdBy || '',
+    updatedBy: item.updatedBy || '',
+    category: 'Default', // Placeholder, as not in JSON
+    dataType: 'String', // Placeholder, as not in JSON
+    isMandatory: false, // Placeholder, as not in JSON
+    effectiveFrom: item.createdDtm || '', // Using createdDtm as effectiveFrom
+  }));
 }
 
 export async function fetchParametersWithDetails(): Promise<Parameter[]> {
@@ -362,18 +438,18 @@ export async function fetchParametersWithDetails(): Promise<Parameter[]> {
   return res.data;
 }
 
-export async function createParameter(parameter: Omit<Parameter, 'id'>): Promise<Parameter> {
-  const res = await masterDataApi.post('/parameters', parameter);
+export async function createParameter(parameter: { parameterName: string }): Promise<Parameter> {
+  const res = await masterDataApi.post('/add/parameter', parameter);
   return res.data;
 }
 
-export async function updateParameter(id: string, updates: Partial<Parameter>): Promise<Parameter> {
-  const res = await masterDataApi.put(`/parameters/${id}`, updates);
+export async function updateParameter(id: string, updates: { parameterName: string; parameterCode: string }): Promise<Parameter> {
+  const res = await masterDataApi.post('/update/parameter', { ...updates, parameterCode: id });
   return res.data;
 }
 
 export async function deleteParameter(id: string): Promise<void> {
-  await masterDataApi.delete(`/parameters/${id}`);
+  await masterDataApi.post(`/delete/parameter?parameterCode=${id}`);
 }
 
 export async function deactivateParameter(id: string): Promise<void> {
@@ -434,29 +510,84 @@ export async function upsertParameterWeightage(weightage: ParameterWeightage): P
 
 // ===== PARAMETER BANDS =====
 export async function getAllParameterBands(): Promise<ParameterBand[]> {
-  const res = await masterDataApi.get('/parameter-bands');
-  return res.data;
+  // Note: No direct endpoint; fetch via parameters and their bands
+  try {
+    const parameters = await getAllParameters();
+    const allBands: ParameterBand[] = [];
+    for (const param of parameters) {
+      const bands = await fetchParameterBands(param.code);
+      allBands.push(...bands);
+    }
+    return allBands;
+  } catch (err) {
+    console.error('Failed to fetch all parameter bands', err);
+    return [];
+  }
 }
 
 export async function fetchParameterBands(parameterCode?: string): Promise<ParameterBand[]> {
-  const params: any = {};
-  if (parameterCode) params.parameterCode = parameterCode;
-  const res = await masterDataApi.get('/parameter-bands', { params });
-  return res.data;
+  if (!parameterCode) {
+    return [];
+  }
+  try {
+    const res = await masterDataApi.get(`/getSubParameterDetailsAllByParameterCode?parameterCode=${parameterCode}`);
+    // Normalize payload
+    const raw = Array.isArray(res?.data?.data)
+      ? res.data.data
+      : Array.isArray(res?.data)
+        ? res.data
+        : [];
+    return raw.map((band: any) => ({
+      id: (band.subParameterCode ?? band.id ?? '').toString(),
+      parameterCode: band.parameterCode ?? parameterCode,
+      name: band.subParameterName ?? band.name ?? '',
+      subParameterName: band.subParameterName ?? band.name ?? '',
+      weightage: parseFloat(band.weightage ?? '0'),
+      effectiveFrom: band.effectiveFrom ?? '',
+      isActive: band.active ?? band.isActive ?? true,
+      createdAt: band.createdDtm ?? band.createdAt ?? '',
+      updatedAt: band.updatedDtm ?? band.updatedAt ?? '',
+    }));
+  } catch (err) {
+    console.error('Failed to fetch parameter bands', { parameterCode, err });
+    return [];
+  }
 }
 
 export async function createParameterBand(band: ParameterBand): Promise<ParameterBand> {
-  const res = await masterDataApi.post('/parameter-bands', band);
-  return res.data;
+  const payload = {
+    parameterCode: band.parameterCode,
+    subParameterName: band.subParameterName || band.name,
+    weightage: band.weightage.toString(),
+    effectiveFrom: band.effectiveFrom,
+  };
+  const res = await masterDataApi.post('/add/subParameter', payload);
+  return {
+    ...band,
+    id: res.data?.subParameterCode?.toString() ?? '',
+    ...res.data,
+  };
 }
 
 export async function updateParameterBand(parameterCode: string, bandCode: string, updates: Partial<ParameterBand>): Promise<ParameterBand> {
-  const res = await masterDataApi.put(`/parameter-bands/${parameterCode}/${bandCode}`, updates);
-  return res.data;
+  const payload = {
+    parameterCode,
+    subParameterCode: bandCode,
+    subParameterName: updates.subParameterName || updates.name,
+    weightage: updates.weightage?.toString(),
+    effectiveFrom: updates.effectiveFrom,
+  };
+  const res = await masterDataApi.post('/update/subParameter', payload);
+  return {
+    parameterCode,
+    id: bandCode,
+    ...updates,
+    ...res.data,
+  };
 }
 
 export async function deleteParameterBand(parameterCode: string, bandCode: string): Promise<void> {
-  await masterDataApi.delete(`/parameter-bands/${parameterCode}/${bandCode}`);
+  await masterDataApi.post(`/delete/subParameter?subParameterCode=${bandCode}`);
 }
 
 export async function getParameterBandHistory(id: string): Promise<AuditLog[]> {
@@ -490,6 +621,8 @@ export async function deactivateApprovingAuthority(id: string): Promise<void> {
 }
 
 // ===== MAPPINGS =====
+// Commented out as unlisted in API design
+/*
 export async function fetchLandClassMappings(districtCode?: string, circleCode?: string, mouzaCode?: string, villageCode?: string): Promise<LandClassMapping[]> {
   const params: any = {};
   if (districtCode) params.districtCode = districtCode;
@@ -527,8 +660,11 @@ export async function createLandSubClassMapping(mapping: LandSubClassMapping): P
 export async function deleteLandSubClassMapping(landSubClassCode: string, districtCode?: string, circleCode?: string, mouzaCode?: string, villageCode?: string): Promise<void> {
   await masterDataApi.delete('/land-sub-class-mappings', { data: { landSubClassCode, districtCode, circleCode, mouzaCode, villageCode } });
 }
+*/
 
 // ===== CIRCLE LOT FACTOR =====
+// Commented out as unlisted in API design
+
 export async function fetchCircleLotFactor(request: CircleLotFactorRequest): Promise<CircleLotFactorResponse> {
   const res = await masterDataApi.get('/circle-lot-factor', { params: request });
   return res.data;
@@ -543,7 +679,10 @@ export async function getCircleLotFactorHistory(districtCode: string, circleCode
   return res.data;
 }
 
+
 // ===== CONVERSION FACTORS =====
+// Commented out as unlisted in API design
+/*
 export async function fetchConversionFactors(landCategoryGenId?: string, areaType?: 'RURAL' | 'URBAN'): Promise<any[]> {
   const params: any = {};
   if (landCategoryGenId) params.landCategoryGenId = landCategoryGenId;
@@ -560,6 +699,7 @@ export async function getConversionFactorHistory(landCategoryGenId: string, area
   const res = await masterDataApi.get('/conversion-factors/history', { params: { landCategoryGenId, areaType } });
   return res.data;
 }
+*/
 
 // ===== CALCULATIONS =====
 
@@ -568,10 +708,12 @@ export async function getConversionFactorHistory(landCategoryGenId: string, area
 
 export async function calculatePlotBaseValue(payload: ComprehensiveValuationRequest): Promise<any> {
   const res = await masterDataApi.post('/valuation/calculate', payload);
-  return res.data;
+  // return res.data;
 }
 
 // ===== CHANGE REQUEST WORKFLOWS =====
+// Commented out as unlisted in API design
+
 export async function submitChangeRequest(request: ChangeRequest): Promise<{ requestId: string }> {
   const res = await coreApi.post('/change-requests', request);
   return res.data;
@@ -581,66 +723,34 @@ export async function requestEntityChange(request: ChangeRequest): Promise<{ req
   return submitChangeRequest(request);
 }
 
-// Added: Bulk deactivate districts
-export async function bulkDeactivateDistricts(ids: string[], reason: string): Promise<void> {
-  await masterDataApi.post('/districts/bulk-deactivate', { ids, reason });
-}
 
-export async function bulkDeactivateCircles(ids: string[], reason: string): Promise<void> {
-  await masterDataApi.post('/circles/bulk-deactivate', { ids, reason });
-}
+// ===== GEOLOCATION =====
+// Commented out as unlisted in API design
 
-export async function bulkDeactivateLandClasses(ids: string[], reason: string): Promise<void> {
-  await masterDataApi.post('/land-classes/bulk-deactivate', { ids, reason });
+export interface GeoLocation {
+  lat: number;
+  lng: number;
+  displayName?: string;
 }
-
-export async function bulkDeactivateLandSubClasses(ids: string[], reason: string): Promise<void> {
-  await masterDataApi.post('/land-sub-classes/bulk-deactivate', { ids, reason });
-}
-
-export async function fetchChangeRequests(entityType?: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<any[]> {
-  const params: any = {};
-  if (entityType) params.entityType = entityType;
-  if (status) params.status = status;
-  const res = await coreApi.get('/change-requests', { params });
-  return res.data;
-}
-
-export async function approveChangeRequest(requestId: string, comment?: string): Promise<void> {
-  await coreApi.post(`/change-requests/${requestId}/approve`, { comment });
-}
-
-export async function rejectChangeRequest(requestId: string, reason: string): Promise<void> {
-  await coreApi.post(`/change-requests/${requestId}/reject`, { reason });
-}
-
-export async function getEntityHistory(entityType: string, entityId: string): Promise<AuditLog[]> {
-  const res = await coreApi.get('/audit/history', { params: { entityType, entityId } });
-  return res.data;
-}
-
-export async function getAuditLogs(entityType?: string, fromDate?: string, toDate?: string, performedBy?: string): Promise<AuditLog[]> {
-  const params: any = {};
-  if (entityType) params.entityType = entityType;
-  if (fromDate) params.fromDate = fromDate;
-  if (toDate) params.toDate = toDate;
-  if (performedBy) params.performedBy = performedBy;
-  const res = await coreApi.get('/audit/logs', { params });
-  return res.data;
-}
-
-// Generic functions for CRUD components with approval workflow
-export async function requestChange(entityType: string, operation: 'CREATE' | 'UPDATE' | 'DEACTIVATE', payload: any, reason: string): Promise<{ requestId: string }> {
-  const request: ChangeRequest = {
-    entityType,
-    entityId: payload.id || payload.code,
-    operation,
-    payload,
-    reason
-  };
-  return requestEntityChange(request);
-}
-
-export async function getHistory(entityType: string, entityId: string): Promise<AuditLog[]> {
-  return getEntityHistory(entityType, entityId);
-}
+import axios from 'axios';
+export const geocodeDistrict = async (
+  districtName: string
+): Promise<GeoLocation | null> => {
+  try {
+    const encodedName = encodeURIComponent(`${districtName}, Assam, India`);
+    const res = await axios.get(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedName}&limit=1`
+    );
+    if (res.data && res.data.length > 0) {
+      return {
+        lat: parseFloat(res.data[0].lat),
+        lng: parseFloat(res.data[0].lon),
+        displayName: res.data[0].display_name,
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Geocoding failed:', err);
+    return null;
+  }
+};

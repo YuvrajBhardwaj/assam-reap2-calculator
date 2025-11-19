@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { fetchLots } from '@/services/masterDataService';
-import { calculatePlotBaseValue } from '@/services/masterDataService';
+import { calculatePlotBaseValue, fetchCircleLotFactor } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { getParameterDetails, type Parameter } from "@/services/parameterService";
 import { ComprehensiveValuationRequest } from '@/types/valuation';
@@ -839,7 +839,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     try {
       setIsDaagLookupLoading(true);
       setDaagFactorInfo(null);
-      const { fetchCircleLotFactor } = await import('@/services/masterDataService');
+
       const res = await fetchCircleLotFactor({
         districtCode: selectedDistrictCode,
         circleCode: selectedCircleCode,

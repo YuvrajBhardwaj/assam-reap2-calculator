@@ -45,7 +45,7 @@ import ApprovalInbox from "@/components/admin/ApprovalInbox";
 import MasterDataManagement, { EntityType } from "./MasterDataManagement";
 
 import { useAuth } from "@/context/AuthContext";
-import { getAuditLogs } from "@/services/masterDataService";
+import { AuditService } from "@/services/auditService";
 import type { AuditLog, MasterDataChangeRequest } from "@/types/masterData";
 import { toast } from "@/hooks/use-toast";
 
@@ -191,13 +191,13 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
-      const data = await getAuditLogs(
+      const data = await AuditService.getAuditLogs(
         filters.entityType || undefined,
         filters.fromDate || undefined,
         filters.toDate || undefined,
         filters.performedBy || undefined
       );
-      setLogs(data);
+      setLogs(data );
     } catch (e) {
       console.error("Failed to fetch audit logs", e);
     } finally {

@@ -103,27 +103,33 @@ export interface Parameter extends BaseEntity {
   unit?: string;
   description?: string;
   formula?: string;
-  minValue?: number;
-  maxValue?: number;
   defaultValue?: string;
   isMandatory: boolean;
   effectiveFrom: string;
-  effectiveTo?: string;
   // Banding/weightage will map here
 }
 
 export interface ParameterWeightage {
   parameterCode: string;
+  bandCode?: string;
   weightage: number; // e.g., 0-1 or percentage as per backend
 }
 
 
-export interface ParameterBand {
+export interface SubParameter extends BaseEntity {
+  parameterCode: string;
+  subParameterCode: string;
+  subParameterName: string;
+  weightage: number;
+  effectiveFrom: string;
+}
+
+export interface ParameterBand extends BaseEntity {
   parameterCode: string;
   bandCode: string;
-  label: string;      // e.g., "0-100m"
-  minValue?: number;  // optional if categorical
-  maxValue?: number;  // optional if categorical
+  subParameterName: string;      // e.g., "0-100m" (renamed from label)
+  weightage: number;
+  effectiveFrom: string;
 }
 
 export interface ApprovingAuthority extends BaseEntity {

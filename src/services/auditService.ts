@@ -1,4 +1,5 @@
 import { coreApi } from './http';
+import type { AuditLog } from "@/types/masterData";
 
 export interface AuditItem {
   id: string;
@@ -103,6 +104,22 @@ export class AuditService {
     const res = await coreApi.get(`/auditController/${role}/pending`, {
       params: { masterType, statusCode },
     });
+    return res.data;
+  }
+
+  static async getAuditLogs(
+    entityType?: string,
+    fromDate?: string,
+    toDate?: string,
+    performedBy?: string
+  ): Promise<AuditLog[]> {
+    const params: any = {};
+    if (entityType) params.entityType = entityType;
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
+    if (performedBy) params.performedBy = performedBy;
+
+    const res = await coreApi.get(`/audit/logs`, { params });
     return res.data;
   }
 }
