@@ -143,11 +143,18 @@ const Index = () => {
     const { tab, locationData, initialMarketValue } = event.detail as { tab?: string; locationData?: any; initialMarketValue?: number };
     let targetTab = activeTab; // Start with current active tab
 
+    console.log('handleTabNavigation:', { tab, initialMarketValue, locationData });
+
     if (tab) {
       targetTab = tab;
-    } else if (typeof initialMarketValue === 'number') {
+    }
+    
+    if (typeof initialMarketValue === 'number') {
+      console.log('Setting prefilledStampDuty with marketValue:', initialMarketValue);
       setPrefilledStampDuty({ marketValue: initialMarketValue });
-      targetTab = 'stamp-duty-calculator';
+      if (!tab) {
+        targetTab = 'stamp-duty-calculator';
+      }
     }
 
     if (locationData) {
@@ -398,7 +405,11 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="stamp-duty-calculator" className="space-y-4">
-            <StampDutyForm initialMarketValue={prefilledStampDuty?.marketValue} initialLocationData={initialLocationData} />
+            <StampDutyForm 
+              key={prefilledStampDuty?.marketValue || 'stamp-duty'} 
+              initialMarketValue={prefilledStampDuty?.marketValue} 
+              initialLocationData={initialLocationData} 
+            />
           </TabsContent>
 
           <TabsContent value="zonal-value-database" className="space-y-4">
