@@ -123,7 +123,7 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
           )}
         </CardContent>
 
-        {marketValue !== null && !showStampDuty && (
+        {marketValue !== null && (
           <div className="mt-4 mx-6 mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-lg text-center">
             <div className="flex items-center justify-center mb-3">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -136,7 +136,15 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
             </div>
             {/* Button to proceed to stamp duty */}
             <Button
-              onClick={() => setShowStampDuty(true)}
+              onClick={() => {
+                if (marketValue !== null) {
+                  window.dispatchEvent(
+                    new CustomEvent('navigate-to-tab', {
+                      detail: { tabId: 'stamp-duty-calculator', initialMarketValue: marketValue },
+                    })
+                  );
+                }
+              }}
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Calculate Stamp Duty

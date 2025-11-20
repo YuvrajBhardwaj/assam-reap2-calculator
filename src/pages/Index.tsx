@@ -258,7 +258,7 @@ const Index = () => {
                   : 'bg-[#595959] text-white'
               } transition-colors`}
             >
-              <Building className="h-4 w-4" /> <span>Property Valuation</span>
+              <Building className="h-4 w-4" /> <span>Map</span>
             </TabsTrigger>
 
             <TabsTrigger
@@ -269,7 +269,7 @@ const Index = () => {
                   : 'bg-[#595959] text-white'
               } transition-colors`}
             >
-              <Calculator className="h-4 w-4" /> <span>Valuation Calculator</span>
+              <Calculator className="h-4 w-4" /> <span>Property Valuation</span>
             </TabsTrigger>
 
             <TabsTrigger
