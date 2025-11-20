@@ -120,33 +120,46 @@ const Index = () => {
 
   useEffect(() => {
     const state = location.state as { tab?: string; initialMarketValue?: number; initialLocationData?: any };
+    let targetTab = activeTab;
+
+    console.log("Index useEffect(location.state):", state);
+
     if (state?.tab) {
-      setActiveTab(state.tab);
-    }
-    if (state?.initialMarketValue) {
+      targetTab = state.tab;
+    } else if (state?.initialMarketValue) {
       setPrefilledStampDuty({ marketValue: state.initialMarketValue });
-      setActiveTab("stamp-duty-calculator"); // Ensure stamp duty tab is active
-    }
-    if (state?.initialLocationData) {
+      targetTab = "stamp-duty-calculator";
+    } else if (state?.initialLocationData) {
       setInitialLocationData(state.initialLocationData);
-      setActiveTab("valuation-calculator"); // Ensure valuation calculator tab is active
+      targetTab = "valuation-calculator";
     }
-    // Clear state after use to prevent re-triggering on subsequent visits
-    // This line was causing the issue, removing it for now.
-    // navigate(location.pathname, { replace: true, state: {} });
-  }, [location.state, navigate, location.pathname]);
+
+    if (targetTab !== activeTab) {
+      handleTabChange(targetTab);
+    }
+  }, [location.state, navigate, location.pathname, activeTab]);
 
   const handleTabNavigation = (event: CustomEvent) => {
     const { tab, locationData, initialMarketValue } = event.detail as { tab?: string; locationData?: any; initialMarketValue?: number };
+    let targetTab = activeTab; // Start with current active tab
+
     if (tab) {
-      handleTabChange(tab);
+      targetTab = tab;
+    } else if (typeof initialMarketValue === 'number') {
+      setPrefilledStampDuty({ marketValue: initialMarketValue });
+      targetTab = 'stamp-duty-calculator';
     }
+
     if (locationData) {
       setInitialLocationData(locationData);
+      // If locationData is present, and no specific tab was requested, default to valuation-calculator
+      if (!tab && !initialMarketValue) {
+        targetTab = 'valuation-calculator';
+      }
     }
-    if (typeof initialMarketValue === 'number') {
-      setPrefilledStampDuty({ marketValue: initialMarketValue });
-      setActiveTab('stamp-duty-calculator');
+
+    if (targetTab !== activeTab) {
+      handleTabChange(targetTab);
     }
   };
 
@@ -246,6 +259,17 @@ const Index = () => {
               } transition-colors`}
             >
               <Building className="h-4 w-4" /> <span>Property Valuation</span>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="valuation-calculator"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                activeTab === 'valuation-calculator'
+                  ? 'bg-white text-[#595959] border border-[#595959]'
+                  : 'bg-[#595959] text-white'
+              } transition-colors`}
+            >
+              <Calculator className="h-4 w-4" /> <span>Valuation Calculator</span>
             </TabsTrigger>
 
             <TabsTrigger

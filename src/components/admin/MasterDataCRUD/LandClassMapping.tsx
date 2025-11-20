@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { LandClass, type LandClassMapping } from '@/types/masterData';
-import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircle } from '@/services/locationService';
+import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircleAndMouzaAndLot } from '@/services/locationService';
 import * as masterDataService from '@/services/masterDataService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -87,7 +87,12 @@ export default function LandClassMapping() {
   useEffect(() => {
     (async () => {
       if (!selectedDistrict || !selectedCircle || !selectedMouza) { setVillages([]); return; }
-      const v = await getVillagesByDistrictAndCircle(selectedDistrict, selectedCircle);
+      const v = await getVillagesByDistrictAndCircleAndMouzaAndLot(
+        selectedDistrict,
+        selectedCircle,
+        selectedMouza,
+        selectedVillage
+      );
       setVillages(v);
       setSelectedVillage('');
     })();

@@ -28,6 +28,7 @@ interface ValuationFormData {
   onMainRoad: boolean;
   onMetalRoad: boolean;
   onMainMarket: boolean;
+  onNonRoad: boolean;
   onApproachRoadWidth: boolean;
   onApproachRoad1stBand: boolean;
   onApproachRoad2ndBand: boolean;
@@ -79,6 +80,7 @@ const initialFormData: ValuationFormData = {
   onMainRoad: false,
   onMetalRoad: false,
   onMainMarket: false,
+  onNonRoad: false,
   onApproachRoadWidth: false,
   onApproachRoad1stBand: false,
   onApproachRoad2ndBand: false,

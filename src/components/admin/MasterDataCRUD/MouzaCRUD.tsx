@@ -227,7 +227,7 @@ export default function MouzaCRUD({ className = "" }: MouzaCRUDProps) {
     //     reason
     //   });
     // },
-    getHistory: async (id) => masterDataService.getEntityHistory('Mouza', id),
+
     search: async (query) => {
       const all = await getMouzasByDistrictAndCircle();
       return all.filter(m =>

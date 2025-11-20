@@ -2,7 +2,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValuationStore } from '@/stores/valuationStore';
-import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircle, getAllLandCategories } from '@/services/locationService';
+import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories, getVillagesByDistrictAndCircleAndMouzaAndLot } from '@/services/locationService';
 import type { District, Circle, Mouza, Village, LandClass, Lot } from '@/types/masterData';
 import {
   Card,
@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { fetchLots } from '@/services/masterDataService';
 import { calculatePlotBaseValue, fetchCircleLotFactor } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
-import { getParameterDetails, type Parameter } from "@/services/parameterService";
+import { getParameterDetailsAll, type Parameter } from "@/services/parameterService";
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
 import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink, Copy, RotateCcw, Loader2 } from 'lucide-react';
@@ -38,6 +38,7 @@ import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, C
 interface FullParameter extends Parameter {
   parameterId: number;
   parameter: string;
+  parameterCode: string;
   parameterType: string | null;
   areaTypeId: number;
   minRangeInMeters: number;
@@ -141,6 +142,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [onMainRoad, setOnMainRoad] = useState(storedFormData.onMainRoad);
   const [onMetalRoad, setOnMetalRoad] = useState(storedFormData.onMetalRoad);
   const [onMainMarket, setOnMainMarket] = useState(storedFormData.onMainMarket);
+  const [onNonRoad, setOnNonRoad] = useState(storedFormData.onNonRoad);
   const [isCalculating, setIsCalculating] = useState(false);
   const isCalculatingRef = useRef(isCalculating);
 
@@ -199,10 +201,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     if (onMainRoad && mainRoadBand) selectedIds.push(mainRoadBand.parameterId);
     if (onMetalRoad && metalRoadBand) selectedIds.push(metalRoadBand.parameterId);
     if (onMainMarket && mainMarketBand) selectedIds.push(mainMarketBand.parameterId);
+    if (onNonRoad) {
+      const nonRoadParam = parameters.find(p => p.parameterCode === '10005');
+      if (nonRoadParam) selectedIds.push(nonRoadParam.parameterId);
+    }
     if (onApproachRoadWidth && onApproachRoad1stBand && approachRoad1stBand) selectedIds.push(approachRoad1stBand.parameterId);
     if (onApproachRoadWidth && onApproachRoad2ndBand && approachRoad2ndBand) selectedIds.push(approachRoad2ndBand.parameterId);
     return selectedIds.reduce((sum, id) => sum + ((bandWeights as any)[id] || 0), 0);
-  }, [selectedSubclauses, onMainRoad, mainRoadBand, onMetalRoad, metalRoadBand, onMainMarket, mainMarketBand, onApproachRoadWidth, onApproachRoad1stBand, approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, bandWeights]);
+  }, [selectedSubclauses, onMainRoad, mainRoadBand, onMetalRoad, metalRoadBand, onMainMarket, mainMarketBand, onNonRoad, onApproachRoadWidth, onApproachRoad1stBand, approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, bandWeights, parameters]);
 
   // NEW: Computed Plot Level Base Value
   // Formula: Plot Level Base = Mouza Base × (1 + Lot % / 100) × (1 + Land Use % / 100)
@@ -247,25 +253,25 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     mainRoad: {
       label: 'Whether on Main Road',
       bands: parameters
-        .filter(p => p.parameter.includes('Distance from Main Road') && p.areaTypeId === 1)
+        .filter(p => p.parameter && p.parameter.includes('Distance from Main Road') && p.areaTypeId === 1)
         .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
     },
     metalRoad: {
       label: 'Whether on Metal Road',
       bands: parameters
-        .filter(p => p.parameter.includes('Distance from Main Road') && p.areaTypeId === 2)
+        .filter(p => p.parameter && p.parameter.includes('Distance from Main Road') && p.areaTypeId === 2)
         .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
     },
     mainMarket: {
       label: null, // Always visible
       bands: parameters
-        .filter(p => p.parameter.includes('Distance from Main Market'))
+        .filter(p => p.parameter && p.parameter.includes('Distance from Main Market'))
         .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
     },
     approachRoadWidth: {
       label: 'Width of Approach Road',
       bands: parameters
-        .filter(p => p.parameter.includes('width of approach road'))
+        .filter(p => p.parameter && p.parameter.includes('width of approach road'))
         .sort((a, b) => a.minRangeInMeters - b.minRangeInMeters)
     }
     // Add more groups e.g., approachRoadWidth if replacing input with bands
@@ -273,11 +279,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
   // NEW: Flat parameters excluding cascading ones
   const flatParameters = useMemo(() =>
-    parameters.filter(p =>
-      !p.parameter.includes('band') &&
-      !p.parameter.startsWith('Whether on') &&
-      !p.parameter.includes('Distance from Main') &&
-      !p.parameter.includes('width of approach road')
+    parameters.filter(p => p.parameter 
     ), [parameters]);
 
   // Section completion states
@@ -316,6 +318,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     setOnMainRoad(formData.onMainRoad || false);
     setOnMetalRoad(formData.onMetalRoad || false);
     setOnMainMarket(formData.onMainMarket || false);
+    setOnNonRoad(formData.onNonRoad || false);
     setOnApproachRoadWidth(formData.onApproachRoadWidth || false);
     setOnApproachRoad1stBand(formData.onApproachRoad1stBand || false);
     setOnApproachRoad2ndBand(formData.onApproachRoad2ndBand || false);
@@ -391,6 +394,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       onMainRoad,
       onMetalRoad,
       onMainMarket,
+      onNonRoad,
       onApproachRoadWidth,
       onApproachRoad1stBand,
       onApproachRoad2ndBand,
@@ -400,7 +404,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     if (marketValue !== undefined) setMarketValue(marketValue);
     if (perLessaValue !== undefined) setPerLessaValue(perLessaValue);
   }, [
-    selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedVillageCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, approachRoad1stBand, approachRoad2ndBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad, onMainMarket, onApproachRoadWidth, onApproachRoad1stBand, onApproachRoad2ndBand,
+    selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedVillageCode, selectedLotId, plotNo, currentLandUse, landUseChange, newLandUse, currentLandType, areaType, areaBigha, areaKatha, areaLessa, marketValue, perLessaValue, mainRoadBand, metalRoadBand, mainMarketBand, approachRoad1stBand, approachRoad2ndBand, selectedSubclauses, locationMethod, onRoad, cornerPlot, litigatedPlot, hasTenant, roadWidth, distanceFromRoad, onMainRoad, onMetalRoad, onMainMarket, onNonRoad, onApproachRoadWidth, onApproachRoad1stBand, onApproachRoad2ndBand,
     setFormData, setMarketValue, setPerLessaValue // Explicit deps for actions
   ]);
 
@@ -512,10 +516,10 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
   // Fetch villages when district, circle, or mouza changes
   useEffect(() => {
-    if (selectedDistrictCode && selectedCircleCode) {
+    if (selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLot?.code) {
       const fetchVillages = async () => {
         try {
-          const data = await getVillagesByDistrictAndCircle(selectedDistrictCode, selectedCircleCode, selectedMouzaCode);
+          const data = await getVillagesByDistrictAndCircleAndMouzaAndLot(selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLot?.code);
           setVillages(data);
           // Set initial village if provided
           if (initialLocationData?.village?.code) {
@@ -530,7 +534,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setVillages([]);
       setSelectedVillageCode('');
     }
-  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, initialLocationData]);
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLot?.code, initialLocationData]);
 
   useEffect(() => {
     if (selectedDistrictCode) {
@@ -606,7 +610,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
     const loadLots = async () => {
       try {
-        const data = await fetchLots(selectedDistrictCode, selectedCircleCode);
+        const data = await fetchLots(selectedDistrictCode, selectedCircleCode, selectedMouzaCode);
         setLots(data);
         // Removed console.log for production
         // Auto-select if only one lot
@@ -640,7 +644,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     const fetchParameters = async () => {
       try {
         setLoadingParameters(true);
-        const response = await getParameterDetails(0, 500);
+        const response = await getParameterDetailsAll();
         if (response.data) setParameters(response.data as FullParameter[]);
       } catch (error) {
         console.error('Failed to fetch parameters:', error);
@@ -1566,6 +1570,20 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 )}
               </div>
 
+              {/* Non Road Group */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="onNonRoad"
+                    checked={onNonRoad}
+                    onCheckedChange={(checked) => {
+                      setOnNonRoad(Boolean(checked));
+                    }}
+                  />
+                  <Label htmlFor="onNonRoad" className="text-sm">Whether on the Non Road</Label>
+                </div>
+              </div>
+
               {/* Width of Approach Road */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -1764,6 +1782,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                             setOnMainRoad(false);
                             setOnMetalRoad(false);
                             setOnMainMarket(false);
+                            setOnNonRoad(false);
                             setOnApproachRoadWidth(false);
                             setOnApproachRoad1stBand(false);
                             setOnApproachRoad2ndBand(false);

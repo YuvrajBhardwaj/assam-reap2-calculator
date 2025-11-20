@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GenericDataTable, { TableColumn, FormField, CRUDService } from './GenericDataTable';
 import * as masterDataService from '@/services/masterDataService';
 import { Village, District, Circle } from '@/types/masterData';
-import { getCirclesByDistrict, getAllDistricts, getVillagesByDistrictAndCircle } from '@/services/locationService';
+import { getCirclesByDistrict, getAllDistricts, getVillagesByDistrictAndCircleAndMouzaAndLot } from '@/services/locationService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,7 +53,7 @@ export default function VillageCRUD({ className = "" }: VillageCRUDProps) {
     setLoading(true);
     try {
       const [villageData, districtData] = await Promise.all([
-        getVillagesByDistrictAndCircle(),
+        getVillagesByDistrictAndCircleAndMouzaAndLot(),
         getAllDistricts()
       ]);
       setVillages(villageData);
@@ -82,7 +82,7 @@ export default function VillageCRUD({ className = "" }: VillageCRUDProps) {
 
   const loadFilteredVillages = async () => {
     try {
-      const filteredData = await getVillagesByDistrictAndCircle(
+      const filteredData = await getVillagesByDistrictAndCircleAndMouzaAndLot(
         selectedDistrict || undefined,
         selectedCircle || undefined,
         selectedVillage || undefined
@@ -191,7 +191,7 @@ export default function VillageCRUD({ className = "" }: VillageCRUDProps) {
         // Load mouzas for the selected district and circle
         if (value && formData?.districtCode) {
           try {
-            const villageData = await getVillagesByDistrictAndCircle(formData.districtCode, value);
+            const villageData = await getVillagesByDistrictAndCircleAndMouzaAndLot(formData.districtCode, value);
             setVillages(villageData);
           } catch (error) {
             console.error('Error loading villages for form:', error);
@@ -208,7 +208,7 @@ export default function VillageCRUD({ className = "" }: VillageCRUDProps) {
   // CRUD service aligned with GenericDataTable
   const villageService: CRUDService<Village> = {
     fetchAll: async () => {
-      const data = await getVillagesByDistrictAndCircle(
+      const data = await getVillagesByDistrictAndCircleAndMouzaAndLot(
         selectedDistrict || undefined,
         selectedCircle || undefined,
         selectedVillage || undefined
@@ -250,9 +250,9 @@ export default function VillageCRUD({ className = "" }: VillageCRUDProps) {
     //     reason
     //   });
     // },
-    getHistory: async (id) => masterDataService.getEntityHistory('Village', id),
+    // getHistory: async (id) => masterDataService.getEntityHistory('Village', id),
     search: async (query) => {
-      const all = await getVillagesByDistrictAndCircle();
+      const all = await getVillagesByDistrictAndCircleAndMouzaAndLot();
       return all.filter(v =>
         v.name?.toLowerCase().includes(query.toLowerCase()) ||
         v.code?.toLowerCase().includes(query.toLowerCase()) ||

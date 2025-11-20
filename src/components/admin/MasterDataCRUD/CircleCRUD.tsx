@@ -86,9 +86,9 @@ export default function CircleCRUD({
       
       return errors;
     },
-    bulkDeactivate: async (ids, reason) => {
-      await masterDataService.bulkDeactivateCircles(ids, reason);
-    }
+    // bulkDeactivate: async (ids, reason) => {
+    //   await masterDataService.bulkDeactivateCircles(ids, reason);
+    // }
   };
 
   // Table columns configuration

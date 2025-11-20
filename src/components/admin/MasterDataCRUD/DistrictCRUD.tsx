@@ -116,13 +116,13 @@ const districtService: CRUDService<District> = {
     
     return errors;
   },
-  bulkDeactivate: async (ids: string[], reason: string) => {
-    const allDistricts = await getAllDistricts();
-    const districtCodesToDeactivate = allDistricts
-      .filter(district => ids.includes(district.id))
-      .map(district => district.code);
-    await masterDataService.bulkDeactivateDistricts(districtCodesToDeactivate, reason);
-  }
+  // bulkDeactivate: async (ids: string[], reason: string) => {
+  //   const allDistricts = await getAllDistricts();
+  //   const districtCodesToDeactivate = allDistricts
+  //     .filter(district => ids.includes(district.id))
+  //     .map(district => district.code);
+  //   await masterDataService.bulkDeactivateDistricts(districtCodesToDeactivate, reason);
+  // }
 };
 
 // Table columns configuration

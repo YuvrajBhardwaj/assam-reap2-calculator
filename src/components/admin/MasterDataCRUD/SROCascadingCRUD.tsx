@@ -113,9 +113,9 @@ const SROCascadingCRUD: React.FC = () => {
     //     reason
     //   });
     // },
-    getHistory: async (id: string) => {
-      return await masterDataService.getEntityHistory('SRO', id);
-    },
+    // getHistory: async (id: string) => {
+    //   return await masterDataService.getEntityHistory('SRO', id);
+    // },
     search: async (query, filters) => {
       const allSROs = await masterDataService.fetchSROs();
       return allSROs.filter(sro =>

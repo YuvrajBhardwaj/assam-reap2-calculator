@@ -203,7 +203,7 @@ export default function LotCRUD({ className = "" }: LotCRUDProps) {
     //     reason
     //   });
     // },
-    getHistory: async (id) => masterDataService.getEntityHistory('Lot', id),
+
     validate: async (item) => {
       const errors: string[] = [];
       if (!item.name?.trim()) errors.push('name: Lot name is required');

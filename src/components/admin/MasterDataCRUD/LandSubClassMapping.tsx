@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { LandSubClass, type LandSubClassMapping, LandClass } from '@/types/masterData';
-import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircle } from '@/services/locationService';
+import { getAllLandCategories, getAllDistricts, getCirclesByDistrict, getMouzasByDistrictAndCircle, getVillagesByDistrictAndCircleAndMouzaAndLot } from '@/services/locationService';
 import * as masterDataService from '@/services/masterDataService';
 import { Unlink } from 'lucide-react';
 
@@ -78,7 +78,7 @@ export default function LandSubClassMapping() {
   useEffect(() => {
     (async () => {
       if (!selectedDistrict || !selectedCircle || !selectedMouza) { setVillages([]); return; }
-      const v = await getVillagesByDistrictAndCircle(selectedDistrict, selectedCircle);
+      const v = await getVillagesByDistrictAndCircleAndMouzaAndLot(selectedDistrict, selectedCircle, selectedMouza);
       setVillages(v);
       setSelectedVillage('');
     })();

@@ -19,15 +19,15 @@ const landSubClassService: CRUDService<LandSubClass> = {
   //     reason
   //   });
   // },
-  getHistory: async (id: string) => masterDataService.getHistory('LandSubClass', id),
-  search: async (query, filters) => {
-    const all = await masterDataService.fetchLandSubClasses(filters?.parentClassCode);
-    return all.filter(item =>
-      item.name.toLowerCase().includes(query.toLowerCase()) ||
-      item.code.toLowerCase().includes(query.toLowerCase()) ||
-      item.parentClassCode?.toLowerCase().includes(query.toLowerCase())
-    );
-  },
+  // getHistory: async (id: string) => masterDataService.getHistory('LandSubClass', id),
+  // search: async (query, filters) => {
+  //   const all = await masterDataService.fetchLandSubClasses(filters?.parentClassCode);
+  //   return all.filter(item =>
+  //     item.name.toLowerCase().includes(query.toLowerCase()) ||
+  //     item.code.toLowerCase().includes(query.toLowerCase()) ||
+  //     item.parentClassCode?.toLowerCase().includes(query.toLowerCase())
+  //   );
+  // },
   validate: async (item) => {
     const errors: string[] = [];
     if (!item.name?.trim()) errors.push('name: Sub-class name is required');
@@ -48,9 +48,9 @@ const landSubClassService: CRUDService<LandSubClass> = {
 
     return errors;
   },
-  bulkDeactivate: async (ids, reason) => {
-    return masterDataService.bulkDeactivateLandSubClasses(ids, reason);
-  }
+  // bulkDeactivate: async (ids, reason) => {
+  //   return masterDataService.bulkDeactivateLandSubClasses(ids, reason);
+  // }
 };
 
 // Table columns configuration

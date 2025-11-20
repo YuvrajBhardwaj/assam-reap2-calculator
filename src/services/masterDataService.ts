@@ -134,40 +134,48 @@ export async function deactivateMouza(id: string): Promise<void> {
 }
 
 // ===== LOT MANAGEMENT =====
-export async function fetchLots(districtCode?: string, circleCode?: string, mouzaCode?: string): Promise<Lot[]> {
-  // Require minimum selections similar to village fetch
-  if (!districtCode || !circleCode) {
+export async function fetchLots(
+  districtCode?: string,
+  circleCode?: string,
+  mouzaCode?: string
+): Promise<Lot[]> {
+
+  if (!districtCode || !circleCode || !mouzaCode) {
     return [];
   }
 
   try {
-    const params: any = { districtCode, circleCode };
-    if (mouzaCode) params.mouzaCode = mouzaCode;
-    const res = await masterDataApi.get('/getLotByDistrictAndCircleAndMouza', { params });
+    const params = { districtCode, circleCode, mouzaCode };
 
-    // Normalize payload shape: support { data: [] } or []
+    const res = await masterDataApi.get(
+      '/getLotByDistrictAndCircleAndMouza',
+      { params }
+    );
+
+    // Payload normalization
     const raw = Array.isArray(res?.data?.data)
       ? res.data.data
-      : Array.isArray(res?.data)
-        ? res.data
-        : [];
+      : [];
 
-    const lots: Lot[] = raw.map((lot: any) => ({
-      id: (lot.lotGenId ?? lot.id ?? '').toString(),
-      code: lot.lotCode ?? lot.code ?? '',
-      name: lot.lotName ?? lot.name ?? '',
+    const lots: Lot[] = raw.map((lot: any): Lot => ({
+      id: String(lot.lotGenId ?? ''),
+      code: lot.lotCode ?? '',
+      name: lot.lotName ?? '',
       districtCode: lot.districtCode ?? districtCode,
       circleCode: lot.circleCode ?? circleCode,
-      mouzaCode: lot.mouzaCode ?? mouzaCode ?? '',
-      isActive: lot.active ?? lot.isActive ?? true,
-      createdAt: lot.createdDtm ?? lot.createdAt ?? '',
-      updatedAt: lot.updatedDtm ?? lot.updatedAt ?? '',
+      mouzaCode: lot.mouzaCode ?? mouzaCode,
+      isActive: lot.active ?? true,
+      createdAt: lot.createdDtm ?? '',
+      updatedAt: lot.updatedDtm ?? '',
       basePriceIncreaseLot: lot.basePriceIncreaseLot ?? 0,
-    })).filter((l: Lot) => l.code && l.name);
+    })).filter((lot) => lot.code && lot.name);
 
-    // Deduplicate lots by name and code
-    const uniqueLots = lots.filter((lot, index, self) =>
-      index === self.findIndex((l) => l.name === lot.name && l.code === lot.code)
+    // Remove duplicates if backend returns redundant rows
+    const uniqueLots = lots.filter(
+      (lot, index, self) =>
+        index === self.findIndex(
+          (x) => x.code === lot.code && x.name === lot.name
+        )
     );
 
     return uniqueLots;
@@ -256,35 +264,7 @@ export async function deactivateVillage(id: string): Promise<void> {
   await masterDataApi.post(`/delete/village?villageCode=${id}`);
 }
 
-export async function getVillagesByDistrictAndCircleAndMouzaAndLot(districtCode: string, circleCode: string, mauzaCode: string, lotCode: string): Promise<Village[]> {
-  try {
-    const params: any = { districtCode, circleCode, mauzaCode, lotCode };
-    const res = await masterDataApi.get('/getVillageByDistrictAndCircleAndMauzaAndLot', { params });
-    // Normalize payload
-    const villageData = Array.isArray(res?.data?.data)
-      ? res.data.data
-      : Array.isArray(res?.data)
-        ? res.data
-        : [];
-    // Map API response to Village interface
-    return villageData.map((village: any) => ({
-      id: village.villageGenId?.toString() || '',
-      code: village.villageCode || '',
-      name: village.villageName || '',
-      villageName: village.villageName || '',
-      districtCode: village.districtCode || '',
-      circleCode: village.circleCode || '',
-      mouzaCode: village.mouzaCode || '',
-      isActive: village.active ?? village.isActive ?? true,
-      isUrban: village.isUrban ?? false,
-      createdAt: village.createdDtm || '',
-      updatedAt: village.updatedDtm || ''
-    }));
-  } catch (err) {
-    console.error('Failed to fetch villages', { districtCode, circleCode, mauzaCode, lotCode, err });
-    return [];
-  }
-}
+
 
 // ===== ZONE MANAGEMENT =====
 export async function fetchZones(): Promise<Zone[]> {
@@ -622,7 +602,7 @@ export async function deactivateApprovingAuthority(id: string): Promise<void> {
 
 // ===== MAPPINGS =====
 // Commented out as unlisted in API design
-/*
+
 export async function fetchLandClassMappings(districtCode?: string, circleCode?: string, mouzaCode?: string, villageCode?: string): Promise<LandClassMapping[]> {
   const params: any = {};
   if (districtCode) params.districtCode = districtCode;
@@ -660,7 +640,7 @@ export async function createLandSubClassMapping(mapping: LandSubClassMapping): P
 export async function deleteLandSubClassMapping(landSubClassCode: string, districtCode?: string, circleCode?: string, mouzaCode?: string, villageCode?: string): Promise<void> {
   await masterDataApi.delete('/land-sub-class-mappings', { data: { landSubClassCode, districtCode, circleCode, mouzaCode, villageCode } });
 }
-*/
+
 
 // ===== CIRCLE LOT FACTOR =====
 // Commented out as unlisted in API design

@@ -71,9 +71,12 @@ export async function getMouzasByDistrictAndCircle(districtCode?: string, circle
     const params: any = {};
     if (districtCode) params.districtCode = districtCode;
     if (circleCode) params.circleCode = circleCode;
-    const res = await masterDataApi.get('/getMouzaDetails', { params });
+
+    const res = await masterDataApi.get('/getMouzaDetailsByDistrictAndCircle', { params });
+
     const payload = (res?.data?.data ?? res?.data) as any[];
     const list = Array.isArray(payload) ? payload : [];
+
     return list.map((m: any) => ({
       id: (m.mouzaGenId?.toString?.() ?? m.mouzaCode ?? m.id ?? '').toString(),
       code: m.mouzaCode ?? '',
@@ -91,48 +94,69 @@ export async function getMouzasByDistrictAndCircle(districtCode?: string, circle
   }
 }
 
-// 4. Fetch village details by district and circle
-export async function getVillagesByDistrictAndCircle(districtCode?: string, circleCode?: string, mouzaCode?: string): Promise<Village[]> {
+
+// 4. Fetch village details by district and circle and mouza and lot
+// 4. Fetch village details by district, circle, mouza, and lot
+export async function getVillagesByDistrictAndCircleAndMouzaAndLot(
+  districtCode?: string,
+  circleCode?: string,
+  mouzaCode?: string,
+  lotCode?: string
+): Promise<Village[]> {
   try {
-    const params: any = {};
-    if (districtCode) params.districtCode = districtCode;
-    if (circleCode) params.circleCode = circleCode;
-    if (mouzaCode) params.mouzaCode = mouzaCode;
+    // Require all necessary filters
+    if (!districtCode || !circleCode || !mouzaCode || !lotCode) {
+      return [];
+    }
 
-    const endpoint = districtCode && circleCode ? '/getVillageByDistrictAndCircle' : '/getAllVillageDetails';
-    const res = await masterDataApi.get(endpoint, { params });
+    // IMPORTANT: backend expects "mauzaCode"
+    const params = {
+      districtCode,
+      circleCode,
+      mauzaCode: mouzaCode,
+      lotCode
+    };
 
-    // Normalize payload
-    const villageData = Array.isArray(res?.data?.data)
+    const res = await masterDataApi.get(
+      "/getVillageByDistrictAndCircleAndMauzaAndLot",
+      { params }
+    );
+
+    // Normalize payload like your other services
+    const payload = Array.isArray(res?.data?.data)
       ? res.data.data
       : Array.isArray(res?.data)
-        ? res.data
-        : [];
+      ? res.data
+      : [];
 
-    // Map API response to Village interface
-    return villageData.map((village: any) => ({
-      id: village.villageGenId?.toString() || '',
-      code: village.villageCode || '',
-      name: village.villageName || '',
-      villageName: village.villageName || '',
-      districtCode: village.districtCode || '',
-      circleCode: village.circleCode || '',
-      mouzaCode: village.mouzaCode || '',
-      isActive: village.active ?? village.isActive ?? true,
-      isUrban: village.isUrban ?? false,
-      createdAt: village.createdDtm || '',
-      updatedAt: village.updatedDtm || ''
+    return payload.map((village: any) => ({
+      id: (village.villageGenId ?? "").toString(),
+      code: village.villageCode ?? "",
+      name: village.villageName ?? "",
+      villageName: village.villageName ?? "",
+      districtCode: village.districtCode ?? districtCode,
+      circleCode: village.circleCode ?? circleCode,
+      mouzaCode: village.mouzaCode ?? mouzaCode,
+      lotCode: village.lotCode ?? lotCode,
+      isActive: village.active ?? true,
+      isUrban: village.areaType === "Urban",
+      basePriceVillage: village.basePriceVillage ?? 0,
+      createdAt: village.createdDtm ?? "",
+      updatedAt: village.updatedDtm ?? "",
     }));
   } catch (err) {
-    console.error('Failed to fetch villages', { districtCode, circleCode, mouzaCode, err });
+    console.error("Failed to fetch villages", { districtCode, circleCode, mouzaCode, lotCode, err });
     return [];
   }
 }
 
+
+
+
 // 5. Fetch all land categories
 export async function getAllLandCategories(): Promise<LandClass[]> {
   try {
-    const res = await masterDataApi.get('/getAllLandCategories');
+    const res = await masterDataApi.get('/getAllLandsCategoryDetails');
     const items = normalizeArray<any>(res);
     return items.map((lc: any) => ({
       id: (lc.landCategoryGenId ?? lc.id ?? '').toString(),

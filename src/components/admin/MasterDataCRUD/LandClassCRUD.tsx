@@ -58,9 +58,9 @@ const landClassService: CRUDService<LandClass> = {
     
     return errors;
   },
-  bulkDeactivate: async (ids, reason) => {
-    return masterDataService.bulkDeactivateLandClasses(ids, reason);
-  }
+  // bulkDeactivate: async (ids, reason) => {
+  //   return masterDataService.bulkDeactivateLandClasses(ids, reason);
+  // }
 };
 
 // Table columns configuration
