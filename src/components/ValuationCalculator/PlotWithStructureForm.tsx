@@ -47,7 +47,6 @@ interface StructureData {
 
 export interface PlotWithStructureFormRef {
   handleCalculate: () => void;
-  getSavePayload: () => ComprehensiveValuationRequest;
 }
 
 import { District, Circle, Village } from '@/types/masterData';
@@ -113,94 +112,54 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     setStructureData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const buildPayload = (): ComprehensiveValuationRequest | null => {
-    if (!plotFormData || !plotFormData.selectedDistrictCode || !plotFormData.selectedMouzaCode) {
-      return null;
-    }
-    
-    // Extract parameter codes from selectedSubclauses
-    const parameterCodes = Array.isArray(plotFormData.selectedSubclauses)
-      ? plotFormData.selectedSubclauses
-          .map((p: any) => (p?.code ? String(p.code) : null))
-          .filter((code: string | null) => !!code)
-      : [];
-    
-    // Extract subparameter codes from selectedSubParameters and subParametersMap
-    const subParameterCodes: string[] = [];
-    if (plotFormData.selectedSubParameters && Array.isArray(plotFormData.selectedSubParameters)) {
-      plotFormData.selectedSubParameters.forEach(([paramCode, subParamCode]: [string, string]) => {
-        if (plotFormData.subParametersMap && Array.isArray(plotFormData.subParametersMap)) {
-          const subParamsEntry = plotFormData.subParametersMap.find(([code]: [string]) => code === paramCode);
-          if (subParamsEntry && subParamsEntry[1]) {
-            const subParam = subParamsEntry[1].find((sp: any) => sp.subParameterCode === subParamCode);
-            if (subParam) {
-              subParameterCodes.push(subParam.subParameterCode.toString());
-            }
-          }
-        }
-      });
-    }
-    
-    // Combine both parameter codes and subparameter codes
-    const allSelectedCodes = [...parameterCodes, ...subParameterCodes];
-
-    // Build plotLandDetails conditionally based on locationMethod
-    const plotLandDetails: any = {
-      locationMethod: plotFormData.locationMethod as 'manual' | 'gis',
-    };
-    
-    if (plotFormData.locationMethod === 'manual') {
-      // For manual method: send both parameter codes and subparameter codes
-      plotLandDetails.selectedParameterCodes = allSelectedCodes.length > 0 ? allSelectedCodes : undefined;
-    } else {
-      // For GIS method: only send checkbox fields
-      plotLandDetails.onRoad = plotFormData.onRoad;
-      plotLandDetails.cornerPlot = plotFormData.cornerPlot;
-      plotLandDetails.litigatedPlot = plotFormData.litigatedPlot;
-      plotLandDetails.hasTenant = plotFormData.hasTenant;
-      plotLandDetails.roadWidth = plotFormData.onRoad ? parseFloat(plotFormData.roadWidth) || undefined : undefined;
-      plotLandDetails.distanceFromRoad = !plotFormData.onRoad ? parseFloat(plotFormData.distanceFromRoad) || undefined : undefined;
-    }
-
-    const payload: ComprehensiveValuationRequest = {
-      jurisdictionInformation: {
-        districtCode: plotFormData.selectedDistrictCode,
-        circleCode: plotFormData.selectedCircleCode,
-        mouzaCode: plotFormData.selectedMouzaCode,
-          lotCode: plotFormData.selectedLotId,
-        plotNo: plotFormData.plotNo,
-        currentLandUse: plotFormData.currentLandUse
-      },
-      landTypeDetails: {
-        currentLandType: plotFormData.currentLandType || plotFormData.currentLandUse,
-        landUseChange: plotFormData.landUseChange,
-        newLandCategoryType: plotFormData.landUseChange ? plotFormData.newLandUse : undefined,
-        areaType: plotFormData.areaType,
-        areaDetails: {
-          totalLessa: plotFormData.areaDetails.totalLessa
-        }
-      },
-      plotLandDetails: plotLandDetails,
-      structureDetails: {
-        structureType: structureData.structureType,
-        constructionYear: parseFloat(structureData.constructionYear) || 0,
-        totalFloors: parseFloat(structureData.totalFloors) || 0,
-        builtUpArea: parseFloat(structureData.builtUpArea) || 0,
-        structureCondition: structureData.structureCondition,
-        structureAge: parseFloat(structureData.structureAge) || 0
-      }
-    };
-    return payload;
-  };
-
   const handleCalculate = async () => {
-    const payload = buildPayload();
-    if (!payload) {
+    if (!plotFormData || !plotFormData.selectedDistrictCode || !plotFormData.selectedMouzaCode) {
       toast({ title: 'Error', description: 'Plot details are not yet loaded.', variant: 'destructive' });
       return;
     }
+
     try {
+      const payload: ComprehensiveValuationRequest = {
+        jurisdictionInformation: {
+          districtCode: plotFormData.selectedDistrictCode,
+          circleCode: plotFormData.selectedCircleCode,
+          mouzaCode: plotFormData.selectedMouzaCode,
+          lotCode: plotFormData.selectedLotId,
+          plotNo: plotFormData.plotNo,
+          currentLandUse: plotFormData.currentLandUse
+        },
+        landTypeDetails: {
+          currentLandType: plotFormData.currentLandType || plotFormData.currentLandUse,
+          landUseChange: plotFormData.landUseChange,
+          newLandCategoryType: plotFormData.landUseChange ? plotFormData.newLandUse : undefined,
+          areaType: plotFormData.areaType,
+          areaDetails: {
+            totalLessa: plotFormData.areaDetails.totalLessa
+          }
+        },
+        plotLandDetails: {
+          locationMethod: plotFormData.locationMethod as 'manual' | 'gis',
+          onRoad: plotFormData.onRoad,
+          cornerPlot: plotFormData.cornerPlot,
+          litigatedPlot: plotFormData.litigatedPlot,
+          hasTenant: plotFormData.hasTenant,
+          roadWidth: plotFormData.onRoad ? parseFloat(plotFormData.roadWidth) || undefined : undefined,
+          distanceFromRoad: !plotFormData.onRoad ? parseFloat(plotFormData.distanceFromRoad) || undefined : undefined,
+          selectedParameterIds: plotFormData.selectedSubclauses.length > 0 ? plotFormData.selectedSubclauses : undefined
+        },
+        structureDetails: {
+          structureType: structureData.structureType,
+          constructionYear: parseFloat(structureData.constructionYear) || 0,
+          totalFloors: parseFloat(structureData.totalFloors) || 0,
+          builtUpArea: parseFloat(structureData.builtUpArea) || 0,
+          structureCondition: structureData.structureCondition,
+          structureAge: parseFloat(structureData.structureAge) || 0
+        }
+      };
+
+      // Call the new comprehensive valuation API
       const result = await calculatePlotBaseValue(payload);
+
       if (onCalculate) onCalculate(result.totalValue, payload);
       toast({ title: 'Market Value Calculated', description: `Total Value: ₹${result.totalValue.toLocaleString()}` });
     } catch (err: any) {
@@ -211,10 +170,6 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
 
   useImperativeHandle(ref, () => ({
     handleCalculate,
-    getSavePayload: () => {
-      const payload = buildPayload();
-      return payload ? { mode: payload.plotLandDetails.locationMethod, payload } as any : null;
-    },
   }));
 
   return (
