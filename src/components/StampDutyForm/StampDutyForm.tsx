@@ -39,7 +39,9 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
 
   useEffect(() => {
     if (initialMarketValue) {
+      console.log('Setting market value from prop:', initialMarketValue);
       setMarketValue(initialMarketValue);
+      setAgreementValue(initialMarketValue);
       setIsMarketValuePrefilled(true);
     }
   }, [initialMarketValue]);
