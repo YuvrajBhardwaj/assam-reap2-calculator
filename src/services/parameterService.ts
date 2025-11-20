@@ -67,7 +67,10 @@ export const getParameterDetailsAll = async (): Promise<ParameterResponse> => {
   return res.data;
 };
 
-
+/**
+ * Fetch sub-parameters (bands) by parameter code
+ * GET /masterData/getSubParameterDetailsAllByParameterCode
+ */
 export const getSubParameterDetailsAllByParameterCode = async (
   parameterCode: string
 ): Promise<SubParameterResponse> => {

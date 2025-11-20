@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { fetchLots } from '@/services/masterDataService';
 import { calculatePlotBaseValue, fetchCircleLotFactor } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
-import { getParameterDetailsAll, type Parameter } from "@/services/parameterService";
+import { getParameterDetailsAll, getSubParameterDetailsAllByParameterCode, type Parameter, type SubParameter } from "@/services/parameterService";
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
 import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink, Copy, RotateCcw, Loader2 } from 'lucide-react';
@@ -153,6 +153,13 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   const [selectedSubclauses, setSelectedSubclauses] = useState<FullParameter[]>([]);
   const [parameters, setParameters] = useState<FullParameter[]>([]);
   const [loadingParameters, setLoadingParameters] = useState<boolean>(true);
+
+  // Dynamic parameter-subparameter state
+  const [dynamicParameters, setDynamicParameters] = useState<Parameter[]>([]);
+  const [subParametersMap, setSubParametersMap] = useState<Map<string, SubParameter[]>>(new Map());
+  const [selectedParameters, setSelectedParameters] = useState<Set<string>>(new Set());
+  const [selectedSubParameters, setSelectedSubParameters] = useState<Map<string, string>>(new Map());
+  const [loadingSubParams, setLoadingSubParams] = useState<Set<string>>(new Set());
 
   // New: Daag lookup state
   const [isDaagLookupLoading, setIsDaagLookupLoading] = useState(false);
@@ -645,10 +652,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       try {
         setLoadingParameters(true);
         const response = await getParameterDetailsAll();
-        if (response.data) setParameters(response.data as FullParameter[]);
+        if (response.data) {
+          setParameters(response.data as FullParameter[]);
+          setDynamicParameters(response.data); // Store dynamic parameters
+        }
       } catch (error) {
         console.error('Failed to fetch parameters:', error);
         setParameters([]);
+        setDynamicParameters([]);
       } finally {
         setLoadingParameters(false);
       }
@@ -694,7 +705,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       if (onApproachRoad1stBand && approachRoad1stBand) allSelectedParams.push(approachRoad1stBand);
       if (onApproachRoad2ndBand && approachRoad2ndBand) allSelectedParams.push(approachRoad2ndBand);
     }
-    const allSelectedParamIds = allSelectedParams.map(p => p.parameterId.toString());
+    
+    // Add dynamically selected sub-parameters
+    const dynamicSubParamIds: string[] = [];
+    selectedSubParameters.forEach((subParamCode, paramCode) => {
+      const subParams = subParametersMap.get(paramCode);
+      const subParam = subParams?.find(sp => sp.subParameterCode === subParamCode);
+      if (subParam) {
+        // Use the subParameterGenId as the parameter ID
+        dynamicSubParamIds.push(subParam.subParameterGenId.toString());
+      }
+    });
+    
+    const allSelectedParamIds = [
+      ...allSelectedParams.map(p => p.parameterId.toString()),
+      ...dynamicSubParamIds
+    ];
     const plotLandDetails = locationMethod === 'manual'
       ? {
           locationMethod: locationMethod as 'manual' | 'gis',
@@ -732,7 +758,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     selectedSubclauses, mainRoadBand, metalRoadBand, mainMarketBand, onApproachRoadWidth, onApproachRoad1stBand,
     approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, selectedDistrictCode, selectedCircleCode,
     selectedMouzaCode, selectedVillageCode, selectedLot, plotNo, currentLandUse, locationMethod, cornerPlot,
-    litigatedPlot, hasTenant
+    litigatedPlot, hasTenant, selectedParameters, selectedSubParameters, subParametersMap
   ]);
 
   // NEW: Memoized payload for full calculation (reuses per-lessa but with actual totalLessa)
@@ -831,6 +857,52 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   }));
 
   // New: handler to lookup daag-based geographical factor
+  // Handle dynamic parameter selection and sub-parameter fetching
+  const handleParameterToggle = async (parameterCode: string, checked: boolean) => {
+    const newSelected = new Set(selectedParameters);
+    
+    if (checked) {
+      newSelected.add(parameterCode);
+      // Fetch sub-parameters when parameter is selected
+      if (!subParametersMap.has(parameterCode)) {
+        setLoadingSubParams(prev => new Set(prev).add(parameterCode));
+        try {
+          const response = await getSubParameterDetailsAllByParameterCode(parameterCode);
+          if (response.data && response.data.length > 0) {
+            setSubParametersMap(prev => new Map(prev).set(parameterCode, response.data));
+          }
+        } catch (error) {
+          console.error(`Failed to fetch sub-parameters for ${parameterCode}:`, error);
+          toast({ 
+            title: 'Error loading bands', 
+            description: 'Could not load parameter bands. Please try again.', 
+            variant: 'destructive' 
+          });
+        } finally {
+          setLoadingSubParams(prev => {
+            const next = new Set(prev);
+            next.delete(parameterCode);
+            return next;
+          });
+        }
+      }
+    } else {
+      newSelected.delete(parameterCode);
+      // Remove selected sub-parameter when parameter is unchecked
+      setSelectedSubParameters(prev => {
+        const next = new Map(prev);
+        next.delete(parameterCode);
+        return next;
+      });
+    }
+    
+    setSelectedParameters(newSelected);
+  };
+
+  const handleSubParameterSelect = (parameterCode: string, subParameterCode: string) => {
+    setSelectedSubParameters(prev => new Map(prev).set(parameterCode, subParameterCode));
+  };
+
   const handleDaagLookup = async () => {
     if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedVillageCode || !selectedLotId) {
       toast({ title: 'Missing selection', description: 'Please select District, Circles, Mouza, Village and Lot before lookup.', variant: 'destructive' });
@@ -1443,214 +1515,77 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 Select Parameters
               </Label>
 
-              {/* NEW: Cascading Parameters - Replace hardcoded with dynamic groups */}
-              {/* Main Road Group */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="onMainRoad"
-                    checked={onMainRoad}
-                    onCheckedChange={(checked) => {
-                      setOnMainRoad(Boolean(checked));
-                      if (!checked && mainRoadBand) {
-                        setMainRoadBand(null);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="onMainRoad" className="text-sm">Whether on Main Road</Label>
+              {/* Dynamic Parameters with Cascading Sub-parameters */}
+              {loadingParameters ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <span className="text-muted-foreground">Loading parameters...</span>
                 </div>
-                {onMainRoad && paramGroups.mainRoad.bands.length > 0 && (
-                  <Select
-                    value={mainRoadBand?.parameterId?.toString() || ''}
-                    onValueChange={(val) => {
-                      const param = paramGroups.mainRoad.bands.find(p => p.parameterId.toString() === val);
-                      setMainRoadBand(param || null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Distance Band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paramGroups.mainRoad.bands.map((p) => (
-                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
-                          {p.parameter}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {mainRoadBand && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selected: {mainRoadBand.parameter} ({mainRoadBand.minMaxRange}) - Weight: {bandWeights[mainRoadBand.parameterId] || 0}%
-                  </p>
-                )}
-              </div>
-
-              {/* Metal Road Group */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="onMetalRoad"
-                    checked={onMetalRoad}
-                    onCheckedChange={(checked) => {
-                      setOnMetalRoad(Boolean(checked));
-                      if (!checked && metalRoadBand) {
-                        setMetalRoadBand(null);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="onMetalRoad" className="text-sm">Whether on Metal Road</Label>
+              ) : dynamicParameters.length > 0 ? (
+                <div className="space-y-4">
+                  {dynamicParameters.map((param) => (
+                    <div key={param.parameterCode} className="space-y-2 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`param-${param.parameterCode}`}
+                          checked={selectedParameters.has(param.parameterCode)}
+                          onCheckedChange={(checked) => handleParameterToggle(param.parameterCode, Boolean(checked))}
+                        />
+                        <Label htmlFor={`param-${param.parameterCode}`} className="text-sm font-medium cursor-pointer flex-1">
+                          {param.parameterName}
+                        </Label>
+                      </div>
+                      
+                      {/* Show sub-parameter dropdown when parameter is selected */}
+                      {selectedParameters.has(param.parameterCode) && (
+                        <div className="ml-6 mt-2">
+                          {loadingSubParams.has(param.parameterCode) ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Loading bands...
+                            </div>
+                          ) : subParametersMap.get(param.parameterCode)?.length ? (
+                            <div className="space-y-2">
+                              <Select
+                                value={selectedSubParameters.get(param.parameterCode) || ''}
+                                onValueChange={(value) => handleSubParameterSelect(param.parameterCode, value)}
+                              >
+                                <SelectTrigger className="w-full bg-background">
+                                  <SelectValue placeholder="Select band / range" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background z-50">
+                                  {subParametersMap.get(param.parameterCode)!.map((subParam) => (
+                                    <SelectItem key={subParam.subParameterCode} value={subParam.subParameterCode}>
+                                      {subParam.subParameterName}
+                                      {subParam.basePriceIncreaseSubParameter && 
+                                        ` (+${subParam.basePriceIncreaseSubParameter}%)`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {selectedSubParameters.get(param.parameterCode) && (
+                                <p className="text-xs text-muted-foreground">
+                                  Selected: {subParametersMap.get(param.parameterCode)?.find(
+                                    sp => sp.subParameterCode === selectedSubParameters.get(param.parameterCode)
+                                  )?.subParameterName}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground py-2">
+                              No bands available for this parameter
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                {onMetalRoad && paramGroups.metalRoad.bands.length > 0 && (
-                  <Select
-                    value={metalRoadBand?.parameterId?.toString() || ''}
-                    onValueChange={(val) => {
-                      const param = paramGroups.metalRoad.bands.find(p => p.parameterId.toString() === val);
-                      setMetalRoadBand(param || null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Distance Band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paramGroups.metalRoad.bands.map((p) => (
-                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
-                          {p.parameter}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {metalRoadBand && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selected: {metalRoadBand.parameter} ({metalRoadBand.minMaxRange}) - Weight: {bandWeights[metalRoadBand.parameterId] || 0}%
-                  </p>
-                )}
-              </div>
-
-              {/* Main Market Group */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="onMainMarket"
-                    checked={onMainMarket}
-                    onCheckedChange={(checked) => {
-                      setOnMainMarket(Boolean(checked));
-                      if (!checked && mainMarketBand) {
-                        setMainMarketBand(null);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="onMainMarket" className="text-sm">Distance from Main Market</Label>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No parameters available
                 </div>
-                {onMainMarket && paramGroups.mainMarket.bands.length > 0 && (
-                  <Select
-                    value={mainMarketBand?.parameterId?.toString() || ''}
-                    onValueChange={(val) => {
-                      const param = paramGroups.mainMarket.bands.find(p => p.parameterId.toString() === val);
-                      setMainMarketBand(param || null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Distance Band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paramGroups.mainMarket.bands.map((p) => (
-                        <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
-                          {p.parameter}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {onMainMarket && mainMarketBand && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selected: {mainMarketBand.parameter} ({mainMarketBand.minMaxRange}) - Weight: {bandWeights[mainMarketBand.parameterId] || 0}%
-                  </p>
-                )}
-              </div>
-
-              {/* Non Road Group */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="onNonRoad"
-                    checked={onNonRoad}
-                    onCheckedChange={(checked) => {
-                      setOnNonRoad(Boolean(checked));
-                    }}
-                  />
-                  <Label htmlFor="onNonRoad" className="text-sm">Whether on the Non Road</Label>
-                </div>
-              </div>
-
-              {/* Width of Approach Road */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="onApproachRoadWidth"
-                    checked={onApproachRoadWidth}
-                    onCheckedChange={(checked) => {
-                      setOnApproachRoadWidth(Boolean(checked));
-                      if (!checked) {
-                        setOnApproachRoad1stBand(false);
-                        setOnApproachRoad2ndBand(false);
-                        setApproachRoad1stBand(null);
-                        setApproachRoad2ndBand(null);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="onApproachRoadWidth" className="text-sm">Width of Approach Road</Label>
-                </div>
-                {onApproachRoadWidth && (
-                  <div className="space-y-2">
-                    <Select
-                      value={approachRoad1stBand?.parameterId?.toString() || approachRoad2ndBand?.parameterId?.toString() || ''}
-                      onValueChange={(val) => {
-                        const param = paramGroups.approachRoadWidth.bands.find(p => p.parameterId.toString() === val);
-                        if (!param) {
-                          setOnApproachRoad1stBand(false);
-                          setApproachRoad1stBand(null);
-                          setOnApproachRoad2ndBand(false);
-                          setApproachRoad2ndBand(null);
-                          return;
-                        }
-                        if (param.parameterId === 15) {
-                          setOnApproachRoad1stBand(true);
-                          setApproachRoad1stBand(param);
-                          setOnApproachRoad2ndBand(false);
-                          setApproachRoad2ndBand(null);
-                        } else if (param.parameterId === 16) {
-                          setOnApproachRoad2ndBand(true);
-                          setApproachRoad2ndBand(param);
-                          setOnApproachRoad1stBand(false);
-                          setApproachRoad1stBand(null);
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Width of Approach Road Band" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paramGroups.approachRoadWidth.bands
-                          .filter(p => p.parameterId === 15 || p.parameterId === 16)
-                          .map((p) => (
-                            <SelectItem key={p.parameterId} value={p.parameterId.toString()}>
-                              {p.parameter}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    {(approachRoad1stBand || approachRoad2ndBand) && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Selected: {(approachRoad1stBand || approachRoad2ndBand)?.parameter} {((approachRoad1stBand || approachRoad2ndBand)?.minMaxRange) ? `(${(approachRoad1stBand || approachRoad2ndBand)?.minMaxRange})` : ''} - Weight: {bandWeights[(approachRoad1stBand || approachRoad2ndBand)!.parameterId] || 0}%
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Flat Parameters (non-cascading) */}
+              )}
               {loadingParameters ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="text-muted-foreground">Loading parameters...</div>
