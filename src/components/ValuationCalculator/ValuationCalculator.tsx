@@ -140,7 +140,7 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
                 if (marketValue !== null) {
                   window.dispatchEvent(
                     new CustomEvent('navigate-to-tab', {
-                      detail: { tabId: 'stamp-duty-calculator', initialMarketValue: marketValue },
+                      detail: { tab: 'stamp-duty-calculator', initialMarketValue: marketValue },
                     })
                   );
                 }

@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import ApprovalInbox from "./ApprovalInbox";
 import { useAuth } from "@/context/AuthContext";
-import { getAuditLogs } from "@/services/masterDataService";
+import { AuditService } from "@/services/auditService";
 import type { AuditLog } from "@/types/masterData";
 
 // ---------- Types ----------
@@ -90,7 +90,7 @@ const WorkflowAdminDashboard = () => {
   const loadLogs = async () => {
     setLogsLoading(true);
     try {
-      const data = await getAuditLogs(
+      const data = await AuditService.getAuditLogs(
         filters.entityType || undefined,
         filters.fromDate || undefined,
         filters.toDate || undefined,
