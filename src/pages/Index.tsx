@@ -242,7 +242,7 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-assam-gray">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-maroon-50">
       <Helmet>
         <title>Assam Land Value & Stamp Duty Calculator | Official Portal</title>
         <meta name="description" content="Calculate property valuation and stamp duty for Assam. Access zonal values, zonal database, and digital land records." />
@@ -250,64 +250,64 @@ const Index = () => {
       </Helmet>
 
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container mx-auto px-4 py-6 animate-fade-in">
         <RoleSwitcher />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           {/* Tab List */}
-          <TabsList className="flex flex-nowrap gap-x-2 mb-8 rounded-lg p-1 justify-start overflow-x-auto sm:overflow-x-visible">
+          <TabsList className="flex flex-nowrap gap-x-2 mb-8 rounded-xl p-2 justify-start overflow-x-auto sm:overflow-x-visible bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200">
             {/* Common Tabs */}
             <TabsTrigger
               value="property-valuation"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                 activeTab === 'property-valuation'
-                  ? 'bg-white text-[#595959] border border-[#595959]'
-                  : 'bg-[#595959] text-white'
-              } transition-colors`}
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
             >
               <Building className="h-4 w-4" /> <span>Map</span>
             </TabsTrigger>
 
             <TabsTrigger
               value="valuation-calculator"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                 activeTab === 'valuation-calculator'
-                  ? 'bg-white text-[#595959] border border-[#595959]'
-                  : 'bg-[#595959] text-white'
-              } transition-colors`}
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
             >
               <Calculator className="h-4 w-4" /> <span>Property Valuation</span>
             </TabsTrigger>
 
             <TabsTrigger
               value="stamp-duty-calculator"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                 activeTab === 'stamp-duty-calculator'
-                  ? 'bg-white text-[#595959] border border-[#595959]'
-                  : 'bg-[#595959] text-white'
-              } transition-colors`}
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
             >
               <Calculator className="h-4 w-4" /> <span>Stamp Duty</span>
             </TabsTrigger>
 
             <TabsTrigger
               value="zonal-value-database"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                 activeTab === 'zonal-value-database'
-                  ? 'bg-white text-[#595959] border border-[#595959]'
-                  : 'bg-[#595959] text-white'
-              } transition-colors`}
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
             >
               <Database className="h-4 w-4" /> <span>Zonal Values</span>
             </TabsTrigger>
 
             <TabsTrigger
               value="certified-copies"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                 activeTab === 'certified-copies'
-                  ? 'bg-white text-[#595959] border border-[#595959]'
-                  : 'bg-[#595959] text-white'
-              } transition-colors`}
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
             >
               <Database className="h-4 w-4" /> <span>Certified Copies</span>
             </TabsTrigger>
@@ -317,21 +317,21 @@ const Index = () => {
               <>
                 <TabsTrigger
                   value="department-dashboard"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'department-dashboard'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <Database className="h-4 w-4" /> <span>Department Dashboard</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="workflow-dept"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'workflow-dept'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
@@ -343,41 +343,41 @@ const Index = () => {
               <>
                 <TabsTrigger
                   value="master-data"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'master-data'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <Database className="h-4 w-4" /> <span>Master Data</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="reports"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'reports'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <ChartBar className="h-4 w-4" /> <span>Reports</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="workflow"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'workflow'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <ChartBar className="h-4 w-4" /> <span>Workflow</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="user-management"
-                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap ${
+                  className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
                     activeTab === 'user-management'
-                      ? 'bg-white text-[#595959] border border-[#595959]'
-                      : 'bg-[#595959] text-white'
-                  } transition-colors`}
+                      ? 'bg-maroon-700 text-white shadow-md scale-105'
+                      : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                  }`}
                 >
                   <span>User Management</span>
                 </TabsTrigger>
@@ -386,25 +386,19 @@ const Index = () => {
           </TabsList>
 
           {/* Tab Contents */}
-          <TabsContent value="landing" className="space-y-4">
+          <TabsContent value="landing" className="space-y-4 animate-fade-in">
             <LandingPage onGetStarted={handleGetStarted} onNavigateToSection={handleNavigateToSection} />
-            <button
-              onClick={() => handleTabChange("stamp-duty-calculator")}
-              className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200"
-            >
-              Go to Stamp Duty Calculator
-            </button>
           </TabsContent>
 
-          <TabsContent value="property-valuation" className="space-y-4">
+          <TabsContent value="property-valuation" className="space-y-4 animate-fade-in">
             <PropertyValuationUI />
           </TabsContent>
 
-          <TabsContent value="valuation-calculator" className="space-y-4">
+          <TabsContent value="valuation-calculator" className="space-y-4 animate-fade-in">
             <ValuationCalculator initialLocationData={initialLocationData} />
           </TabsContent>
 
-          <TabsContent value="stamp-duty-calculator" className="space-y-4">
+          <TabsContent value="stamp-duty-calculator" className="space-y-4 animate-fade-in">
             <StampDutyForm 
               key={prefilledStampDuty?.marketValue || 'stamp-duty'} 
               initialMarketValue={prefilledStampDuty?.marketValue} 
@@ -412,11 +406,11 @@ const Index = () => {
             />
           </TabsContent>
 
-          <TabsContent value="zonal-value-database" className="space-y-4">
+          <TabsContent value="zonal-value-database" className="space-y-4 animate-fade-in">
             <ZonalView />
           </TabsContent>
 
-          <TabsContent value="certified-copies" className="space-y-4">
+          <TabsContent value="certified-copies" className="space-y-4 animate-fade-in">
             <CertifiedCopiesServices />
           </TabsContent>
           
