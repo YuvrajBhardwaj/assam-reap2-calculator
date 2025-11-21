@@ -1586,30 +1586,6 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   No parameters available
                 </div>
               )}
-              {loadingParameters ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading parameters...</div>
-                </div>
-              ) : flatParameters.length > 0 ? (
-                <div className="space-y-3 p-2 border rounded-md">
-                  {flatParameters.map((param) => (
-                    <div key={param.parameterId} className="flex items-start space-x-3 p-3 hover:bg-muted/50 rounded-lg transition-colors">
-                      <Checkbox
-                        id={`parameter-${param.parameterId}`}
-                        checked={selectedSubclauses.some(p => p.parameterId === param.parameterId)}
-                        onCheckedChange={() => handleSubclauseChange(param)}
-                      />
-                      <Label htmlFor={`parameter-${param.parameterId}`} className="text-sm text-foreground cursor-pointer flex-1">
-                        {param.parameter} {param.minMaxRange ? `(${param.minMaxRange})` : ''}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              ) : parameters.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No additional parameters available.
-                </div>
-              ) : null}
 
               {totalMarketValuationWithRate !== null && (
                 <Card className="border-purple-200 bg-purple-50 mt-4 animate-in fade-in slide-in-from-bottom-1">
