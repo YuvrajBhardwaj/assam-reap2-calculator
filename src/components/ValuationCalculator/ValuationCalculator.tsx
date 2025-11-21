@@ -67,6 +67,7 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
     setMarketValue(null);
   }, [effectiveSelectedType]);
 
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <Card className="bg-background shadow-sm">

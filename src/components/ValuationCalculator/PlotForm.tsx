@@ -86,6 +86,7 @@ interface PlotFormProps {
 
 export interface PlotFormRef {
   handleCalculate: () => void;
+  getSavePayload: () => any;
 }
 
 // Placeholder data
@@ -465,6 +466,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         roadWidth,
         distanceFromRoad,
         selectedSubclauses,
+        selectedSubParameters: Array.from(selectedSubParameters.entries()),
+        subParametersMap: Array.from(subParametersMap.entries()),
       });
     }
   }, [
@@ -491,6 +494,8 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     roadWidth,
     distanceFromRoad,
     selectedSubclauses,
+    selectedSubParameters,
+    subParametersMap,
     totalLessa // Added for areaDetails
   ]);
 
@@ -852,8 +857,88 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     );
   };
 
+  const getSelectedParameterCodes = () => {
+    const allSelectedParams = [
+      ...selectedSubclauses,
+      mainRoadBand,
+      metalRoadBand,
+      mainMarketBand,
+    ].filter((p): p is FullParameter => p !== null);
+    if (onApproachRoadWidth) {
+      if (onApproachRoad1stBand && approachRoad1stBand) allSelectedParams.push(approachRoad1stBand);
+      if (onApproachRoad2ndBand && approachRoad2ndBand) allSelectedParams.push(approachRoad2ndBand);
+    }
+    const dynamicSubParamCodes: string[] = [];
+    selectedSubParameters.forEach((subParamCode, paramCode) => {
+      const subParams = subParametersMap.get(paramCode);
+      const subParam = subParams?.find(sp => sp.subParameterCode === subParamCode);
+      if (subParam) dynamicSubParamCodes.push(subParam.subParameterCode.toString());
+    });
+    return [
+      ...allSelectedParams.map(p => (p as any).parameterCode?.toString() || (p as any).code?.toString() || ''),
+      ...dynamicSubParamCodes,
+    ].filter(code => code !== '');
+  };
+
+  const getSavePayload = () => {
+    const selectedParameterCodes = getSelectedParameterCodes();
+    const effectiveRoadWidth = onRoad && roadWidth ? parseFloat(roadWidth) : undefined;
+    const effectiveDistanceFromRoad = !onRoad && distanceFromRoad ? parseFloat(distanceFromRoad) : undefined;
+    
+    // Build plotLandDetails conditionally based on locationMethod
+    const plotLandDetails: any = {
+      locationMethod: locationMethod,
+    };
+    
+    if (locationMethod === 'manual') {
+      // For manual method: only send parameter codes
+      plotLandDetails.selectedParameterCodes = selectedParameterCodes.length > 0 ? selectedParameterCodes : undefined;
+    } else {
+      // For GIS method: only send checkbox fields
+      plotLandDetails.onRoad = onRoad;
+      plotLandDetails.cornerPlot = cornerPlot;
+      plotLandDetails.litigatedPlot = litigatedPlot;
+      plotLandDetails.hasTenant = hasTenant;
+      plotLandDetails.roadWidth = effectiveRoadWidth;
+      plotLandDetails.distanceFromRoad = effectiveDistanceFromRoad;
+    }
+    
+    const basePayload: ComprehensiveValuationRequest = {
+      jurisdictionInformation: {
+        districtCode: selectedDistrictCode,
+        circleCode: selectedCircleCode,
+        mouzaCode: selectedMouzaCode,
+        villageCode: selectedVillageCode,
+        lotCode: selectedLot?.code || '',
+        plotNo: plotNo || undefined,
+        currentLandUse: currentLandUse,
+      },
+      landTypeDetails: {
+        currentLandType: landUseChange ? (newLandUse || '') : (currentLandType || ''),
+        landUseChange: landUseChange,
+        newLandCategoryType: landUseChange ? (newLandUse || undefined) : undefined,
+        areaType: areaType,
+        areaDetails: { totalLessa },
+      },
+      plotLandDetails: plotLandDetails,
+    };
+    const consolePayload: any = {
+      mode: locationMethod,
+      payload: basePayload,
+    };
+    if (locationMethod === 'gis' && daagFactorInfo) {
+      consolePayload.gisInfo = {
+        factor: daagFactorInfo.factor,
+        source: daagFactorInfo.source,
+        areaDetails: daagFactorInfo.areaDetails || null,
+      };
+    }
+    return consolePayload;
+  };
+
   useImperativeHandle(ref, () => ({
     handleCalculate,
+    getSavePayload,
   }));
 
   // New: handler to lookup daag-based geographical factor
@@ -1586,6 +1671,30 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   No parameters available
                 </div>
               )}
+              {loadingParameters ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading parameters...</div>
+                </div>
+              ) : flatParameters.length > 0 ? (
+                <div className="space-y-3 p-2 border rounded-md">
+                  {flatParameters.map((param) => (
+                    <div key={param.parameterId} className="flex items-start space-x-3 p-3 hover:bg-muted/50 rounded-lg transition-colors">
+                      <Checkbox
+                        id={`parameter-${param.parameterId}`}
+                        checked={selectedSubclauses.some(p => p.parameterId === param.parameterId)}
+                        onCheckedChange={() => handleSubclauseChange(param)}
+                      />
+                      <Label htmlFor={`parameter-${param.parameterId}`} className="text-sm text-foreground cursor-pointer flex-1">
+                        {param.parameter} {param.minMaxRange ? `(${param.minMaxRange})` : ''}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : parameters.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No additional parameters available.
+                </div>
+              ) : null}
 
               {totalMarketValuationWithRate !== null && (
                 <Card className="border-purple-200 bg-purple-50 mt-4 animate-in fade-in slide-in-from-bottom-1">
@@ -1594,18 +1703,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                       <p className="text-sm text-muted-foreground mb-1">Total Market Valuation</p>
                       <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
                       <div className="mt-4 flex items-center justify-center gap-3">
-                        <Button
-                          onClick={handleCalculate}
-                          className="bg-maroon-700 hover:bg-maroon-800 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
-                          disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
-                        >
-                          {isCalculating ? (<span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Calculating...</span>) : 'Calculate'}
-                        </Button>
+                        
                         <Button
                           onClick={() => navigateToStampDuty()} // Changed to use the dedicated function
                           className="bg-purple-600 hover:bg-purple-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
                         >
                           Calculate Stamp Duty
+                        </Button>
+
+                        <Button
+                          onClick={() => {
+                            const payload = getSavePayload();
+                            console.log('Plot Save Payload', payload);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
+                        >
+                          Save
                         </Button>
                       </div>
                     </div>
@@ -1636,11 +1749,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                           {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
                         </Button>
                         <Button
-                          onClick={handleCalculate}
-                          className="flex items-center gap-2 bg-maroon-700 hover:bg-maroon-800 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
-                          disabled={isCalculating || !isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
+                          onClick={() => {
+                            const payload = getSavePayload();
+                            console.log('Plot Save Payload', payload);
+                          }}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto text-white"
+                          disabled={!isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
                         >
-                          {isCalculating ? (<span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Calculating...</span>) : 'Calculate'}
+                          Save
                         </Button>
                         <Button
                           onClick={navigateToStampDuty} // Use the dedicated function here too
