@@ -255,7 +255,7 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           {/* Tab List */}
-          <TabsList className="flex flex-nowrap gap-x-2 mb-8 rounded-xl p-2 justify-start overflow-x-auto sm:overflow-x-visible bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200">
+          <TabsList className="flex flex-nowrap gap-x-2 mb-8">
             {/* Common Tabs */}
             <TabsTrigger
               value="property-valuation"
