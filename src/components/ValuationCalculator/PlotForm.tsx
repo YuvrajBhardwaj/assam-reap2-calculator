@@ -35,6 +35,56 @@ import { ComprehensiveValuationRequest } from '@/types/valuation';
 import { Badge } from '@/components/ui/badge';
 import { Info, MapPin, Home, Layers, AlertTriangle, Users, Ruler, CheckCircle, Calculator, FileText, History, ExternalLink, Copy, RotateCcw, Loader2 } from 'lucide-react';
 
+interface PlotLandDetailsPayload {
+  locationMethod: string;
+  parameters?: {
+    parameterCode: string;
+    parameterName: string;
+    subParameters: { subParameterCode: string; subParameterName: string }[];
+  }[];
+  onRoad?: boolean;
+  cornerPlot?: boolean;
+  litigatedPlot?: boolean;
+  hasTenant?: boolean;
+  roadWidth?: number;
+  distanceFromRoad?: number;
+}
+
+interface JurisdictionInformationExternal {
+  districtCode: string;
+  circleCode: string;
+  mouzaCode: string;
+  villageCode: string;
+  lotCode: string;
+  plotNo?: string;
+  currentLandUse: string;
+}
+
+interface LandTypeDetailsExternal {
+  currentLandType: string;
+  landUseChange: boolean;
+  newLandCategoryType?: string;
+  areaType: 'RURAL' | 'URBAN';
+  areaDetailsExternal: { totalLessa: number };
+}
+
+interface PayloadExternal {
+  jurisdictionInformationExternal: JurisdictionInformationExternal;
+  landTypeDetailsExternal: LandTypeDetailsExternal;
+  plotLandDetailsExternal: PlotLandDetailsPayload;
+  totalMarketValuation?: number;
+}
+
+interface ConsolePayload {
+  mode: string;
+  payloadExternal: PayloadExternal;
+  gisInfo?: {
+    factor: number;
+    source: string;
+    areaDetails: { bigha?: number; katha?: number; lessa?: number } | null;
+  };
+}
+
 interface FullParameter extends Parameter {
   parameterId: number;
   parameter: string;
@@ -86,7 +136,7 @@ interface PlotFormProps {
 
 export interface PlotFormRef {
   handleCalculate: () => void;
-  getSavePayload: () => any;
+  getSavePayload: () => ConsolePayload;
 }
 
 // Placeholder data
@@ -607,7 +657,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     if (selectedVillageCode) {
       const selectedVillage = villages.find(v => v.code === selectedVillageCode);
       if (selectedVillage?.areaType) {
-        setAreaType(selectedVillage.areaType);
+        setAreaType(selectedVillage.areaType.toUpperCase() as 'RURAL' | 'URBAN');
       }
     }
   }, [selectedVillageCode, villages]);
@@ -881,18 +931,74 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   };
 
   const getSavePayload = () => {
-    const selectedParameterCodes = getSelectedParameterCodes();
+    const getSelectedParametersForPayload = () => {
+       const params: FullParameter[] = [];
+       selectedSubclauses.forEach(p => params.push(p));
+       if (onMainRoad && mainRoadBand) params.push(mainRoadBand);
+       if (onMetalRoad && metalRoadBand) params.push(metalRoadBand);
+       if (onMainMarket && mainMarketBand) params.push(mainMarketBand);
+       if (onApproachRoadWidth && approachRoad1stBand) params.push(approachRoad1stBand);
+       if (onApproachRoadWidth && approachRoad2ndBand) params.push(approachRoad2ndBand);
+       return params;
+     };
+
+    const getSelectedDynamicParameters = () => {
+       const dynamicParams: { parameterCode: string; parameterName: string }[] = [];
+       selectedParameters.forEach(paramCode => {
+         const param = dynamicParameters.find(p => p.parameterCode === paramCode);
+         if (param) {
+           dynamicParams.push({
+             parameterCode: param.parameterCode,
+             parameterName: param.parameterName
+           });
+         }
+       });
+       return dynamicParams;
+     };
+
+    const selectedParametersForPayload = getSelectedParametersForPayload();
+    const selectedDynamicParams = getSelectedDynamicParameters();
     const effectiveRoadWidth = onRoad && roadWidth ? parseFloat(roadWidth) : undefined;
     const effectiveDistanceFromRoad = !onRoad && distanceFromRoad ? parseFloat(distanceFromRoad) : undefined;
     
     // Build plotLandDetails conditionally based on locationMethod
-    const plotLandDetails: any = {
+    const plotLandDetails: PlotLandDetailsPayload = {
       locationMethod: locationMethod,
     };
     
     if (locationMethod === 'manual') {
-      // For manual method: only send parameter codes
-      plotLandDetails.selectedParameterCodes = selectedParameterCodes.length > 0 ? selectedParameterCodes : undefined;
+      // For manual method: send parameters with their sub-parameters
+      const allParameters = [
+        ...selectedParametersForPayload.map(param => ({
+          parameterCode: param.parameterCode,
+          parameterName: param.parameter,
+          subParameters: Array.from(selectedSubParameters.entries())
+            .filter(([key, value]) => key.startsWith(param.parameterCode) && value !== '')
+            .map(([key, value]) => {
+              const subParamCode = value;
+              const subParam = subParametersMap.get(param.parameterCode)?.find(sp => sp.subParameterCode === subParamCode);
+              return {
+                subParameterCode: subParamCode,
+                subParameterName: subParam?.subParameterName || '',
+              };
+            }),
+        })),
+        ...selectedDynamicParams.map(param => ({
+          parameterCode: param.parameterCode,
+          parameterName: param.parameterName,
+          subParameters: Array.from(selectedSubParameters.entries())
+            .filter(([key, value]) => key === param.parameterCode && value !== '')
+            .map(([key, value]) => {
+              const subParamCode = value;
+              const subParam = subParametersMap.get(param.parameterCode)?.find(sp => sp.subParameterCode === subParamCode);
+              return {
+                subParameterCode: subParamCode,
+                subParameterName: subParam?.subParameterName || '',
+              };
+            }),
+        }))
+      ];
+      plotLandDetails.parameters = allParameters;
     } else {
       // For GIS method: only send checkbox fields
       plotLandDetails.onRoad = onRoad;
@@ -903,29 +1009,30 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       plotLandDetails.distanceFromRoad = effectiveDistanceFromRoad;
     }
     
-    const basePayload: ComprehensiveValuationRequest = {
-      jurisdictionInformation: {
-        districtCode: selectedDistrictCode,
-        circleCode: selectedCircleCode,
-        mouzaCode: selectedMouzaCode,
-        villageCode: selectedVillageCode,
-        lotCode: selectedLot?.code || '',
-        plotNo: plotNo || undefined,
-        currentLandUse: currentLandUse,
-      },
-      landTypeDetails: {
-        currentLandType: landUseChange ? (newLandUse || '') : (currentLandType || ''),
-        landUseChange: landUseChange,
-        newLandCategoryType: landUseChange ? (newLandUse || undefined) : undefined,
-        areaType: areaType,
-        areaDetails: { totalLessa },
-      },
-      plotLandDetails: plotLandDetails,
-    };
-    const consolePayload: any = {
-      mode: locationMethod,
-      payload: basePayload,
-    };
+    const basePayload: PayloadExternal = {
+       jurisdictionInformationExternal: {
+         districtCode: selectedDistrictCode,
+         circleCode: selectedCircleCode,
+         mouzaCode: selectedMouzaCode,
+         villageCode: selectedVillageCode,
+         lotCode: selectedLot?.code || '',
+         plotNo: plotNo || undefined,
+         currentLandUse: currentLandUse,
+       },
+       landTypeDetailsExternal: {
+         currentLandType: landUseChange ? (newLandUse || '') : (currentLandType || ''),
+         landUseChange: landUseChange,
+         newLandCategoryType: landUseChange ? (newLandUse || undefined) : undefined,
+         areaType: areaType,
+         areaDetailsExternal: { totalLessa },
+       },
+       plotLandDetailsExternal: plotLandDetails,
+       totalMarketValuation: totalMarketValuationWithRate || undefined,
+     };
+     const consolePayload: ConsolePayload = {
+       mode: locationMethod,
+       payloadExternal: basePayload,
+     };
     if (locationMethod === 'gis' && daagFactorInfo) {
       consolePayload.gisInfo = {
         factor: daagFactorInfo.factor,
