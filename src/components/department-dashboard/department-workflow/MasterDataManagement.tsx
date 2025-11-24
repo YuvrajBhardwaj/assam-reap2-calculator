@@ -57,6 +57,7 @@ import {
   Check,
   Send,
   X,
+  Clock,
 } from "lucide-react";
 
 import { MasterDataChangeRequest } from "@/types/masterData";
@@ -68,6 +69,7 @@ import LotCRUD from "@/components/admin/MasterDataCRUD/LotCRUD";
 import LandClassCRUD from "@/components/admin/MasterDataCRUD/LandClassCRUD";
 import AreaTypeCRUD from "@/components/admin/MasterDataCRUD/AreaTypeCRUD";
 import SROCascadingCRUD from "@/components/admin/MasterDataCRUD/SROCascadingCRUD";
+import ParameterCRUD from "@/components/admin/MasterDataCRUD/ParameterCRUD";
 
 export type EntityType =
   | "Districts"
@@ -135,11 +137,11 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   const [requestEntityId, setRequestEntityId] = useState<string>("");
   const [requestPayloadText, setRequestPayloadText] = useState<string>("{}");
   const { loginId } = useAuth();
-  const [showDeptApprovalsDialog, setShowDeptApprovalsDialog] = useState(false);
-  const [activeEntityTab, setActiveEntityTab] = useState<"District" | "Circle" | "Lot">("District");
-  const [pendingDistrict, setPendingDistrict] = useState<MasterDataChangeRequest[]>([]);
-  const [pendingCircle, setPendingCircle] = useState<MasterDataChangeRequest[]>([]);
-  const [pendingLot, setPendingLot] = useState<MasterDataChangeRequest[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<MasterDataChangeRequest[]>([]);
+  const [isLoadingApprovals, setIsLoadingApprovals] = useState(false);
+  const [selectedViewRequest, setSelectedViewRequest] = useState<MasterDataChangeRequest | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     setRequests(masterDataChangeRequests);
@@ -148,52 +150,232 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
   const getStatusCodeForRole = (role: string | null): string => {
     switch (role) {
       case "JR_MANAGER":
-        return "22-2";
+      case "ROLE_JuniorManager":
+        return "22-1"; // PEN_J_M_CODE
       case "MANAGER":
-        return "22-3";
+      case "ROLE_Manager":
+        return "22-2"; // PEN_M_CODE
       case "SR_MANAGER":
+      case "ROLE_SeniorManager":
+        return "22-3"; // PEN_S_M_CODE
       case "ADMIN":
-        return "22-1";
+      case "ROLE_ADMIN":
+        return "22-3"; // Admin also uses Senior Manager status code
       default:
         return "22-1";
     }
   };
 
-  const fetchDeptPendingRequests = async (masterType: "District" | "Circle" | "Lot") => {
+  const fetchDeptPendingRequests = async (entityType: EntityType) => {
     try {
       const statusCode = getStatusCodeForRole(userRole);
+      const masterType = toMasterTypeParam(entityType);
       const items = await AuditService.getPendingAuditManagement(masterType, statusCode);
-      const mapped: MasterDataChangeRequest[] = (items || []).map((it: any) => ({
-        id: Number(it.id),
-        entityType: masterType as EntityType,
-        operation: (it?.payload?.operation ?? "update") as MasterDataChangeRequest["operation"],
-        requestedBy: it.requestorName ?? "",
-        requestDate: it.requestDate ?? "",
-        status: "Pending",
-        currentApprover: (it.currentApprover ?? "N/A") as MasterDataChangeRequest["currentApprover"],
-        approvalLevel: Number(it.approvalLevel ?? 1),
-        reason: it.reason ?? "",
-        payload: it.payload ?? {},
-        daysPending: Number(it.daysPending ?? 0),
-      }));
+      
+      const mapped: MasterDataChangeRequest[] = (items || []).map((it: any) => {
+        // Handle different data structures based on entity type
+        let id = it.id;
+        let entityName = "";
+        let entityCode = "";
+        
+        // Extract entity-specific fields
+        if (it.districtGenId) {
+          id = it.districtGenId;
+          entityName = it.districtName || "";
+          entityCode = it.districtCode || "";
+        } else if (it.circleGenId) {
+          id = it.circleGenId;
+          entityName = it.circleName || "";
+          entityCode = it.circleCode || "";
+        } else if (it.mauzaGenId) {
+          id = it.mauzaGenId;
+          entityName = it.mauzaName || "";
+          entityCode = it.mauzaCode || "";
+        } else if (it.villageGenId) {
+          id = it.villageGenId;
+          entityName = it.villageName || "";
+          entityCode = it.villageCode || "";
+        } else if (it.lotGenId) {
+          id = it.lotGenId;
+          entityName = it.lotName || "";
+          entityCode = it.lotCode || "";
+        } else if (it.landClassGenId) {
+          id = it.landClassGenId;
+          entityName = it.landClassName || "";
+          entityCode = it.landClassCode || "";
+        } else if (it.areaTypeGenId) {
+          id = it.areaTypeGenId;
+          entityName = it.areaTypeName || "";
+          entityCode = it.areaTypeCode || "";
+        }
+
+        // Calculate days pending
+        const daysPending = it.createdDtm 
+          ? Math.floor((Date.now() - new Date(it.createdDtm).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+
+        return {
+          id: Number(id),
+          entityType: entityType,
+          operation: (it.operation || "update") as MasterDataChangeRequest["operation"],
+          requestedBy: it.createdBy || "Unknown",
+          requestDate: it.createdDtm ? new Date(it.createdDtm).toISOString().split('T')[0] : "",
+          status: "Pending",
+          currentApprover: (it.status || "N/A") as MasterDataChangeRequest["currentApprover"],
+          approvalLevel: 1,
+          reason: `${entityName} (${entityCode})`,
+          payload: {
+            ...it,
+            entityName,
+            entityCode,
+            masterCode: entityCode,
+          },
+          daysPending,
+        };
+      });
+      
       return mapped;
     } catch (err) {
-      console.error(`Failed to fetch pending ${masterType} approvals`, err);
-      toast({ title: `Failed to fetch pending ${masterType} approvals`, variant: "destructive" });
+      console.error(`Failed to fetch pending ${entityType} approvals`, err);
+      toast({ title: `Failed to fetch pending ${entityType} approvals`, variant: "destructive" });
       return [];
     }
   };
 
-  useEffect(() => {
-    if (showDeptApprovalsDialog) {
-      const loadRequests = async () => {
-        setPendingDistrict(await fetchDeptPendingRequests("District"));
-        setPendingCircle(await fetchDeptPendingRequests("Circle"));
-        setPendingLot(await fetchDeptPendingRequests("Lot"));
-      };
-      loadRequests();
+  const loadPendingApprovalsForEntity = async (entityType: EntityType) => {
+    setIsLoadingApprovals(true);
+    try {
+      const approvals = await fetchDeptPendingRequests(entityType);
+      setPendingApprovals(approvals);
+    } finally {
+      setIsLoadingApprovals(false);
     }
-  }, [showDeptApprovalsDialog, userRole]);
+  };
+
+  const getRoleFromUserRole = (): 'jm' | 'man' | 'sman' | 'admin' => {
+    switch (userRole) {
+      case "JR_MANAGER":
+      case "ROLE_JuniorManager":
+        return "jm";
+      case "MANAGER":
+      case "ROLE_Manager":
+        return "man";
+      case "SR_MANAGER":
+      case "ROLE_SeniorManager":
+        return "sman";
+      case "ADMIN":
+      case "ROLE_ADMIN":
+        return "admin";
+      default:
+        return "man";
+    }
+  };
+
+  const handleApproveAction = async (request: MasterDataChangeRequest) => {
+    setActionLoading(true);
+    try {
+      const role = getRoleFromUserRole();
+      const masterType = toMasterTypeParam(request.entityType);
+      const masterCode = request.payload?.entityCode || request.payload?.masterCode || "";
+      const currentStatusCode = request.payload?.statusCode || getStatusCodeForRole(userRole);
+
+      const actionRequest: WorkflowActionRequest = {
+        id: request.id.toString(),
+        masterType: masterType,
+        masterCode: masterCode,
+        action: 'approve',
+        currentStatusCode: currentStatusCode
+      };
+
+      let result: string;
+      switch (role) {
+        case 'jm':
+          result = await AuditService.juniorManagerAction(actionRequest);
+          break;
+        case 'man':
+          result = await AuditService.managerAction(actionRequest);
+          break;
+        case 'sman':
+          result = await AuditService.seniorManagerAction(actionRequest);
+          break;
+        case 'admin':
+          result = await AuditService.adminAction(actionRequest);
+          break;
+      }
+
+      toast({ 
+        title: "Success", 
+        description: "Request approved successfully." 
+      });
+
+      // Refresh the list
+      await loadPendingApprovalsForEntity(selectedMasterDataEntity);
+    } catch (error) {
+      console.error('Failed to approve request:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to approve request. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectAction = async (request: MasterDataChangeRequest) => {
+    setActionLoading(true);
+    try {
+      const role = getRoleFromUserRole();
+      const masterType = toMasterTypeParam(request.entityType);
+      const masterCode = request.payload?.entityCode || request.payload?.masterCode || "";
+      const currentStatusCode = request.payload?.statusCode || getStatusCodeForRole(userRole);
+
+      const actionRequest: WorkflowActionRequest = {
+        id: request.id.toString(),
+        masterType: masterType,
+        masterCode: masterCode,
+        action: 'reject',
+        currentStatusCode: currentStatusCode
+      };
+
+      let result: string;
+      switch (role) {
+        case 'jm':
+          result = await AuditService.juniorManagerAction(actionRequest);
+          break;
+        case 'man':
+          result = await AuditService.managerAction(actionRequest);
+          break;
+        case 'sman':
+          result = await AuditService.seniorManagerAction(actionRequest);
+          break;
+        case 'admin':
+          result = await AuditService.adminAction(actionRequest);
+          break;
+      }
+
+      toast({ 
+        title: "Success", 
+        description: "Request rejected successfully." 
+      });
+
+      // Refresh the list
+      await loadPendingApprovalsForEntity(selectedMasterDataEntity);
+    } catch (error) {
+      console.error('Failed to reject request:', error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to reject request. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPendingApprovalsForEntity(selectedMasterDataEntity);
+  }, [selectedMasterDataEntity, userRole]);
 
   // Map display name to backend masterType
   const toMasterTypeParam = (entity: string): string => {
@@ -281,6 +463,7 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
       case "Land Classes": return <LandClassCRUD />;
       case "Area Types": return <AreaTypeCRUD />;
       case "SRO Hierarchy": return <SROCascadingCRUD />;
+      case "Parameters": return <ParameterCRUD />;
       default: return null;
     }
   };
@@ -319,71 +502,117 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
       {/* Render CRUD view */}
       <div className="mb-6">{renderDeptView()}</div>
 
-      {/* Requests Table */}
+      {/* Department Workflow Management - Always Visible */}
       <Card>
-        <CardHeader className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Database className="w-5 h-5" /> Dept Workflow Management - {selectedMasterDataEntity}
-          </CardTitle>
-          <div className="flex gap-2">
-
+          <CardHeader className="flex flex-row justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-blue-600" /> 
+                Department Workflow Management - {selectedMasterDataEntity}
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage pending approvals for {selectedMasterDataEntity.toLowerCase()}
+              </p>
+            </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowDeptApprovalsDialog(true)}
+              onClick={() => loadPendingApprovalsForEntity(selectedMasterDataEntity)}
+              disabled={isLoadingApprovals}
             >
-              <CheckCircle className="w-4 h-4" /> Dept Approvals
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingApprovals ? 'animate-spin' : ''}`} />
+              {isLoadingApprovals ? 'Loading...' : 'Refresh'}
             </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Operation</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Requested By</TableHead>
-                <TableHead>Approver</TableHead>
-                <TableHead>Level</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.id}</TableCell>
-                  <TableCell>{r.entityType}</TableCell>
-                  <TableCell>{r.operation}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(r.status)}>{r.status}</Badge>
-                  </TableCell>
-                  <TableCell>{r.requestedBy}</TableCell>
-                  <TableCell>{r.currentApprover}</TableCell>
-                  <TableCell>{r.approvalLevel}</TableCell>
-                  <TableCell>
-                    {r.status === "Pending" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" className="bg-green-600 text-white" onClick={() => handleMasterDataActionSelect(r, "approve")}>
-                          Approve
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleMasterDataActionSelect(r, "send-back")}>
-                          Send Back
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleMasterDataActionSelect(r, "reject")}>
-                          Reject
-                        </Button>
-                      </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingApprovals ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+                <span className="ml-3 text-gray-600">Loading {selectedMasterDataEntity} approvals...</span>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-200 max-h-[500px] overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-gray-50 z-10">
+                    <TableRow>
+                      <TableHead className="font-semibold">ID</TableHead>
+                      <TableHead className="font-semibold">Name</TableHead>
+                      <TableHead className="font-semibold">Code</TableHead>
+                      <TableHead className="font-semibold">Requested By</TableHead>
+                      <TableHead className="font-semibold">Days Pending</TableHead>
+                      <TableHead className="font-semibold">Status</TableHead>
+                      <TableHead className="font-semibold text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingApprovals.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12">
+                          <div className="flex flex-col items-center justify-center text-gray-500">
+                            <Database className="w-12 h-12 mb-3 text-gray-300" />
+                            <p className="text-lg font-medium">No Pending Approvals</p>
+                            <p className="text-sm mt-1">There are no pending {selectedMasterDataEntity.toLowerCase()} approvals at the moment.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      pendingApprovals.map((r) => (
+                        <TableRow key={r.id} className="hover:bg-gray-50 transition-colors">
+                          <TableCell className="font-medium text-blue-600">{r.id}</TableCell>
+                          <TableCell className="font-medium">{r.payload?.entityName || "N/A"}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="font-mono text-xs">{r.payload?.entityCode || "N/A"}</Badge>
+                          </TableCell>
+                          <TableCell>{r.requestedBy}</TableCell>
+                          <TableCell>
+                            <Badge className={r.daysPending > 7 ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}>
+                              {r.daysPending}d
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">
+                              {r.currentApprover}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 justify-center">
+                              <Button 
+                                size="sm" 
+                                className="bg-green-600 text-white hover:bg-green-700" 
+                                onClick={() => handleApproveAction(r)}
+                                disabled={actionLoading}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleRejectAction(r)}
+                                disabled={actionLoading}
+                              >
+                                Reject
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedViewRequest(r);
+                                  setShowViewDialog(true);
+                                }}
+                              >
+                                View
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Request Dialog */}
       <Dialog open={showMasterDataRequestDialog} onOpenChange={setShowMasterDataRequestDialog}>
@@ -443,6 +672,162 @@ const MasterDataManagement: React.FC<MasterDataManagementProps> = ({
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Request Details Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-blue-600" />
+              Request Details - {selectedViewRequest?.entityType}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedViewRequest && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-gray-500">Request ID</span>
+                    <p className="text-sm font-medium text-blue-600">{selectedViewRequest.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Entity Type</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.entityType}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Entity Name</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.payload?.entityName || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Entity Code</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.payload?.entityCode || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Operation</span>
+                    <Badge variant="outline" className="capitalize">{selectedViewRequest.operation}</Badge>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Status</span>
+                    <Badge className="bg-yellow-100 text-yellow-800">{selectedViewRequest.status}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Details */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Request Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs text-gray-500">Requested By</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.requestedBy}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Request Date</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.requestDate}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Days Pending</span>
+                    <Badge className={selectedViewRequest.daysPending > 7 ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}>
+                      {selectedViewRequest.daysPending} days
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Current Approver</span>
+                    <p className="text-sm font-medium">{selectedViewRequest.currentApprover}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Approval Level</span>
+                    <p className="text-sm font-medium">Level {selectedViewRequest.approvalLevel}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500">Active Status</span>
+                    <Badge variant={selectedViewRequest.payload?.active ? "default" : "secondary"}>
+                      {selectedViewRequest.payload?.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Audit Information */}
+              {selectedViewRequest.payload?.createdBy && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Audit Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500">Created By</span>
+                      <p className="text-sm font-medium">{selectedViewRequest.payload.createdBy}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">Created Date</span>
+                      <p className="text-sm font-medium">
+                        {selectedViewRequest.payload.createdDtm 
+                          ? new Date(selectedViewRequest.payload.createdDtm).toLocaleString() 
+                          : "N/A"}
+                      </p>
+                    </div>
+                    {selectedViewRequest.payload.updatedBy && (
+                      <>
+                        <div>
+                          <span className="text-xs text-gray-500">Updated By</span>
+                          <p className="text-sm font-medium">{selectedViewRequest.payload.updatedBy}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500">Updated Date</span>
+                          <p className="text-sm font-medium">
+                            {selectedViewRequest.payload.updatedDtm 
+                              ? new Date(selectedViewRequest.payload.updatedDtm).toLocaleString() 
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Full Payload */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Full Data Payload</h3>
+                <pre className="text-xs bg-white p-3 rounded border border-gray-200 overflow-auto max-h-[200px]">
+                  {JSON.stringify(selectedViewRequest.payload, null, 2)}
+                </pre>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowViewDialog(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    handleApproveAction(selectedViewRequest);
+                  }}
+                  disabled={actionLoading}
+                >
+                  Approve
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    handleRejectAction(selectedViewRequest);
+                  }}
+                  disabled={actionLoading}
+                >
+                  Reject
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

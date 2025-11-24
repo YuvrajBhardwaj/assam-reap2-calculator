@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CheckCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import MasterDataManagement, { EntityType } from "./department-workflow/MasterDataManagement";
@@ -17,6 +17,7 @@ export default function DepartmentDashboard() {
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<MasterDataChangeRequest["entityType"]>("Districts");
   const [showMasterDataRequestDialog, setShowMasterDataRequestDialog] = useState(false);
+  const [showDeptApprovalsDialog, setShowDeptApprovalsDialog] = useState(false);
   const [masterDataRequestType, setMasterDataRequestType] = useState<"create" | "update" | "deactivate">("create");
   const [masterDataRequestReason, setMasterDataRequestReason] = useState("");
   const [masterDataChangeRequests, setMasterDataChangeRequests] = useState<MasterDataChangeRequest[]>([
@@ -161,6 +162,8 @@ export default function DepartmentDashboard() {
                 + New Request
               </Button>
             )}
+            
+            
           </div>
         </CardHeader>
 

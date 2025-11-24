@@ -229,6 +229,7 @@ export interface ComprehensiveValuationRequest {
     };
   };
   plotLandDetails: {
+    selectedSubParameterCodes: any[];
     locationMethod: 'manual' | 'gis';
     onRoad: boolean;
     cornerPlot: boolean;

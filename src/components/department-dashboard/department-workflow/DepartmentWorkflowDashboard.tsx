@@ -43,11 +43,12 @@ import {
 } from "lucide-react";
 import ApprovalInbox from "@/components/admin/ApprovalInbox";
 import MasterDataManagement, { EntityType } from "./MasterDataManagement";
+import DepartmentWorkflowManager from "./DepartmentWorkflowManager";
 
 import { useAuth } from "@/context/AuthContext";
-import { AuditService } from "@/services/auditService";
+import { AuditService, type WorkflowActionRequest } from "@/services/auditService";
 import type { AuditLog, MasterDataChangeRequest } from "@/types/masterData";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // ---------- Types ----------
 interface WorkflowItem {
@@ -82,7 +83,8 @@ const DepartmentWorkflowDashboard = () => {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowItem | null>(null);
-  const { userRole } = useAuth();
+  const { userRole, loginId } = useAuth();
+  const { toast } = useToast();
 
   // Roles
   const isAdmin = userRole === "ROLE_ADMIN";
@@ -185,6 +187,61 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
 
   const handleRefreshData = () => {
     toast({ title: "Refreshing data..." });
+    loadPendingRequests(); // Refresh pending requests
+  };
+
+  // Handle workflow approval/rejection actions
+  const handleWorkflowAction = async (
+    requestId: string, 
+    action: 'approve' | 'reject',
+    role: 'jm' | 'man' | 'sman' | 'admin',
+    masterType: string,
+    masterCode: string,
+    currentStatusCode: string
+  ) => {
+    try {
+      const request: WorkflowActionRequest = {
+        id: requestId,
+        masterType: masterType,
+        masterCode: masterCode,
+        action: action,
+        currentStatusCode: currentStatusCode
+      };
+
+      let result: string;
+      switch (role) {
+        case 'jm':
+          result = await AuditService.juniorManagerAction(request);
+          break;
+        case 'man':
+          result = await AuditService.managerAction(request);
+          break;
+        case 'sman':
+          result = await AuditService.seniorManagerAction(request);
+          break;
+        case 'admin':
+          result = await AuditService.adminAction(request);
+          break;
+        default:
+          throw new Error('Invalid role specified');
+      }
+
+      toast({
+        title: "Success",
+        description: `Request ${action}d successfully.`
+      });
+
+      // Refresh data after action
+      handleRefreshData();
+      
+    } catch (error) {
+      console.error(`Failed to ${action} request:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to ${action} request. Please try again.`,
+        variant: "destructive"
+      });
+    }
   };
 
   // Fetch Audit Logs
@@ -205,8 +262,58 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
     }
   };
 
+  // Fetch Pending Requests from Department
+  const loadPendingRequests = async () => {
+    try {
+      const masterType = "Mauza"; // Default master type for department workflow
+      const statusCode = "22-2"; // Pending status code
+      
+      // Get all pending requests
+      const pendingData = await AuditService.getPendingAuditManagement(masterType, statusCode);
+      
+      // Transform audit items to workflow items
+      const workflowItems: WorkflowItem[] = pendingData.map((item, index) => ({
+        id: parseInt(item.id) || index + 1,
+        type: item.masterType || "Master Data Change",
+        applicant: item.requestorName || "Department User",
+        property: `Request #${item.id}`,
+        location: "Department Workflow",
+        submittedDate: new Date().toISOString().split('T')[0], // Current date as placeholder
+        status: "pending" as const,
+        assignedTo: item.currentApprover || "Pending Assignment",
+        priority: "medium" as const,
+        daysElapsed: item.daysPending || 0,
+        enteredBy: item.requestorName,
+        entryDate: new Date().toISOString().split('T')[0],
+        modifiedBy: item.currentApprover,
+        modifiedDate: new Date().toISOString().split('T')[0],
+        approvedBy: item.currentApprover,
+        approvedDate: new Date().toISOString().split('T')[0],
+      }));
+      
+      // Update workflow data with real data
+      // This would typically update state, but for now we'll log it
+      console.log("Loaded pending requests:", workflowItems);
+      
+      // You could set this to state if you have a state variable for workflow data
+      // setWorkflowData(workflowItems);
+      
+    } catch (error) {
+      console.error("Failed to load pending requests:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pending requests from department",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
-    if (isAdmin) loadLogs();
+    if (isAdmin) {
+      loadLogs();
+    }
+    // Load pending requests for all users
+    loadPendingRequests();
   }, [isAdmin]);
 
   // ---------- Mock Workflow Data ----------
@@ -376,8 +483,9 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
 
       {/* Tabs Section */}
       <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="grid w-full sm:w-[500px] grid-cols-3 mb-4">
+        <TabsList className="grid w-full sm:w-[650px] grid-cols-4 mb-4">
           <TabsTrigger value="workflows">Workflow Management</TabsTrigger>
+          <TabsTrigger value="dept-approvals">Department Approvals</TabsTrigger>
           <TabsTrigger value="approval">Approval Inbox</TabsTrigger>
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
         </TabsList>
@@ -521,6 +629,11 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
             setShowActionDialog={setShowActionDialog}
             setActionReason={setActionReason}
           />
+        </TabsContent>
+
+        {/* Department Approvals Tab */}
+        <TabsContent value="dept-approvals">
+          <DepartmentWorkflowManager userRole={userRole} />
         </TabsContent>
 
         {/* Approval Inbox */}

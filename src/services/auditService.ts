@@ -1,4 +1,4 @@
-import { coreApi } from './http';
+import { jurisdictionApi } from './http';
 import type { AuditLog } from "@/types/masterData";
 
 export interface AuditItem {
@@ -23,25 +23,25 @@ export interface UpdateAuditActionRequest {
 }
 
 export interface WorkflowActionRequest {
-  loginId: string;
   id: string;
   masterType: string;
+  masterCode: string;
   action: 'approve' | 'reject';
-  statusCode: string;
+  currentStatusCode: string;
 }
 
 export type ApprovalRole = 'jm' | 'man' | 'sman' | 'admin';
 
 export class AuditService {
   static async getPendingAuditManagement(masterType: string, statusCode: string): Promise<AuditItem[]> {
-    const res = await coreApi.get(`/audit/get/pending/management`, {
+    const res = await jurisdictionApi.get(`/audit/get/pending/management`, {
       params: { masterType, statusCode },
     });
     return res.data;
   }
 
   static async updateAuditAction(request: UpdateAuditActionRequest): Promise<string> {
-    const res = await coreApi.post(`/audit/update/action`, null, {
+    const res = await jurisdictionApi.post(`/audit/update/action`, null, {
       params: request,
     });
     return res.data;
@@ -52,8 +52,14 @@ export class AuditService {
     role: ApprovalRole,
     request: WorkflowActionRequest
   ): Promise<string> {
-    const res = await coreApi.post(`/audit/update/action/${role}`, null, {
-      params: request,
+    const res = await jurisdictionApi.get(`/audit/update/action/${role}`, {
+      params: {
+        id: request.id,
+        masterType: request.masterType,
+        masterCode: request.masterCode,
+        action: request.action,
+        currentStatusCode: request.currentStatusCode,
+      },
     });
     return res.data;
   }
@@ -89,7 +95,7 @@ export class AuditService {
       params.role = role;
     }
     
-    const res = await coreApi.get(`/audit/get/pending/management`, {
+    const res = await jurisdictionApi.get(`/audit/get/pending/management`, {
       params,
     });
     return res.data;
@@ -101,7 +107,7 @@ export class AuditService {
     masterType: string,
     statusCode: string
   ): Promise<AuditItem[]> {
-    const res = await coreApi.get(`/auditController/${role}/pending`, {
+    const res = await jurisdictionApi.get(`/auditController/${role}/pending`, {
       params: { masterType, statusCode },
     });
     return res.data;
@@ -119,7 +125,7 @@ export class AuditService {
     if (toDate) params.toDate = toDate;
     if (performedBy) params.performedBy = performedBy;
 
-    const res = await coreApi.get(`/audit/logs`, { params });
+    const res = await jurisdictionApi.get(`/audit/logs`, { params });
     return res.data;
   }
 }

@@ -57,15 +57,20 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
       setParameters(paramData || []);
 
       // Build bands mapped to ExtendedParameterBand
-      const mappedBands: ExtendedParameterBand[] = (bandData || []).map((b: ParameterBand) => ({
-        ...b,
-        id: `${b.parameterCode}-${b.bandCode}`,
-        code: b.bandCode,
-        name: b.subParameterName,
-        isActive: true,
-        weightage: b.weightage,
-        effectiveFrom: b.effectiveFrom
-      }));
+      const mappedBands: ExtendedParameterBand[] = (bandData || []).map((b: any) => {
+        const bandCode = b.bandCode || b.subParameterCode || b.id;
+        const codeStr = String(bandCode);
+        return {
+          ...(b as any),
+          bandCode: codeStr,
+          id: `${b.parameterCode}-${codeStr}`,
+          code: codeStr,
+          name: b.subParameterName || b.name,
+          isActive: true,
+          weightage: b.weightage,
+          effectiveFrom: b.effectiveFrom
+        } as ExtendedParameterBand;
+      });
       setBands(mappedBands);
 
       // Build weightages mapped to ExtendedParameterWeightage
@@ -95,6 +100,97 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
     }
   };
 
+  // Targeted loaders for lazy tab-based loading
+  const loadParameters = async () => {
+    setLoading(true);
+    try {
+      const paramData = await masterDataService.getAllParameters();
+      setParameters(paramData || []);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to load parameters", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBandsOnly = async () => {
+    setLoading(true);
+    try {
+      const bandData = await masterDataService.getAllParameterBands();
+      const mappedBands: ExtendedParameterBand[] = (bandData || []).map((b: any) => {
+        const bandCode = b.bandCode || b.subParameterCode || b.id;
+        const codeStr = String(bandCode);
+        return {
+          ...(b as any),
+          bandCode: codeStr,
+          id: `${b.parameterCode}-${codeStr}`,
+          code: codeStr,
+          name: b.subParameterName || b.name,
+          isActive: true,
+          weightage: b.weightage,
+          effectiveFrom: b.effectiveFrom
+        } as ExtendedParameterBand;
+      });
+      setBands(mappedBands);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to load bands", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadWeightagesOnly = async () => {
+    setLoading(true);
+    try {
+      const weightageData = await masterDataService.getAllParameterWeightages();
+      const mappedWeightages: ExtendedParameterWeightage[] = (weightageData || []).map((w: ParameterWeightage) => {
+        const param = (parameters || []).find(p => p.code === w.parameterCode);
+        const bc = (w as any).bandCode;
+        return {
+          ...(w as any),
+          id: `${w.parameterCode}${bc ? `-${bc}` : ''}`,
+          code: w.parameterCode,
+          name: param ? param.name : w.parameterCode,
+          isActive: true,
+          bandCode: bc
+        };
+      });
+      setWeightages(mappedWeightages);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to load weightages", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // When switching tabs, ensure the relevant dataset is loaded even without a manual refresh
+  useEffect(() => {
+    const ensureParametersThen = async (fn: () => Promise<void>) => {
+      if (!parameters.length) {
+        await loadParameters();
+      }
+      await fn();
+    };
+
+    if (activeTab === 'parameters' && parameters.length === 0) {
+      loadParameters();
+    } else if (activeTab === 'bands' && bands.length === 0) {
+      ensureParametersThen(loadBandsOnly);
+    } else if (activeTab === 'weightages') {
+      ensureParametersThen(async () => {
+        if (bands.length === 0) {
+          await loadBandsOnly();
+        }
+        if (weightages.length === 0) {
+          await loadWeightagesOnly();
+        }
+      });
+    }
+  }, [activeTab]);
+  
   // helper: generate a unique code from name (slug + timestamp)
   const generateUniqueCode = (name?: string) => {
     if (!name) return `param-${Date.now()}`;
@@ -162,8 +258,8 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
       type: 'select',
       required: true,
       options: parameters.map(p => ({ value: p.code, label: p.name })),
-      onChange: (_, val) => {
-        setWeightageParam(val as string);
+      onChange: (value) => {
+        setWeightageParam(value as string);
         // reset selected band when parameter changes
         setSelectedBandForWeightage('');
       }
@@ -173,9 +269,11 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
       label: 'Band',
       type: 'select',
       required: true,
+      dependsOn: 'parameterCode',
       options: bands
         .filter(b => b.parameterCode === weightageParam)
-        .map(b => ({ value: b.code, label: b.name }))
+        .filter(b => !!b.code && typeof b.code === 'string' && b.code.trim().length > 0)
+        .map(b => ({ value: b.code as string, label: b.name }))
     },
     {
       key: 'weightage',
@@ -328,11 +426,11 @@ export default function ParameterCRUD({ className = "" }: ParameterCRUDProps) {
   const bandCRUDService: CRUDService<ExtendedParameterBand> = {
     fetchAll: async () => {
       const data = await masterDataService.getAllParameterBands();
-      return (data || []).map((b: ParameterBand) => ({
-        ...b,
-        id: `${b.parameterCode}-${b.bandCode}`,
-        code: b.bandCode,
-        name: b.subParameterName,
+      return (data || []).map((b: any) => ({
+        ...(b as any),
+        id: `${b.parameterCode}-${String(b.bandCode || b.subParameterCode || b.id)}`,
+        code: String(b.bandCode || b.subParameterCode || b.id),
+        name: b.subParameterName || b.name,
         isActive: true,
         weightage: b.weightage,
         effectiveFrom: b.effectiveFrom

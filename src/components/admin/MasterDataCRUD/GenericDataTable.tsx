@@ -161,6 +161,9 @@ export default function GenericDataTable<T extends BaseEntity>({
 
   const { toast } = useToast();
 
+  // Only render default Status column if caller did not provide one
+  const showStatusAuto = !columns.some(col => (col.key as string) === 'isActive');
+
   // Effects
   useEffect(() => {
     setData(initialData);
@@ -386,12 +389,17 @@ export default function GenericDataTable<T extends BaseEntity>({
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Select
-              key={`${field.key as string}-${field.options?.length || 0}`}
+              key={`${field.key as string}-${field.options?.length || 0}-${field.dependsOn ? (formData[field.dependsOn] as string | number | undefined) ?? '' : ''}`}
               onValueChange={(value) => {
-                setFormData(prev => ({ ...prev, [field.key]: value }));
+                const next = { ...formData, [field.key]: value } as any;
                 if (field.onChange) {
-                  field.onChange(value, formData);
+                  const patch = field.onChange(value, next);
+                  if (patch && typeof patch === 'object') {
+                    setFormData({ ...next, ...(patch as any) });
+                    return;
+                  }
                 }
+                setFormData(next);
               }}
               value={formData[field.key] as string}
             >
@@ -666,7 +674,7 @@ const renderActionButtons = (item: T) => (
               {columns.map(column => (
                 <TableHead key={column.key as string}>{column.label}</TableHead>
               ))}
-              <TableHead>Status</TableHead>
+              {showStatusAuto && <TableHead>Status</TableHead>}
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -696,11 +704,13 @@ const renderActionButtons = (item: T) => (
                     }
                   </TableCell>
                 ))}
-                <TableCell>
-                  <Badge variant={item.isActive ? "default" : "secondary"}>
-                    {item.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
+                {showStatusAuto && (
+                  <TableCell>
+                    <Badge variant={item.isActive ? "default" : "secondary"}>
+                      {item.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                )}
                 <TableCell>{renderActionButtons(item)}</TableCell>
               </TableRow>
             ))}

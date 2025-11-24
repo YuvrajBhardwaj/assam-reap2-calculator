@@ -188,10 +188,12 @@ export interface MasterDataChangeRequest {
   modifiedDate?: string;
   approvedBy?: string;
   approvedDate?: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Under Review';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Under Review' | string;
   currentApprover: 'Junior Manager' | 'Manager' | 'Senior Manager' | 'Role Admin' | 'N/A' | undefined;
   approvalLevel: number;
   reason: string;
   payload: any;
   daysPending: number;
+  statusCode?: string;
+  masterCode?: string;
 }
