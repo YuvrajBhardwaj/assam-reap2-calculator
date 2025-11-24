@@ -228,7 +228,7 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
 
       toast({
         title: "Success",
-        description: `Request ${action}d successfully.`
+        description: `Request ${action}d successfully: ${result}`
       });
 
       // Refresh data after action
