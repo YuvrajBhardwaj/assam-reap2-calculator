@@ -441,7 +441,7 @@ const [selectedMasterDataEntity, setSelectedMasterDataEntity] = useState<EntityT
 
   // ---------- Render ----------
   return (
-    <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
+    <div className="p-6 space-y-8 max-w-[1600px] mx-auto animate-fade-in">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900">

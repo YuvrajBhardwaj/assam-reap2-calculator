@@ -438,10 +438,10 @@ const Index = () => {
 
           {isDepartmentUser && (
             <>
-              <TabsContent value="department-dashboard" className="space-y-4">
+              <TabsContent value="department-dashboard" className="space-y-4 animate-fade-in">
                 <DepartmentDashboard />
               </TabsContent>
-              <TabsContent value="workflow-dept" className="space-y-4">
+              <TabsContent value="workflow-dept" className="space-y-4 animate-fade-in">
                 <DepartmentWorkflowDashboard />
               </TabsContent>
             </>
@@ -449,11 +449,11 @@ const Index = () => {
 
           {isAdmin && (
             <>
-              <TabsContent value="master-data" className="space-y-4">
+              <TabsContent value="master-data" className="space-y-4 animate-fade-in">
                 <MasterDataCRUDDashboard />
               </TabsContent>
 
-              <TabsContent value="reports" className="space-y-4">
+              <TabsContent value="reports" className="space-y-4 animate-fade-in">
                 <div className="bg-white p-6 rounded-md shadow-sm">
                   <h2 className="text-xl font-medium text-assam-blue mb-4">Reports & Analysis</h2>
                   <p className="text-gray-600">This section provides various reports and analytical tools for land valuation data.</p>
@@ -486,7 +486,7 @@ const Index = () => {
                 <DepartmentWorkflowDashboard />
               </TabsContent>
 
-              <TabsContent value="user-management" className="space-y-4">
+              <TabsContent value="user-management" className="space-y-4 animate-fade-in">
                 <Tabs defaultValue="add-user" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="add-user">Add New User</TabsTrigger>
