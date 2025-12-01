@@ -129,7 +129,7 @@ export async function getVillagesByDistrictAndCircleAndMouzaAndLot(
       ? res.data
       : [];
 
-    return payload.map((village: any) => ({
+  return payload.map((village: any) => ({
       id: (village.villageGenId ?? "").toString(),
       code: village.villageCode ?? "",
       name: village.villageName ?? "",
@@ -140,6 +140,8 @@ export async function getVillagesByDistrictAndCircleAndMouzaAndLot(
       lotCode: village.lotCode ?? lotCode,
       isActive: village.active ?? true,
       isUrban: village.areaType === "Urban",
+      areaType: village.areaType === "Urban" ? 'URBAN' : 'RURAL',
+      landCategory: village.landCategory ?? undefined,
       basePriceVillage: village.basePriceVillage ?? 0,
       createdAt: village.createdDtm ?? "",
       updatedAt: village.updatedDtm ?? "",

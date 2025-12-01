@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { fetchLots } from '@/services/masterDataService';
+import { fetchLots, fetchLandClassMappings } from '@/services/masterDataService';
 import { calculatePlotBaseValue, fetchCircleLotFactor } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { getParameterDetailsAll, getSubParameterDetailsAllByParameterCode, type Parameter, type SubParameter } from "@/services/parameterService";
@@ -414,6 +414,48 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setSelectedSubclauses(params);
     }
   }, [parameters, storedFormData]); // Depend on parameters and storedFormData
+
+  // Effect to fetch land class mappings when village changes
+  useEffect(() => {
+    const applyVillageLandCategory = async () => {
+      if (!selectedDistrictCode || !selectedCircleCode || !selectedMouzaCode || !selectedVillageCode) {
+        setCurrentLandUse('');
+        return;
+      }
+      const selectedVillage = villages.find(v => v.code === selectedVillageCode);
+      if (selectedVillage?.landCategory && landCategories.length > 0) {
+        const match = landCategories.find(c => (c.name?.toLowerCase?.() || '') === selectedVillage.landCategory!.toLowerCase());
+        if (match && match.id !== undefined) {
+          const idStr = String(match.id);
+          setCurrentLandUse(idStr);
+          setCurrentLandType(idStr);
+          setBasePriceLandUse(match.basePriceMouzaIncrease ?? null);
+          return;
+        }
+      }
+      try {
+        const res = await fetchLandClassMappings(selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedVillageCode);
+        if (Array.isArray(res) && res.length > 0) {
+          const first = res[0];
+          const matchByCode = landCategories.find(c => String(c.code) === String(first.landClassCode));
+          if (matchByCode) {
+            const idStr = String(matchByCode.id);
+            setCurrentLandUse(idStr);
+            setCurrentLandType(idStr);
+            setBasePriceLandUse(matchByCode.basePriceMouzaIncrease ?? null);
+          } else {
+            setCurrentLandUse('');
+          }
+        } else {
+          setCurrentLandUse('');
+        }
+      } catch (error) {
+        console.error('Failed to fetch land class mappings:', error);
+        setCurrentLandUse('');
+      }
+    };
+    applyVillageLandCategory();
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedVillageCode, villages, landCategories]);
 
   // Effect to save form data to zustand store whenever relevant state changes
   // Note: To avoid infinite loops, we've moved sync to a throttled or batched approach if needed, but for now, it's fine as states are local
@@ -1362,7 +1404,24 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 <Home className="w-3 h-3 text-gray-500" />
                 Village
               </Label>
-              <Select value={selectedVillageCode} onValueChange={setSelectedVillageCode}>
+              <Select value={selectedVillageCode} onValueChange={(value) => {
+    setSelectedVillageCode(value);
+    const selectedVillage = villages.find((v) => v.code === value);
+    if (selectedVillage?.areaType) {
+      setAreaType(selectedVillage.areaType);
+    } else if (selectedVillage?.isUrban !== undefined) {
+      setAreaType(selectedVillage.isUrban ? 'URBAN' : 'RURAL');
+    }
+    if (selectedVillage?.landCategory && landCategories.length > 0) {
+      const match = landCategories.find((c) => (c.name?.toLowerCase?.() || '') === selectedVillage.landCategory.toLowerCase());
+      if (match && match.id !== undefined) {
+        const idStr = String(match.id);
+        setCurrentLandUse(idStr);
+        setCurrentLandType(idStr);
+        setBasePriceLandUse(match.basePriceMouzaIncrease ?? null);
+      }
+    }
+  }}>
               <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
                 <SelectValue placeholder="Select Village" />
               </SelectTrigger>

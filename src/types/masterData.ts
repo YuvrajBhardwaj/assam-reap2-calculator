@@ -74,6 +74,10 @@ export interface Village extends BaseEntity {
   mouzaCode: string;
   isUrban: boolean;
   areaType?: 'RURAL' | 'URBAN';
+  lotCode?: string;
+  basePriceVillage?: number;
+  landCategory?: string;
+
 }
 
 export interface Zone extends BaseEntity {}
