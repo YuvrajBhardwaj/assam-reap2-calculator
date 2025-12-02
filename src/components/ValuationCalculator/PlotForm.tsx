@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { fetchLots, fetchLandClassMappings } from '@/services/masterDataService';
+import { fetchLots, fetchLandClassMappings, saveValuation } from '@/services/masterDataService';
 import { calculatePlotBaseValue, fetchCircleLotFactor } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { getParameterDetailsAll, getSubParameterDetailsAllByParameterCode, type Parameter, type SubParameter } from "@/services/parameterService";
@@ -1878,9 +1878,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                         </Button>
 
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             const payload = getSavePayload();
-                            console.log('Plot Save Payload', payload);
+                            try {
+                              const res = await saveValuation(payload);
+                              toast({ title: 'Saved', description: 'Plot details saved successfully.' });
+                            } catch (err: any) {
+                              toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
+                            }
                           }}
                           className="bg-green-600 hover:bg-green-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
                         >
@@ -1915,9 +1920,14 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                           {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
                         </Button>
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             const payload = getSavePayload();
-                            console.log('Plot Save Payload', payload);
+                            try {
+                              const res = await saveValuation(payload);
+                              toast({ title: 'Saved', description: 'Plot details saved successfully.' });
+                            } catch (err: any) {
+                              toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
+                            }
                           }}
                           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto text-white"
                           disabled={!isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}

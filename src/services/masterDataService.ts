@@ -691,6 +691,11 @@ export async function calculatePlotBaseValue(payload: ComprehensiveValuationRequ
   // return res.data;
 }
 
+export async function saveValuation(payload: any): Promise<any> {
+  const res = await masterDataApi.post('/valuation/save', payload);
+  return res.data;
+}
+
 // ===== CHANGE REQUEST WORKFLOWS =====
 // Commented out as unlisted in API design
 
