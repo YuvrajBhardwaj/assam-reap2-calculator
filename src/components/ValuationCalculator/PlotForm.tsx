@@ -68,10 +68,20 @@ interface LandTypeDetailsExternal {
   areaDetailsExternal: { totalLessa: number };
 }
 
+interface StructureDetailsExternal {
+  structureType?: string;
+  constructionYear?: number;
+  totalFloors?: number;
+  builtUpArea?: number;
+  structureCondition?: string;
+  structureAge?: number;
+}
+
 interface PayloadExternal {
   jurisdictionInformationExternal: JurisdictionInformationExternal;
   landTypeDetailsExternal: LandTypeDetailsExternal;
   plotLandDetailsExternal: PlotLandDetailsPayload;
+  structureDetails?: StructureDetailsExternal;
   totalMarketValuation?: number;
 }
 
@@ -1069,6 +1079,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
          areaDetailsExternal: { totalLessa },
        },
        plotLandDetailsExternal: plotLandDetails,
+        structureDetails: {},
        totalMarketValuation: totalMarketValuationWithRate || undefined,
      };
      const consolePayload: ConsolePayload = {

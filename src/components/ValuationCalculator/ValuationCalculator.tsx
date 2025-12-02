@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import PlotForm, { PlotFormRef } from './PlotForm';
 import PlotWithStructureForm, { PlotWithStructureFormRef } from './PlotWithStructureForm';
 import { District, Circle, Village } from '@/types/masterData';
+import { saveValuation } from '@/services/masterDataService';
+import { useToast } from '@/hooks/use-toast';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import StampDutyForm from '../StampDutyForm/StampDutyForm';
@@ -32,6 +34,7 @@ interface ValuationCalculatorProps {
 
 const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) => {
   const { selectedType, setSelectedType } = useCalculatorSettingsStore();
+  const { toast } = useToast();
   const [marketValue, setMarketValue] = useState<number | null>(null);
   const [showStampDuty, setShowStampDuty] = useState(false); // New state to control tab display
 
@@ -67,6 +70,25 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
     setMarketValue(null);
   }, [effectiveSelectedType]);
 
+  const handleSave = async () => {
+    try {
+      if (effectiveSelectedType === 'plot' && plotFormRef.current) {
+        const payload = plotFormRef.current.getSavePayload();
+        await saveValuation(payload);
+        toast({ title: 'Saved', description: 'Plot details saved successfully.' });
+        return;
+      }
+      if (effectiveSelectedType === 'plot-with-structure' && plotWithStructureFormRef.current) {
+        const payload = plotWithStructureFormRef.current.getSavePayload();
+        await saveValuation(payload as any);
+        toast({ title: 'Saved', description: 'Plot with structure details saved successfully.' });
+        return;
+      }
+      toast({ title: 'Error', description: 'Form data is not ready to save.', variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -111,6 +133,12 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
               initialLocationData={initialLocationData}
             />
           )}
+
+          <div className="flex justify-end mt-4">
+            {/* <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white">
+              Save
+            </Button> */}
+          </div>
 
           {/* Conditionally render StampDutyForm if market value is calculated and showStampDuty is true */}
           {showStampDuty && marketValue !== null && (

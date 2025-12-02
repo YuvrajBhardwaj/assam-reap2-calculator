@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { calculatePlotBaseValue, saveValuation } from '@/services/masterDataService';
+import { calculatePlotBaseValue } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { ComprehensiveValuationRequest } from '@/types/valuation';
 
@@ -209,20 +209,6 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     }
   };
 
-  const handleSave = async () => {
-    const payload = buildPayload();
-    if (!payload) {
-      toast({ title: 'Error', description: 'Plot details are not yet loaded.', variant: 'destructive' });
-      return;
-    }
-    try {
-      await saveValuation({ mode: payload.plotLandDetails.locationMethod, payload });
-      toast({ title: 'Saved', description: 'Plot and structure details saved successfully.' });
-    } catch (err: any) {
-      console.error(err);
-      toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
-    }
-  };
 
   useImperativeHandle(ref, () => ({
     handleCalculate,
@@ -364,16 +350,13 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
         onDataChange={setPlotFormData} // Pass setPlotFormData to update the state
       />
 
-      <div className="flex justify-end gap-3">
-        {!hideCalculateButton && (
+      {!hideCalculateButton && (
+        <div className="flex justify-end">
           <Button onClick={handleCalculate}>
             Show Market Value
           </Button>
-        )}
-        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white">
-          Save
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 });
