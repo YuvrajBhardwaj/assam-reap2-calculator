@@ -347,7 +347,15 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
         ref={plotFormRef}
         hideCalculateButton={true}
         initialLocationData={initialLocationData}
-        onDataChange={setPlotFormData} // Pass setPlotFormData to update the state
+        onDataChange={setPlotFormData}
+        getStructureDetails={() => ({
+          structureType: structureData.structureType || undefined,
+          constructionYear: parseFloat(structureData.constructionYear) || undefined,
+          totalFloors: parseFloat(structureData.totalFloors) || undefined,
+          builtUpArea: parseFloat(structureData.builtUpArea) || undefined,
+          structureCondition: structureData.structureCondition || undefined,
+          structureAge: parseFloat(structureData.structureAge) || undefined,
+        })}
       />
 
       {!hideCalculateButton && (

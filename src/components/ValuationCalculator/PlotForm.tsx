@@ -142,6 +142,7 @@ interface PlotFormProps {
   };
   // New: allow parent to receive live form data
   onDataChange?: (data: any) => void;
+  getStructureDetails?: () => StructureDetailsExternal | undefined;
 }
 
 export interface PlotFormRef {
@@ -150,7 +151,7 @@ export interface PlotFormRef {
 }
 
 // Placeholder data
-const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange }, ref) => {
+const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalculateButton, initialLocationData, onDataChange, getStructureDetails }, ref) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { formData: storedFormData, setFormData, setMarketValue, setPerLessaValue } = useValuationStore();
@@ -1079,7 +1080,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
          areaDetailsExternal: { totalLessa },
        },
        plotLandDetailsExternal: plotLandDetails,
-        structureDetails: {},
+        structureDetails: getStructureDetails ? (getStructureDetails() || {}) : {},
        totalMarketValuation: totalMarketValuationWithRate || undefined,
      };
      const consolePayload: ConsolePayload = {
@@ -1094,6 +1095,66 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       };
     }
     return consolePayload;
+  };
+
+  // Save to backend at `VITE_JURISDICTION_API_BASE_URL` or fallback to localhost:8081
+  const [isSaving, setIsSaving] = useState(false);
+  const handleSaveToServer = async () => {
+    const payload = getSavePayload();
+    if (!payload) {
+      toast({ title: 'Nothing to save', description: 'Payload is empty.', variant: 'destructive' });
+      return;
+    }
+
+    const base = import.meta.env?.VITE_JURISDICTION_API_BASE_URL || 'http://localhost:8081';
+    const url = `${base.replace(/\/$/, '')}/valuation/calculate`;
+    const token = localStorage.getItem('authToken') || localStorage.getItem('jwtToken') || '';
+    try {
+      setIsSaving(true);
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      // Expecting { savedId: number, message: string, status: 'SUCCESS' }
+      toast({ title: 'Saved', description: data?.message || 'Valuation saved successfully.' });
+
+      if (data?.savedId) {
+        // Optionally fetch the saved record to confirm and maybe update UI
+        try {
+          const getUrl = `${base.replace(/\/$/, '')}/valuation/by-plot/${encodeURIComponent(String(data.savedId))}`;
+          const getResp = await fetch(getUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              ...(token ? { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` } : {}),
+            },
+          });
+          if (getResp.ok) {
+            const savedRecord = await getResp.json();
+            // Optionally update UI/store with savedRecord
+            console.debug('Saved valuation record:', savedRecord);
+          }
+        } catch (err) {
+          console.debug('Failed to fetch saved record', err);
+        }
+      }
+    } catch (err: any) {
+      console.error('Save failed', err);
+      toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   useImperativeHandle(ref, () => ({
@@ -1457,7 +1518,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 const category = landCategories.find(c => String(c.id) === val);
                 // Removed console.logs for production
                 setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
-              }}>
+              }} disabled={true}>
                 <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
                   <SelectValue placeholder="Select Current Land Use" />
                 </SelectTrigger>
@@ -1562,7 +1623,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   <Layers className="w-3 h-3 text-gray-500" />
                   Area Type
                 </Label>
-                <RadioGroup value={areaType} onValueChange={(value) => setAreaType(value as 'RURAL' | 'URBAN')} className="space-y-2">
+                <RadioGroup value={areaType} onValueChange={(value) => setAreaType(value as 'RURAL' | 'URBAN')} className="space-y-2" disabled={true}>
                   <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="RURAL" id="rural" />
@@ -1889,18 +1950,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                         </Button>
 
                         <Button
-                          onClick={async () => {
-                            const payload = getSavePayload();
-                            try {
-                              const res = await saveValuation(payload);
-                              toast({ title: 'Saved', description: 'Plot details saved successfully.' });
-                            } catch (err: any) {
-                              toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
-                            }
-                          }}
+                          onClick={handleSaveToServer}
                           className="bg-green-600 hover:bg-green-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
+                          disabled={isSaving}
                         >
-                          Save
+                          {isSaving ? 'Saving...' : 'Save'}
                         </Button>
                       </div>
                     </div>
@@ -1931,19 +1985,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                           {showDetailedBreakdown ? 'Hide Details' : 'Show Breakdown'}
                         </Button>
                         <Button
-                          onClick={async () => {
-                            const payload = getSavePayload();
-                            try {
-                              const res = await saveValuation(payload);
-                              toast({ title: 'Saved', description: 'Plot details saved successfully.' });
-                            } catch (err: any) {
-                              toast({ title: 'Save failed', description: err?.message || 'Unknown error', variant: 'destructive' });
-                            }
-                          }}
+                          onClick={handleSaveToServer}
                           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto text-white"
-                          disabled={!isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete}
+                          disabled={!isJurisdictionComplete || !isLandTypeComplete || !isLocationComplete || isSaving}
                         >
-                          Save
+                          {isSaving ? 'Saving...' : 'Save'}
                         </Button>
                         <Button
                           onClick={navigateToStampDuty} // Use the dedicated function here too
