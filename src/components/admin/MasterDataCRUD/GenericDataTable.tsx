@@ -110,7 +110,7 @@ export interface FormField<T> {
   dependsOn?: keyof T;
   disabled?: boolean;
   editOnly?: boolean;
-  onChange?: (value: any, formData?: any) => void;
+  onChange?: (value: any, formData?: any) => Record<string, any> | void | undefined;
 }
 
 // Main Generic Data Table Component
@@ -394,7 +394,7 @@ export default function GenericDataTable<T extends BaseEntity>({
                 const next = { ...formData, [field.key]: value } as any;
                 if (field.onChange) {
                   const patch = field.onChange(value, next);
-                  if (patch && typeof patch === 'object') {
+                  if (patch && patch !== undefined && typeof patch === 'object') {
                     setFormData({ ...next, ...(patch as any) });
                     return;
                   }

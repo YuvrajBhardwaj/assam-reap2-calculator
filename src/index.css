@@ -8,82 +8,100 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 12%;
 
-    --primary: 211 100% 41%;
-    --primary-foreground: 210 40% 98%;
+    /* Maroon/Industrial Primary */
+    --primary: 350 60% 30%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm Gray Secondary */
+    --secondary: 30 10% 94%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 10% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Darker Maroon */
+    --accent: 350 55% 25%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 211 100% 41%;
+    /* Industrial Warm Borders */
+    --border: 30 15% 85%;
+    --input: 30 15% 88%;
+    --ring: 350 60% 30%;
 
-    --radius: 0.5rem;
+    --radius: 0.375rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar - Industrial Dark */
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 25%;
+    --sidebar-primary: 350 60% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 10% 92%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 30 15% 88%;
+    --sidebar-ring: 350 60% 35%;
+
+    /* Custom Industrial Tokens */
+    --industrial-steel: 220 10% 50%;
+    --industrial-concrete: 30 5% 75%;
+    --industrial-rust: 15 60% 45%;
+    --industrial-dark: 0 0% 15%;
+    
+    /* Success/Warning States */
+    --success: 142 70% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 15%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 350 55% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 350 50% 40%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 350 55% 45%;
+
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 350 55% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 350 55% 50%;
   }
 }
 
@@ -93,25 +111,25 @@
   }
 
   body {
-    @apply bg-background text-foreground font-roboto;
+    @apply bg-background text-foreground font-roboto antialiased;
   }
 }
 
 @layer components {
   .section-box {
-    @apply border border-gray-200 rounded-md p-6 mb-6 bg-white shadow-sm;
+    @apply border border-border rounded-md p-6 mb-6 bg-card shadow-sm;
   }
 
   .section-title {
-    @apply text-lg font-medium mb-4 flex items-center text-assam-blue;
+    @apply text-lg font-semibold mb-4 flex items-center text-primary;
   }
 
   .form-label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-foreground mb-1;
   }
 
   .form-input {
-    @apply w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-assam-blue focus:border-transparent;
+    @apply w-full border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors;
   }
 
   .option-box {
@@ -119,10 +137,23 @@
   }
 
   .radio-label {
-    @apply text-sm text-gray-700;
+    @apply text-sm text-foreground;
   }
 
   .value-box {
-    @apply bg-assam-light-blue border border-assam-blue rounded-md px-4 py-2 text-right font-medium text-assam-blue;
-  }  
+    @apply bg-primary/10 border border-primary/30 rounded-md px-4 py-2 text-right font-semibold text-primary;
+  }
+
+  /* Industrial Card Styles */
+  .industrial-card {
+    @apply bg-card border border-border rounded-lg shadow-md transition-all duration-200 hover:shadow-lg;
+  }
+
+  .industrial-header {
+    @apply bg-gradient-to-r from-primary to-accent text-primary-foreground px-6 py-4 rounded-t-lg;
+  }
+
+  .industrial-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-primary/15 text-primary border border-primary/20;
+  }
 }

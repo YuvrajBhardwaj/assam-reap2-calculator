@@ -1402,21 +1402,21 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   return (
     <div className="space-y-8">
       {/* Jurisdiction Info - Modern gradient design */}
-      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50`}>
-        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-blue-400 to-indigo-500`} />
-        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
+      <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+        <CardHeader className="p-5 bg-muted/30 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
-                <MapPin className="w-6 h-6 text-blue-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <MapPin className="w-5 h-5 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
+              <CardTitle className="text-lg font-semibold text-foreground">
                 Jurisdiction Information
               </CardTitle>
             </div>
             {isJurisdictionComplete && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                <CheckCircle className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 bg-success/10 text-success px-2.5 py-1 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3.5 h-3.5" />
                 Complete
               </div>
             )}
@@ -1693,21 +1693,21 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       </Card>
 
       {/* Land Type - Modern gradient design */}
-      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-emerald-50 to-green-50`}>
-        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-emerald-400 to-green-500`} />
-        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
+      <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+        <CardHeader className="p-5 bg-muted/30 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-100 to-green-100 rounded-lg">
-                <Home className="w-6 h-6 text-emerald-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Home className="w-5 h-5 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
+              <CardTitle className="text-lg font-semibold text-foreground">
                 Land Type Details
               </CardTitle>
             </div>
             {isLandTypeComplete && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                <CheckCircle className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 bg-success/10 text-success px-2.5 py-1 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3.5 h-3.5" />
                 Complete
               </div>
             )}

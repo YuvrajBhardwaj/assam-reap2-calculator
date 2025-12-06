@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { calculatePlotBaseValue } from '@/services/masterDataService';
 import { useToast } from '@/hooks/use-toast';
 import { ComprehensiveValuationRequest } from '@/types/valuation';
+import { Building2, Calendar, Layers, Ruler, CheckCircle, Info } from 'lucide-react';
 
 // Define structure types and conditions for better maintainability
 const structureTypes = [
@@ -92,10 +93,9 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     roadWidth: '',
     distanceFromRoad: '',
     selectedSubclauses: [],
-  }); // Initialize with default values matching PlotForm onDataChange
+  });
 
   const { toast } = useToast();
-
   const plotFormRef = useRef<PlotFormRef>(null);
 
   // Auto-calculate structure age from construction year
@@ -209,7 +209,6 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     }
   };
 
-
   useImperativeHandle(ref, () => ({
     handleCalculate,
     getSavePayload: () => {
@@ -218,25 +217,42 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
     },
   }));
 
+  const isStructureComplete = structureData.structureType && structureData.constructionYear && structureData.totalFloors && structureData.builtUpArea && structureData.structureCondition;
+
   return (
     <div className="space-y-6">
-      {/* Structure Details Section */}
-      <Card className="border-t-4 border-blue-500 bg-blue-50">
-        <CardHeader>
-          <CardTitle>Structure Details</CardTitle>
+      {/* Structure Details Section - Industrial Design */}
+      <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+        <CardHeader className="p-5 bg-muted/30 border-b border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold text-foreground">Structure Details</CardTitle>
+            </div>
+            {isStructureComplete && (
+              <div className="flex items-center gap-1.5 bg-success/10 text-success px-2.5 py-1 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Complete
+              </div>
+            )}
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <CardContent className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Structure Type */}
-            <div>
-              <Label htmlFor="structureType">Structure Type</Label>
+            <div className="space-y-2">
+              <Label htmlFor="structureType" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                Structure Type
+              </Label>
               <Select
                 value={structureData.structureType}
-                onValueChange={(value) =>
-                  handleStructureChange('structureType', value)
-                }
+                onValueChange={(value) => handleStructureChange('structureType', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-input focus:ring-primary/50">
                   <SelectValue placeholder="Select Structure Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,60 +266,67 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
             </div>
 
             {/* Construction Year */}
-            <div>
-              <Label htmlFor="constructionYear">Construction Year</Label>
+            <div className="space-y-2">
+              <Label htmlFor="constructionYear" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                Construction Year
+              </Label>
               <Input
                 id="constructionYear"
                 type="number"
                 min="1900"
                 max={new Date().getFullYear()}
                 value={structureData.constructionYear}
-                onChange={(e) =>
-                  handleStructureChange('constructionYear', e.target.value)
-                }
+                onChange={(e) => handleStructureChange('constructionYear', e.target.value)}
                 placeholder="Enter Year"
+                className="border-input focus:ring-primary/50"
               />
             </div>
 
             {/* Total Floors */}
-            <div>
-              <Label htmlFor="totalFloors">Total Floors</Label>
+            <div className="space-y-2">
+              <Label htmlFor="totalFloors" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                Total Floors
+              </Label>
               <Input
                 id="totalFloors"
                 type="number"
                 min="1"
                 value={structureData.totalFloors}
-                onChange={(e) =>
-                  handleStructureChange('totalFloors', e.target.value)
-                }
+                onChange={(e) => handleStructureChange('totalFloors', e.target.value)}
                 placeholder="Enter Number of Floors"
+                className="border-input focus:ring-primary/50"
               />
             </div>
 
             {/* Built-up Area */}
-            <div>
-              <Label htmlFor="builtUpArea">Built-up Area (Sq. Ft.)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="builtUpArea" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Ruler className="w-3.5 h-3.5 text-muted-foreground" />
+                Built-up Area (Sq. Ft.)
+              </Label>
               <Input
                 id="builtUpArea"
                 type="number"
                 value={structureData.builtUpArea}
-                onChange={(e) =>
-                  handleStructureChange('builtUpArea', e.target.value)
-                }
+                onChange={(e) => handleStructureChange('builtUpArea', e.target.value)}
                 placeholder="Enter Built-up Area"
+                className="border-input focus:ring-primary/50"
               />
             </div>
 
             {/* Structure Condition */}
-            <div>
-              <Label htmlFor="structureCondition">Structure Condition</Label>
+            <div className="space-y-2">
+              <Label htmlFor="structureCondition" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                Structure Condition
+              </Label>
               <Select
                 value={structureData.structureCondition}
-                onValueChange={(value) =>
-                  handleStructureChange('structureCondition', value)
-                }
+                onValueChange={(value) => handleStructureChange('structureCondition', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-input focus:ring-primary/50">
                   <SelectValue placeholder="Select Condition" />
                 </SelectTrigger>
                 <SelectContent>
@@ -317,24 +340,28 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
             </div>
 
             {/* Structure Age */}
-            <div>
-              <Label htmlFor="structureAge">Structure Age (Years)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="structureAge" className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                Structure Age (Years)
+              </Label>
               <Input
                 id="structureAge"
                 type="number"
                 value={structureData.structureAge}
-                onChange={(e) =>
-                  handleStructureChange('structureAge', e.target.value)
-                }
+                onChange={(e) => handleStructureChange('structureAge', e.target.value)}
                 placeholder="Auto-calculated or manual"
+                className="border-input focus:ring-primary/50 bg-muted/30"
+                readOnly={!!structureData.constructionYear}
               />
             </div>
           </div>
 
           {/* Note Section */}
-          <div className="mt-4 p-3 bg-blue-100 rounded-md">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Structure parameters will be used in
+          <div className="mt-5 p-3 bg-primary/5 border border-primary/20 rounded-lg flex items-start gap-2">
+            <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-foreground">
+              <strong className="text-primary">Note:</strong> Structure parameters will be used in
               conjunction with plot details to calculate the total property value,
               including both land and structure components.
             </p>
@@ -360,7 +387,10 @@ const PlotWithStructureForm = forwardRef<PlotWithStructureFormRef, PlotWithStruc
 
       {!hideCalculateButton && (
         <div className="flex justify-end">
-          <Button onClick={handleCalculate}>
+          <Button 
+            onClick={handleCalculate}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 font-semibold"
+          >
             Show Market Value
           </Button>
         </div>
