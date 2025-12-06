@@ -1400,7 +1400,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 w-full max-w-full">
       {/* Jurisdiction Info - Modern gradient design */}
       <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
@@ -1778,11 +1778,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* Display Per Lessa Value */}
           {perLessaValue !== null && (
-            <Card className="border-green-200 bg-green-50 animate-in fade-in slide-in-from-bottom-1">
+            <Card className="border-success/30 bg-success/5">
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Market Value per Lessa</p>
-                  <p className="text-2xl font-bold text-green-800">₹{perLessaValue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-success">₹{perLessaValue.toLocaleString()}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1790,11 +1790,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* Display Local Total Value */}
           {localTotalValue !== null && (
-            <Card className="border-blue-200 bg-blue-50 animate-in fade-in slide-in-from-bottom-1">
+            <Card className="border-primary/30 bg-primary/5">
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Total Market Value (Area Based)</p>
-                  <p className="text-2xl font-bold text-blue-800">₹{localTotalValue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-primary">₹{localTotalValue.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground mt-1">Based on {totalLessa} Lessa (without location factors)</p>
                 </div>
               </CardContent>
@@ -1803,22 +1803,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* Plot Land Details - Modern gradient design */}
-      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50`}>
-        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-purple-400 to-pink-500`} />
-        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
+      {/* Plot Land Details - Industrial Maroon Design */}
+      <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card w-full">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+        <CardHeader className="p-5 bg-muted/30 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
-                <Ruler className="w-6 h-6 text-purple-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Ruler className="w-5 h-5 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
+              <CardTitle className="text-lg font-semibold text-foreground">
                 Plot Land Details
               </CardTitle>
             </div>
             {isLocationComplete && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
-                <CheckCircle className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 bg-success/10 text-success px-2.5 py-1 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3.5 h-3.5" />
                 Complete
               </div>
             )}
@@ -2205,33 +2205,35 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* Calculated Values and Actions Card */}
-      <Card className="border-blue-200 bg-gradient-to-br from-blue-50/50 to-blue-100/50">
-        <div className="absolute top-0 left-0 w-full h-1 bg-blue-400" />
-        <CardHeader className="relative z-10 rounded-t-lg p-4 bg-gradient-to-r from-blue-100/50 to-blue-200/50 border-b border-blue-200/50">
-          <div className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-blue-600" />
-            <CardTitle className="text-xl font-bold text-blue-700">
+      {/* Calculated Values and Actions Card - Industrial Maroon Design */}
+      <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card w-full">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+        <CardHeader className="p-5 bg-muted/30 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Calculator className="w-5 h-5 text-primary" />
+            </div>
+            <CardTitle className="text-lg font-semibold text-foreground">
               Calculated Values
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-5 space-y-5">
           {/* Plot Level Base Value */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1">
-              <Info className="w-3 h-3 text-blue-500" />
+            <Label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+              <Info className="w-3.5 h-3.5 text-primary" />
               Calculated Plot Level Base Value
             </Label>
-            <div className="p-3 bg-white/70 rounded-lg border border-blue-200">
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Base Value per Lessa:</span>
-                <span className="font-bold text-lg text-blue-700">
+                <span className="text-sm text-muted-foreground">Base Value per Lessa:</span>
+                <span className="font-bold text-xl text-primary">
                   ₹{plotLevelBaseValue?.toLocaleString('en-IN') || '0'}
                 </span>
               </div>
               {basePriceMouza !== null && (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
                   Based on: Mouza Base ₹{basePriceMouza.toLocaleString('en-IN')} 
                   × Lot {(basePriceLot !== null ? `${basePriceLot}%` : '0%')} 
                   × Land Use {(landUseIncrease !== 0 ? `${landUseIncrease}%` : '0%')} 
@@ -2243,29 +2245,29 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
           {/* Total Market Valuation */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-1">
-              <Home className="w-3 h-3 text-green-500" />
+            <Label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+              <Home className="w-3.5 h-3.5 text-success" />
               Total Market Valuation
             </Label>
-            <div className="p-3 bg-white/70 rounded-lg border border-green-200">
+            <div className="p-4 bg-success/5 rounded-lg border border-success/30">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Value:</span>
-                <span className="font-bold text-lg text-green-700">
+                <span className="text-sm text-muted-foreground">Total Value:</span>
+                <span className="font-bold text-xl text-success">
                   ₹{totalMarketValuationWithRate?.toLocaleString('en-IN') || '0'}
                 </span>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-muted-foreground mt-2">
                 {totalLessa > 0 ? `For ${totalLessa} Lessa` : 'Enter area to calculate'}
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3 pt-4 border-t border-blue-200">
+          <div className="space-y-4 pt-4 border-t border-border">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Button 
                 onClick={navigateToStampDuty}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
                 disabled={!totalMarketValuationWithRate}
               >
                 <Calculator className="w-4 h-4 mr-2" />
@@ -2273,42 +2275,42 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
               </Button>
               
               <Button 
-                  onClick={handleSaveToServer}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  disabled={!totalMarketValuationWithRate}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Save Valuation
-                </Button>
+                onClick={handleSaveToServer}
+                className="bg-success hover:bg-success/90 text-success-foreground font-medium"
+                disabled={!totalMarketValuationWithRate || isSaving}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Valuation'}
+              </Button>
                 
-                <Button 
-                  onClick={handleReset}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  variant="destructive"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset Form
-                </Button>
+              <Button 
+                onClick={handleReset}
+                variant="destructive"
+                className="font-medium"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset Form
+              </Button>
             </div>
             
             {!hideCalculateButton && (
               <Button 
                 onClick={handleCalculate}
-                className={`w-full h-14 text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
+                className={`w-full h-12 text-base font-semibold rounded-lg shadow-md transition-all duration-200 ${
                   isCalculating || !hasBaseValue
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-blue-200 hover:shadow-xl'
+                    ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                    : 'bg-primary hover:bg-primary/90 text-primary-foreground hover:shadow-lg'
                 }`}
                 disabled={isCalculating || !hasBaseValue}
               >
                 {isCalculating ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Calculating Property Value...
                   </>
                 ) : (
                   <>
-                    <Calculator className="w-5 h-5 mr-3" />
+                    <Calculator className="w-5 h-5 mr-2" />
                     Calculate Property Value
                   </>
                 )}
@@ -2318,30 +2320,35 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* History Dropdown */}
+      {/* History Dropdown - Industrial Maroon Design */}
       {!hideCalculateButton && calculationHistory.length > 0 && (
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="w-5 h-5" />
-              Calculation History
-            </CardTitle>
+        <Card className="relative overflow-hidden shadow-md border border-border rounded-lg bg-card w-full">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+          <CardHeader className="p-5 bg-muted/30 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <History className="w-5 h-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg font-semibold text-foreground">
+                Calculation History
+              </CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5">
             <div className="space-y-3">
               <Select value={selectedHistoryId} onValueChange={(value) => {
                 setSelectedHistoryId(value);
                 if (value) loadFromHistory(value);
               }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-input">
                   <SelectValue placeholder="Load previous calculation..." />
                 </SelectTrigger>
                 <SelectContent>
                   {calculationHistory.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
                       <div className="flex flex-col">
-                        <span className="font-medium">{item.description}</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="font-medium text-foreground">{item.description}</span>
+                        <span className="text-xs text-muted-foreground">
                           {new Date(item.timestamp).toLocaleDateString()} - ₹{item.result.totalValue.toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -2349,7 +2356,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {calculationHistory.length} calculation{calculationHistory.length !== 1 ? 's' : ''} saved
               </p>
             </div>
