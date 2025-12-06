@@ -28,6 +28,7 @@ export interface WorkflowActionRequest {
   masterCode: string;
   action: 'approve' | 'reject';
   currentStatusCode: string;
+  requestType?: 'update' | 'delete';
 }
 
 export type ApprovalRole = 'jm' | 'man' | 'sman' | 'admin';
@@ -59,6 +60,7 @@ export class AuditService {
         masterCode: request.masterCode,
         action: request.action,
         currentStatusCode: request.currentStatusCode,
+        ...(request.requestType && { requestType: request.requestType }),
       },
     });
     return res.data;

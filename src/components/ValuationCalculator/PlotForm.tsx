@@ -1,5 +1,5 @@
 // PlotForm.tsx
-import { useEffect, useState, forwardRef, useImperativeHandle, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle, useMemo, useRef, useCallback, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValuationStore } from '@/stores/valuationStore';
 import { getCirclesByDistrict, getAllDistricts, getMouzasByDistrictAndCircle, getAllLandCategories, getVillagesByDistrictAndCircleAndMouzaAndLot } from '@/services/locationService';
@@ -305,17 +305,16 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     return null;
   }, [perLessaValue, totalLessa]);
 
-  // Rate percent based on area type
-  const ratePercent = useMemo(() => areaType === 'RURAL' ? 0.02 : 0.01, [areaType]);
+  // Rate percent based on area type (kept for reference, but not used in calculation)
+  // const ratePercent = useMemo(() => areaType === 'RURAL' ? 0.02 : 0.01, [areaType]);
 
-  // Total Market Valuation with Rate
+  // Total Market Valuation with Rate (removed Rural 2% and Urban 1%)
   const totalMarketValuationWithRate = useMemo(() => {
     if (plotLevelBaseValue !== null && totalLessa > 0) {
-      const baseSubtotal = plotLevelBaseValue * totalLessa;
-      return Math.round(baseSubtotal * (1 + ratePercent));
+      return Math.round(plotLevelBaseValue * totalLessa);
     }
     return null;
-  }, [plotLevelBaseValue, totalLessa, ratePercent]);
+  }, [plotLevelBaseValue, totalLessa]);
 
   // NEW: Grouped bands for cascading
   const paramGroups = useMemo(() => ({
@@ -1157,6 +1156,52 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
   };
 
+  // Reset function to clear all form data
+  const handleReset = () => {
+    // Reset all form states to initial values
+    setSelectedDistrictCode('');
+    setSelectedCircleCode('');
+    setSelectedMouzaCode('');
+    setSelectedVillageCode('');
+    setSelectedLotId('');
+    setCurrentLandUse('');
+    setNewLandUse('');
+    setLandUseChange(false);
+    setAreaType('RURAL');
+    setAreaBigha('');
+    setAreaKatha('');
+    setAreaLessa('');
+    setCornerPlot(false);
+    setLitigatedPlot(false);
+    setHasTenant(false);
+    setRoadWidth('');
+    setDistanceFromRoad('');
+    setOnMainRoad(false);
+    setOnMetalRoad(false);
+    setOnMainMarket(false);
+    setOnNonRoad(false);
+    setOnApproachRoadWidth(false);
+    setSelectedSubclauses([]);
+    setDynamicParameters([]);
+    setSubParametersMap(new Map());
+    setSelectedParameters(new Set());
+    setSelectedSubParameters(new Map());
+    setCalculationResult(null);
+    setSelectedHistoryId('');
+    setBasePriceLandUse(null);
+    setNewBasePriceLandUse(null);
+    setDaagFactorInfo(null);
+    
+    // Clear localStorage
+    localStorage.removeItem('plotFormData');
+    
+    toast({
+      title: 'Form Reset',
+      description: 'All form data has been cleared.',
+      duration: 3000,
+    });
+  };
+
   useImperativeHandle(ref, () => ({
     handleCalculate,
     getSavePayload,
@@ -1350,22 +1395,28 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     return '3rd';
   };
 
+  function handleSave(event: MouseEvent<HTMLButtonElement>): void {
+    handleSaveToServer();
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Jurisdiction Info - Neutral theme with icons */}
-      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50`}>
-        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 bg-gray-300`} />
-        <CardHeader className={`relative z-10 rounded-t-lg p-4 bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50`}>
+    <div className="space-y-8">
+      {/* Jurisdiction Info - Modern gradient design */}
+      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50`}>
+        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-blue-400 to-indigo-500`} />
+        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-gray-600" />
-              <CardTitle className="text-xl font-bold text-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
+                <MapPin className="w-6 h-6 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
                 Jurisdiction Information
               </CardTitle>
             </div>
             {isJurisdictionComplete && (
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                <CheckCircle className="w-4 h-4" />
                 Complete
               </div>
             )}
@@ -1641,20 +1692,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* Land Type - Neutral theme with icons */}
-      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50`}>
-        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 bg-gray-300`} />
-        <CardHeader className={`relative z-10 rounded-t-lg p-4 bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50`}>
+      {/* Land Type - Modern gradient design */}
+      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-emerald-50 to-green-50`}>
+        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-emerald-400 to-green-500`} />
+        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Home className="w-5 h-5 text-gray-600" />
-              <CardTitle className="text-xl font-bold text-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-100 to-green-100 rounded-lg">
+                <Home className="w-6 h-6 text-emerald-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
                 Land Type Details
               </CardTitle>
             </div>
             {isLandTypeComplete && (
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                <CheckCircle className="w-4 h-4" />
                 Complete
               </div>
             )}
@@ -1721,49 +1774,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             </div>
           )}
 
-          {/* NEW: Base Value Calculation Display - Moved to Land Type Details when fields are filled - Neutral theme */}
-          {hasBaseValue && plotLevelBaseValue !== null && (
-            <div className="mt-6 pt-4 border-t border-border bg-gray-50 rounded-lg p-4 animate-in fade-in slide-in-from-bottom-1">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-gray-600" />
-                  Calculated Plot Level Base Value
-                </h3>
-                <Badge variant="secondary" className="text-gray-600 border-gray-200 bg-gray-100">
-                  Formula: District Base × Geo Factor × Conversion
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Mouza Base</p>
-                  <p className="font-mono font-semibold text-gray-800">₹{basePriceMouza?.toLocaleString()}</p>
-                </div>
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Lot Adjustment</p>
-                  <p className={`font-mono font-semibold ${basePriceLot > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    +{basePriceLot}%
-                  </p>
-                </div>
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Land Use Adjustment</p>
-                  <p className={`font-mono font-semibold ${landUseIncrease > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    +{landUseIncrease}%
-                  </p>
-                </div>
-                <div className="bg-white rounded-md p-3 shadow-sm border">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide">Parameter Adjustment</p>
-                  <p className={`font-mono font-semibold ${parameterWeightPercent > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    +{parameterWeightPercent}%
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-gray-100 text-gray-800 rounded-lg border border-gray-200">
-                <p className="text-sm opacity-90">Plot Level Base Value</p>
-                <p className="text-2xl font-bold">₹{plotLevelBaseValue.toLocaleString()}</p>
-                <p className="text-xs opacity-75 mt-1">Per unit area (in lessa)</p>
-              </div>
-            </div>
-          )}
+
 
           {/* Display Per Lessa Value */}
           {perLessaValue !== null && (
@@ -1792,20 +1803,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
-      {/* Plot Land Details - Neutral theme with icons */}
-      <Card className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border-gray-200 bg-gradient-to-br from-gray-50/50 to-gray-100/50`}>
-        <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 bg-gray-300`} />
-        <CardHeader className={`relative z-10 rounded-t-lg p-4 bg-gradient-to-r from-gray-100/50 to-gray-200/50 border-b border-gray-200/50`}>
+      {/* Plot Land Details - Modern gradient design */}
+      <Card className={`relative overflow-hidden shadow-xl transition-all duration-300 hover:shadow-2xl border-0 rounded-2xl bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50`}>
+        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-300 bg-gradient-to-r from-purple-400 to-pink-500`} />
+        <CardHeader className={`relative z-10 rounded-t-2xl p-6 bg-white/30 backdrop-blur-sm border-b border-white/20`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Ruler className="w-5 h-5 text-gray-600" />
-              <CardTitle className="text-xl font-bold text-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                <Ruler className="w-6 h-6 text-purple-600" />
+              </div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-900 bg-clip-text text-transparent">
                 Plot Land Details
               </CardTitle>
             </div>
             {isLocationComplete && (
-              <div className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                <CheckCircle className="w-4 h-4" />
                 Complete
               </div>
             )}
@@ -1934,33 +1947,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 </div>
               ) : null}
 
-              {totalMarketValuationWithRate !== null && (
-                <Card className="border-purple-200 bg-purple-50 mt-4 animate-in fade-in slide-in-from-bottom-1">
-                  <CardContent className="p-4">
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground mb-1">Total Market Valuation</p>
-                      <p className="text-2xl font-bold text-purple-800">₹{totalMarketValuationWithRate.toLocaleString()}</p>
-                      <div className="mt-4 flex items-center justify-center gap-3">
-                        
-                        <Button
-                          onClick={() => navigateToStampDuty()} // Changed to use the dedicated function
-                          className="bg-purple-600 hover:bg-purple-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] w-full md:w-auto"
-                        >
-                          Calculate Stamp Duty
-                        </Button>
 
-                        <Button
-                          onClick={handleSaveToServer}
-                          className="bg-green-600 hover:bg-green-700 text-white transition-transform hover:scale-[0.99] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
-                          disabled={isSaving}
-                        >
-                          {isSaving ? 'Saving...' : 'Save'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {!hideCalculateButton && marketValue !== null && (
                 <div className="space-y-4 pt-4">
@@ -2218,6 +2205,119 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
         </CardContent>
       </Card>
 
+      {/* Calculated Values and Actions Card */}
+      <Card className="border-blue-200 bg-gradient-to-br from-blue-50/50 to-blue-100/50">
+        <div className="absolute top-0 left-0 w-full h-1 bg-blue-400" />
+        <CardHeader className="relative z-10 rounded-t-lg p-4 bg-gradient-to-r from-blue-100/50 to-blue-200/50 border-b border-blue-200/50">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-5 h-5 text-blue-600" />
+            <CardTitle className="text-xl font-bold text-blue-700">
+              Calculated Values
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          {/* Plot Level Base Value */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1">
+              <Info className="w-3 h-3 text-blue-500" />
+              Calculated Plot Level Base Value
+            </Label>
+            <div className="p-3 bg-white/70 rounded-lg border border-blue-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Base Value per Lessa:</span>
+                <span className="font-bold text-lg text-blue-700">
+                  ₹{plotLevelBaseValue?.toLocaleString('en-IN') || '0'}
+                </span>
+              </div>
+              {basePriceMouza !== null && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Based on: Mouza Base ₹{basePriceMouza.toLocaleString('en-IN')} 
+                  × Lot {(basePriceLot !== null ? `${basePriceLot}%` : '0%')} 
+                  × Land Use {(landUseIncrease !== 0 ? `${landUseIncrease}%` : '0%')} 
+                  × Parameters {(parameterWeightPercent !== 0 ? `${parameterWeightPercent}%` : '0%')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Total Market Valuation */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-1">
+              <Home className="w-3 h-3 text-green-500" />
+              Total Market Valuation
+            </Label>
+            <div className="p-3 bg-white/70 rounded-lg border border-green-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Value:</span>
+                <span className="font-bold text-lg text-green-700">
+                  ₹{totalMarketValuationWithRate?.toLocaleString('en-IN') || '0'}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {totalLessa > 0 ? `For ${totalLessa} Lessa` : 'Enter area to calculate'}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3 pt-4 border-t border-blue-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Button 
+                onClick={navigateToStampDuty}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                disabled={!totalMarketValuationWithRate}
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                Calculate Stamp Duty
+              </Button>
+              
+              <Button 
+                  onClick={handleSaveToServer}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={!totalMarketValuationWithRate}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Save Valuation
+                </Button>
+                
+                <Button 
+                  onClick={handleReset}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  variant="destructive"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Reset Form
+                </Button>
+            </div>
+            
+            {!hideCalculateButton && (
+              <Button 
+                onClick={handleCalculate}
+                className={`w-full h-14 text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] ${
+                  isCalculating || !hasBaseValue
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-blue-200 hover:shadow-xl'
+                }`}
+                disabled={isCalculating || !hasBaseValue}
+              >
+                {isCalculating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                    Calculating Property Value...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-5 h-5 mr-3" />
+                    Calculate Property Value
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* History Dropdown */}
       {!hideCalculateButton && calculationHistory.length > 0 && (
         <Card className="border-gray-200">
@@ -2263,3 +2363,4 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 PlotForm.displayName = 'PlotForm';
 
 export default PlotForm;
+
