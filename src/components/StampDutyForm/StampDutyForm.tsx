@@ -361,13 +361,14 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
   }
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 py-8">
+    <div className="w-full min-h-screen bg-gradient-to-br from-background to-secondary py-8">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="bg-card shadow-sm rounded-lg p-6 mb-6 border border-border relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+          <h2 className="text-2xl font-bold text-foreground mb-4">
             Assam Stamp Duty Calculator
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             Select one or more instruments below. If an instrument has sub-types, checkboxes will appear.
           </p>
           <div className="flex items-center mb-4">
@@ -379,7 +380,7 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                   })
                 );
               }}
-              className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="flex items-center text-primary hover:text-accent text-sm font-medium transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                 strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
@@ -391,11 +392,12 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full">
           {/* Left Column: Calculate Section */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculate</h3>
+          <div className="bg-card p-6 rounded-lg border border-border w-full relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
+            <h3 className="text-lg font-semibold text-foreground mb-4">Calculate</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label htmlFor="marketValue" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="marketValue" className="block text-sm font-medium text-muted-foreground mb-2">
                   Market Value (₹)
                 </label>
                 <input
@@ -404,13 +406,13 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                   value={formatIndianCurrency(marketValue)}
                   onChange={handleNumericInput}
                   placeholder="e.g., 1,00,00,000"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
                 />
               </div>
               <div>
-                <label htmlFor="agreementValue" className="block text-sm font-medium text-gray-700 mb-2 relative">
+                <label htmlFor="agreementValue" className="block text-sm font-medium text-muted-foreground mb-2 relative">
                   Consideration Value (₹)
-                  <span className="ml-2 cursor-help text-gray-500" title="This value is the consideration amount for the instrument.">ℹ️</span>
+                  <span className="ml-2 cursor-help text-muted-foreground" title="This value is the consideration amount for the instrument.">ℹ️</span>
                 </label>
                 <input
                   id="agreementValue"
@@ -418,29 +420,29 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                   value={formatIndianCurrency(agreementValue)}
                   onChange={handleNumericInput}
                   placeholder="e.g., 1,00,00,000"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
                 />
               </div>
             </div>
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Instruments</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Select Instruments</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {instruments.map((inst) => (
                   <label
                     key={inst.id}
                     className={`flex items-center p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
                       selectedInstruments.includes(inst.id)
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        ? 'border-primary bg-primary/10 shadow-md'
+                        : 'border-border hover:border-primary/50 hover:shadow-sm'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={selectedInstruments.includes(inst.id)}
                       onChange={() => handleInstrumentChange(inst.id)}
-                      className="h-5 w-5 text-blue-600 focus:ring-blue-500"
+                      className="h-5 w-5 text-primary focus:ring-primary"
                     />
-                    <span className="ml-3 text-sm font-medium text-gray-900">
+                    <span className="ml-3 text-sm font-medium text-foreground">
                       <strong>{inst.id}.</strong> {inst.name}
                     </span>
                   </label>
@@ -452,12 +454,12 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 const instrument = instruments.find((inst) => inst.id === id);
                 if (!instrument) return null;
                 return (
-                  <div key={id} className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <div key={id} className="p-6 border border-border rounded-lg bg-card shadow-sm">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
                       Options for {instrument.name} (ID: {id})
                     </h3>
                     <div className="flex items-center space-x-6">
-                      <label className="text-sm font-medium text-gray-700">Select Gender:</label>
+                      <label className="text-sm font-medium text-muted-foreground">Select Gender:</label>
                       <div className="flex space-x-8">
                         {genderOptions.map((g) => (
                           <label key={g} className="flex items-center space-x-2 cursor-pointer">
@@ -466,9 +468,9 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                               name={`gender-${id}`}
                               checked={instrumentGenders[id] === g}
                               onChange={() => handleInstrumentGenderChange(id, g)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                              className="h-4 w-4 text-primary focus:ring-primary"
                             />
-                            <span className="text-sm text-gray-900">{g}</span>
+                            <span className="text-sm text-foreground">{g}</span>
                           </label>
                         ))}
                       </div>
@@ -477,26 +479,26 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                 );
               })}
             </div>
-            <div className="flex justify-center space-x-4">
+            <div className="flex justify-center space-x-3">
               <button
                 onClick={calculateStampDuty}
                 disabled={selectedInstruments.length === 0 || !marketValue || selectedInstruments.some(id => !instrumentGenders[id]) || loading}
-                className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
+                className={`px-6 py-2 rounded-md font-medium text-primary-foreground transition-all duration-200 transform h-9 text-sm ${
                   selectedInstruments.length > 0 && marketValue && !selectedInstruments.some(id => !instrumentGenders[id]) && !loading
-                    ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 shadow-lg'
-                    : 'bg-gray-300 cursor-not-allowed'
+                    ? 'bg-primary hover:bg-primary/90 hover:scale-105 shadow-sm'
+                    : 'bg-muted cursor-not-allowed'
                 }`}
               >
-                {loading ? 'Calculating...' : 'Calculate Duty'}
+                {loading ? 'Calculating...' : 'Calculate'}
               </button>
               <button
                 type="button"
                 onClick={saveCalculation}
                 disabled={!selectionResults}
-                className={`px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 transform ${
+                className={`px-6 py-2 rounded-md font-medium text-primary-foreground transition-all duration-200 transform h-9 text-sm ${
                   selectionResults
-                    ? 'bg-green-600 hover:bg-green-700 hover:scale-105 shadow-lg'
-                    : 'bg-gray-300 cursor-not-allowed'
+                    ? 'bg-success hover:bg-success/90 hover:scale-105 shadow-sm'
+                    : 'bg-muted cursor-not-allowed'
                 }`}
               >
                 Save
@@ -504,107 +506,108 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-8 py-3 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
+                className="px-6 py-2 rounded-md font-medium text-foreground bg-secondary hover:bg-secondary/90 transition-colors h-9 text-sm"
               >
                 Reset
               </button>
             </div>
           </div>
           {/* Right Column: Bill Generation */}
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 w-full">
+          <div className="bg-card p-6 rounded-lg border border-border w-full relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent" />
             {selectionResults ? (
-              <div className="bg-white shadow-lg rounded-lg overflow-hidden h-full w-full">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 text-white flex justify-between items-center">
+              <div className="bg-card shadow-lg rounded-lg overflow-hidden h-full w-full border border-border">
+                <div className="bg-gradient-to-r from-primary to-accent px-6 py-4 text-primary-foreground flex justify-between items-center">
                   <div>
                     <h3 className="text-2xl font-bold">Stamp Duty Calculation Bill</h3>
-                    <p className="text-blue-100 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
+                    <p className="text-primary-foreground/80 mt-1">Generated on {new Date().toLocaleDateString('en-IN')}</p>
                   </div>
                   <button
                     onClick={printBill}
-                    className="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                    className="px-4 py-2 bg-primary-foreground text-primary rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors h-9 text-sm"
                   >
                     🖨️ Print
                   </button>
                 </div>
-                <div className="p-6 border-b border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h4>
+                <div className="p-6 border-b border-border">
+                  <h4 className="text-lg font-semibold text-foreground mb-4">Property Details</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Market Value:</span>
-                      <span className="font-semibold text-gray-900">₹{formatIndianCurrency(marketValue)}</span>
+                      <span className="font-medium text-muted-foreground">Market Value:</span>
+                      <span className="font-semibold text-foreground">₹{formatIndianCurrency(marketValue)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium text-gray-700">Consideration Value:</span>
-                      <span className="font-semibold text-gray-900">₹{formatIndianCurrency(agreementValue)}</span>
+                      <span className="font-medium text-muted-foreground">Consideration Value:</span>
+                      <span className="font-semibold text-foreground">₹{formatIndianCurrency(agreementValue)}</span>
                     </div>
                     <div className="flex justify-between md:col-span-2">
-                      <span className="font-medium text-gray-700">Final Amount Used:</span>
-                      <span className="font-semibold text-blue-600">₹{formatIndianCurrency(baseValue)} (Higher of Market/Consideration)</span>
+                      <span className="font-medium text-muted-foreground">Final Amount Used:</span>
+                      <span className="font-semibold text-primary">₹{formatIndianCurrency(baseValue)} (Higher of Market/Consideration)</span>
                     </div>
                   </div>
                 </div>
-                <div className="p-6 border-b border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Instrument Breakdown</h4>
+                <div className="p-6 border-b border-border">
+                  <h4 className="text-lg font-semibold text-foreground mb-4">Instrument Breakdown</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full table-auto border-collapse">
                       <thead>
-                        <tr className="bg-gray-50">
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Instrument</th>
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Option</th>
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rate (%)</th>
-                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
+                        <tr className="bg-secondary/50">
+                          <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Instrument</th>
+                          <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Option</th>
+                          <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Rate (%)</th>
+                          <th className="border border-border px-4 py-3 text-right text-sm font-semibold text-muted-foreground">Amount (₹)</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectionResults.map((r, index) => {
                           const individualAmount = Math.round((baseValue || 0) * (r.dutyValue / 100));
                           return (
-                            <tr key={r.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.instrumentName}</td>
-                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.selectedOption}</td>
-                              <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">{r.dutyValue}%</td>
-                              <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(individualAmount)}</td>
+                            <tr key={r.id} className={index % 2 === 0 ? 'bg-card' : 'bg-secondary/30'}>
+                              <td className="border border-border px-4 py-3 text-sm text-foreground">{r.instrumentName}</td>
+                              <td className="border border-border px-4 py-3 text-sm text-foreground">{r.selectedOption}</td>
+                              <td className="border border-border px-4 py-3 text-sm text-foreground">{r.dutyValue}%</td>
+                              <td className="border border-border px-4 py-3 text-right text-sm font-semibold text-foreground">₹{formatIndianCurrency(individualAmount)}</td>
                             </tr>
                           );
                         })}
-                        <tr className="bg-blue-50 font-semibold">
-                          <td colSpan={3} className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">Total Stamp Duty:</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
+                        <tr className="bg-primary/10 font-semibold">
+                          <td colSpan={3} className="border border-border px-4 py-3 text-right text-sm text-foreground">Total Stamp Duty:</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm text-foreground">₹{formatIndianCurrency(stampDuty)}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
                 <div className="p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Fees & Charges</h4>
+                  <h4 className="text-lg font-semibold text-foreground mb-4">Fees & Charges</h4>
                   <div className="overflow-x-auto mb-6">
                     <table className="w-full table-auto border-collapse">
                       <thead>
-                        <tr className="bg-gray-50">
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
-                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount (₹)</th>
+                        <tr className="bg-secondary/50">
+                          <th className="border border-border px-4 py-3 text-left text-sm font-semibold text-muted-foreground">Description</th>
+                          <th className="border border-border px-4 py-3 text-right text-sm font-semibold text-muted-foreground">Amount (₹)</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className={stampDuty ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Stamp Duty</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold text-gray-900">₹{formatIndianCurrency(stampDuty)}</td>
+                        <tr className={stampDuty ? 'bg-card' : 'bg-secondary/30'}>
+                          <td className="border border-border px-4 py-3 text-sm text-foreground">Stamp Duty</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm font-semibold text-foreground">₹{formatIndianCurrency(stampDuty)}</td>
                         </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Surcharge</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(surcharge)}</td>
+                        <tr className="bg-secondary/30">
+                          <td className="border border-border px-4 py-3 text-sm text-foreground">Surcharge</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm text-foreground">₹{formatIndianCurrency(surcharge)}</td>
                         </tr>
-                        <tr className="bg-white">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Cess</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(cess)}</td>
+                        <tr className="bg-card">
+                          <td className="border border-border px-4 py-3 text-sm text-foreground">Cess</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm text-foreground">₹{formatIndianCurrency(cess)}</td>
                         </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Registration Fees</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-gray-900">₹{formatIndianCurrency(registrationFees)}</td>
+                        <tr className="bg-secondary/30">
+                          <td className="border border-border px-4 py-3 text-sm text-foreground">Registration Fees</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm text-foreground">₹{formatIndianCurrency(registrationFees)}</td>
                         </tr>
-                        <tr className="bg-blue-50 border-t-2 border-blue-200 font-bold">
-                          <td className="border border-gray-300 px-4 py-3 text-sm text-gray-900">Total Amount</td>
-                          <td className="border border-gray-300 px-4 py-3 text-right text-sm text-blue-800">₹{formatIndianCurrency(totalPayable)}</td>
+                        <tr className="bg-primary/10 border-t-2 border-primary/20 font-bold">
+                          <td className="border border-border px-4 py-3 text-sm text-foreground">Total Amount</td>
+                          <td className="border border-border px-4 py-3 text-right text-sm text-primary">₹{formatIndianCurrency(totalPayable)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -613,7 +616,7 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     {pieData && (
                       <div className="w-full">
-                        <h5 className="text-md font-semibold text-gray-900 mb-2">Duty Breakdown</h5>
+                        <h5 className="text-md font-semibold text-foreground mb-2">Duty Breakdown</h5>
                         <div className="w-full h-64">
                           <Pie data={pieData} options={pieOptions} />
                         </div>
@@ -621,14 +624,14 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
                     )}
                     {totalPayablePieData && (
                       <div className="w-full">
-                        <h5 className="text-md font-semibold text-gray-900 mb-2">Property Value vs Duty & Fees</h5>
+                        <h5 className="text-md font-semibold text-foreground mb-2">Property Value vs Duty & Fees</h5>
                         <div className="w-full h-64">
                           <Pie data={totalPayablePieData} options={totalPayablePieOptions} />
                         </div>
                       </div>
                     )}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                  <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
                     <p>* Calculations based on Assam Stamp Duty rules. Subject to change. Consult official sources for final verification.</p>
                   </div>
                 </div>
@@ -636,9 +639,9 @@ const StampDutyForm: React.FC<StampDutyFormProps> = ({
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center py-8 w-full">
                 <div className="text-6xl mb-4">🧮</div>
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Stamp Duty Calculator</h4>
-                <p className="text-gray-600 mb-4">Enter values, select instruments, and calculate to see your bill here.</p>
-                <div className="text-sm text-gray-500">
+                <h4 className="text-xl font-bold text-foreground mb-2">Stamp Duty Calculator</h4>
+                <p className="text-muted-foreground mb-4">Enter values, select instruments, and calculate to see your bill here.</p>
+                <div className="text-sm text-muted-foreground">
                   <p>Quick steps:</p>
                   <ul className="mt-2 space-y-1 list-disc list-inside">
                     <li>Input Market & Consideration Values</li>

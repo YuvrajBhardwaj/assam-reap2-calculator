@@ -88,7 +88,7 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6">
+    <div className="w-full mx-auto p-4 md:p-6">
       <Card className="bg-card shadow-lg border border-border rounded-lg overflow-hidden">
         {/* Industrial Header */}
         <div className="bg-gradient-to-r from-primary via-primary to-accent px-6 py-5">
@@ -111,42 +111,42 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
               <TrendingUp className="w-5 h-5 text-primary" />
               Select Property Type
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button
                 variant={effectiveSelectedType === 'plot' ? "default" : "outline"}
                 onClick={() => handleTypeChange('plot')}
-                className={`flex items-center justify-start gap-3 h-auto py-4 px-5 rounded-lg transition-all duration-200 ${
+                className={`flex items-center justify-start gap-2 h-10 py-2 px-3 rounded-md transition-all duration-200 ${
                   effectiveSelectedType === 'plot' 
-                    ? 'bg-primary text-primary-foreground shadow-md border-2 border-primary' 
-                    : 'bg-card text-foreground border-2 border-border hover:border-primary/50 hover:bg-primary/5'
+                    ? 'bg-primary text-primary-foreground shadow-sm border border-primary' 
+                    : 'bg-card text-foreground border border-border hover:border-primary/50 hover:bg-primary/5'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${effectiveSelectedType === 'plot' ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
-                  <MapPin className="w-5 h-5" />
+                <div className={`p-1 rounded-md ${effectiveSelectedType === 'plot' ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
+                  <MapPin className="w-3.5 h-3.5" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-semibold text-base">PLOT</div>
-                  <div className="text-xs opacity-75">Land valuation only</div>
+                  <div className="font-medium text-sm">Plot</div>
+                  <div className="text-xs opacity-70">Land only</div>
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-60" />
+                <ArrowRight className="w-3 h-3 opacity-60" />
               </Button>
               <Button
                 variant={effectiveSelectedType === 'plot-with-structure' ? "default" : "outline"}
                 onClick={() => handleTypeChange('plot-with-structure')}
-                className={`flex items-center justify-start gap-3 h-auto py-4 px-5 rounded-lg transition-all duration-200 ${
+                className={`flex items-center justify-start gap-2 h-10 py-2 px-3 rounded-md transition-all duration-200 ${
                   effectiveSelectedType === 'plot-with-structure' 
-                    ? 'bg-primary text-primary-foreground shadow-md border-2 border-primary' 
-                    : 'bg-card text-foreground border-2 border-border hover:border-primary/50 hover:bg-primary/5'
+                    ? 'bg-primary text-primary-foreground shadow-sm border border-primary' 
+                    : 'bg-card text-foreground border border-border hover:border-primary/50 hover:bg-primary/5'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${effectiveSelectedType === 'plot-with-structure' ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
-                  <Building2 className="w-5 h-5" />
+                <div className={`p-1 rounded-md ${effectiveSelectedType === 'plot-with-structure' ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
+                  <Building2 className="w-3.5 h-3.5" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-semibold text-base">PLOT WITH STRUCTURE</div>
-                  <div className="text-xs opacity-75">Land + building valuation</div>
+                  <div className="font-medium text-sm">Plot + Structure</div>
+                  <div className="text-xs opacity-70">Land & building</div>
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-60" />
+                <ArrowRight className="w-3 h-3 opacity-60" />
               </Button>
             </div>
           </div>
@@ -213,11 +213,11 @@ const ValuationCalculator = ({ initialLocationData }: ValuationCalculatorProps) 
                     );
                   }
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-semibold"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 font-medium text-sm h-9"
               >
-                <Calculator className="w-5 h-5" />
-                Calculate Stamp Duty
-                <ArrowRight className="w-4 h-4" />
+                <Calculator className="w-3.5 h-3.5" />
+                Stamp Duty
+                <ArrowRight className="w-3 h-3" />
               </Button>
             </div>
           </div>
