@@ -253,31 +253,118 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     }
   }, [landUseChange, newBasePriceLandUse, basePriceLandUse]);
 
-  const bandWeights = useMemo(() => ({
-    12: 15,
-    13: 10,
-    5: 10,
-    18: 5,
-    19: 2.5,
-    2: 1,
-    15: 15,
-    16: 10,
-  }), []);
-
   const parameterWeightPercent = useMemo(() => {
-    const selectedIds: number[] = [];
-    selectedSubclauses.forEach(p => selectedIds.push(p.parameterId));
-    if (onMainRoad && mainRoadBand) selectedIds.push(mainRoadBand.parameterId);
-    if (onMetalRoad && metalRoadBand) selectedIds.push(metalRoadBand.parameterId);
-    if (onMainMarket && mainMarketBand) selectedIds.push(mainMarketBand.parameterId);
+    let totalWeight = 0;
+    
+    // Add weights from selected sub-parameters (manual selection)
+    selectedSubParameters.forEach((subParamCode, paramCode) => {
+      const subParams = subParametersMap.get(paramCode);
+      if (subParams && subParamCode) {
+        const selectedSubParam = subParams.find(sp => sp.subParameterCode === subParamCode);
+        if (selectedSubParam && selectedSubParam.basePriceIncreaseSubParameter) {
+          totalWeight += selectedSubParam.basePriceIncreaseSubParameter;
+        }
+      }
+    });
+    
+    // Add weights from selected subclauses (checkbox selection)
+    selectedSubclauses.forEach(param => {
+      const selectedSubParamCode = selectedSubParameters.get(param.parameterCode);
+      if (selectedSubParamCode) {
+        // If there's a selected sub-parameter, use it instead of the parameter
+        const subParams = subParametersMap.get(param.parameterCode);
+        if (subParams) {
+          const selectedSubParam = subParams.find(sp => sp.subParameterCode === selectedSubParamCode);
+          if (selectedSubParam && selectedSubParam.basePriceIncreaseSubParameter) {
+            totalWeight += selectedSubParam.basePriceIncreaseSubParameter;
+          }
+        }
+      } else {
+        // Fallback: use the first sub-parameter if no specific selection
+        const subParams = subParametersMap.get(param.parameterCode);
+        if (subParams && subParams.length > 0) {
+          const firstSubParam = subParams[0];
+          if (firstSubParam && firstSubParam.basePriceIncreaseSubParameter) {
+            totalWeight += firstSubParam.basePriceIncreaseSubParameter;
+          }
+        }
+      }
+    });
+    
+    // Helper function to find the best matching sub-parameter for road bands
+    const findRoadBandWeight = (band: any, parameterCode: string): number => {
+      const selectedSubParamCode = selectedSubParameters.get(parameterCode);
+      const subParams = subParametersMap.get(parameterCode);
+      
+      if (!subParams || subParams.length === 0) return 0;
+      
+      // Priority 1: Use explicitly selected sub-parameter
+      if (selectedSubParamCode) {
+        const selectedSubParam = subParams.find(sp => sp.subParameterCode === selectedSubParamCode);
+        if (selectedSubParam && selectedSubParam.basePriceIncreaseSubParameter) {
+          return selectedSubParam.basePriceIncreaseSubParameter;
+        }
+      }
+      
+      // Priority 2: Find matching band by name pattern
+      if (band && band.parameterName) {
+        const is1stBand = band.parameterName.includes('1st Band');
+        const is2ndBand = band.parameterName.includes('2nd Band');
+        
+        const matchingSubParam = subParams.find(sp => {
+          if (is1stBand && sp.subParameterName?.includes('1st Band')) return true;
+          if (is2ndBand && sp.subParameterName?.includes('2nd Band')) return true;
+          return false;
+        });
+        
+        if (matchingSubParam && matchingSubParam.basePriceIncreaseSubParameter) {
+          return matchingSubParam.basePriceIncreaseSubParameter;
+        }
+      }
+      
+      // Priority 3: Use first available sub-parameter as fallback
+      const firstSubParam = subParams[0];
+      if (firstSubParam && firstSubParam.basePriceIncreaseSubParameter) {
+        return firstSubParam.basePriceIncreaseSubParameter;
+      }
+      
+      return 0;
+    };
+    
+    // Add weights from main road band
+    if (onMainRoad && mainRoadBand) {
+      totalWeight += findRoadBandWeight(mainRoadBand, mainRoadBand.parameterCode);
+    }
+    
+    // Add weights from metal road band
+    if (onMetalRoad && metalRoadBand) {
+      totalWeight += findRoadBandWeight(metalRoadBand, metalRoadBand.parameterCode);
+    }
+    
+    // Add weights from main market band
+    if (onMainMarket && mainMarketBand) {
+      totalWeight += findRoadBandWeight(mainMarketBand, mainMarketBand.parameterCode);
+    }
+    
+    // Add weights from approach road bands
+    if (onApproachRoadWidth && onApproachRoad1stBand && approachRoad1stBand) {
+      totalWeight += findRoadBandWeight(approachRoad1stBand, approachRoad1stBand.parameterCode);
+    }
+    
+    if (onApproachRoadWidth && onApproachRoad2ndBand && approachRoad2ndBand) {
+      totalWeight += findRoadBandWeight(approachRoad2ndBand, approachRoad2ndBand.parameterCode);
+    }
+    
+    // Add weight for non-road parameter if selected
     if (onNonRoad) {
       const nonRoadParam = parameters.find(p => p.parameterCode === '10005');
-      if (nonRoadParam) selectedIds.push(nonRoadParam.parameterId);
+      if (nonRoadParam) {
+        totalWeight += findRoadBandWeight(nonRoadParam, nonRoadParam.parameterCode);
+      }
     }
-    if (onApproachRoadWidth && onApproachRoad1stBand && approachRoad1stBand) selectedIds.push(approachRoad1stBand.parameterId);
-    if (onApproachRoadWidth && onApproachRoad2ndBand && approachRoad2ndBand) selectedIds.push(approachRoad2ndBand.parameterId);
-    return selectedIds.reduce((sum, id) => sum + ((bandWeights as any)[id] || 0), 0);
-  }, [selectedSubclauses, onMainRoad, mainRoadBand, onMetalRoad, metalRoadBand, onMainMarket, mainMarketBand, onNonRoad, onApproachRoadWidth, onApproachRoad1stBand, approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, bandWeights, parameters]);
+    
+    return totalWeight;
+  }, [selectedSubclauses, onMainRoad, mainRoadBand, onMetalRoad, metalRoadBand, onMainMarket, mainMarketBand, onNonRoad, onApproachRoadWidth, onApproachRoad1stBand, approachRoad1stBand, onApproachRoad2ndBand, approachRoad2ndBand, subParametersMap, parameters, selectedSubParameters]);
 
   // NEW: Computed Plot Level Base Value
   // Formula: Plot Level Base = Mouza Base × (1 + Lot % / 100) × (1 + Land Use % / 100)
@@ -357,8 +444,11 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     (onRoad ? roadWidth : distanceFromRoad) :
     true;
 
-  // Fixed: Complete useEffect to load form data from zustand store on component mount
+  // Load form data from zustand store after master data is loaded
   useEffect(() => {
+    // Only load stored form data if we have districts loaded (indicates master data is ready)
+    if (districts.length === 0) return;
+    
     const formData = storedFormData;
     setSelectedDistrictCode(formData.selectedDistrictCode || '');
     setSelectedCircleCode(formData.selectedCircleCode || '');
@@ -390,7 +480,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
     setOnApproachRoadWidth(formData.onApproachRoadWidth || false);
     setOnApproachRoad1stBand(formData.onApproachRoad1stBand || false);
     setOnApproachRoad2ndBand(formData.onApproachRoad2ndBand || false);
-  }, [storedFormData]); // Depend on storedFormData to react to changes
+  }, [storedFormData, districts]); // Depend on storedFormData and districts
 
   // Effect to load parameter-related saved data after parameters are loaded
   useEffect(() => {
@@ -630,10 +720,12 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
 
   // Fetch villages when district, circle, or mouza changes
   useEffect(() => {
-    if (selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLot?.code) {
+    if (selectedDistrictCode && selectedCircleCode && selectedMouzaCode) {
       const fetchVillages = async () => {
         try {
-          const data = await getVillagesByDistrictAndCircleAndMouzaAndLot(selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLot?.code);
+          // Try to fetch villages with the selected lot if available
+          const lotCode = selectedLot?.code || '';
+          const data = await getVillagesByDistrictAndCircleAndMouzaAndLot(selectedDistrictCode, selectedCircleCode, selectedMouzaCode, lotCode);
           setVillages(data);
           // Set initial village if provided
           if (initialLocationData?.village?.code) {
@@ -648,7 +740,22 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       setVillages([]);
       setSelectedVillageCode('');
     }
-  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLot?.code, initialLocationData]);
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode, initialLocationData]);
+
+  // Refetch villages when lot changes to get lot-specific village data
+  useEffect(() => {
+    if (selectedDistrictCode && selectedCircleCode && selectedMouzaCode && selectedLot?.code) {
+      const refetchVillages = async () => {
+        try {
+          const data = await getVillagesByDistrictAndCircleAndMouzaAndLot(selectedDistrictCode, selectedCircleCode, selectedMouzaCode, selectedLot.code);
+          setVillages(data);
+        } catch (error) {
+          console.error('Error refetching villages for lot:', error);
+        }
+      };
+      refetchVillages();
+    }
+  }, [selectedLot?.code, selectedDistrictCode, selectedCircleCode, selectedMouzaCode]);
 
   useEffect(() => {
     if (selectedDistrictCode) {
@@ -738,7 +845,7 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
       }
     };
     loadLots();
-  }, [selectedDistrictCode, selectedCircleCode]);
+  }, [selectedDistrictCode, selectedCircleCode, selectedMouzaCode]);
 
   useEffect(() => {
     if (selectedLotId) {
@@ -2125,6 +2232,90 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                               </div>
                             </div>
                           </div>
+                          
+                          {/* Parameter Weights Breakdown */}
+                          {parameterWeightPercent > 0 && (
+                            <div className="mt-3 bg-white/70 rounded-md p-3 border border-blue-100">
+                              <div className="text-blue-700 font-medium mb-2">Parameter Weights Breakdown</div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                {selectedSubclauses.map((param, index) => {
+                                  const subParams = subParametersMap.get(param.parameterCode);
+                                  const weight = subParams?.[0]?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div key={index} className="flex justify-between">
+                                      <span>{param.parameterName}</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })}
+                                {onMainRoad && mainRoadBand && (() => {
+                                  const subParams = subParametersMap.get(mainRoadBand.parameterCode);
+                                  const weight = subParams?.find(sp => sp.subParameterName?.includes('1st Band') || sp.subParameterName?.includes('2nd Band'))?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Main Road Band</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                {onMetalRoad && metalRoadBand && (() => {
+                                  const subParams = subParametersMap.get(metalRoadBand.parameterCode);
+                                  const weight = subParams?.find(sp => sp.subParameterName?.includes('1st Band') || sp.subParameterName?.includes('2nd Band'))?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Metal Road Band</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                {onMainMarket && mainMarketBand && (() => {
+                                  const subParams = subParametersMap.get(mainMarketBand.parameterCode);
+                                  const weight = subParams?.find(sp => sp.subParameterName?.includes('1st Band') || sp.subParameterName?.includes('2nd Band'))?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Main Market Band</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                {onApproachRoadWidth && onApproachRoad1stBand && approachRoad1stBand && (() => {
+                                  const subParams = subParametersMap.get(approachRoad1stBand.parameterCode);
+                                  const weight = subParams?.find(sp => sp.subParameterName?.includes('1st Band'))?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Approach Road 1st Band</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                {onApproachRoadWidth && onApproachRoad2ndBand && approachRoad2ndBand && (() => {
+                                  const subParams = subParametersMap.get(approachRoad2ndBand.parameterCode);
+                                  const weight = subParams?.find(sp => sp.subParameterName?.includes('2nd Band'))?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Approach Road 2nd Band</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                {onNonRoad && (() => {
+                                  const nonRoadParam = parameters.find(p => p.parameterCode === '10005');
+                                  const subParams = nonRoadParam ? subParametersMap.get(nonRoadParam.parameterCode) : null;
+                                  const weight = subParams?.[0]?.basePriceIncreaseSubParameter || 0;
+                                  return (
+                                    <div className="flex justify-between">
+                                      <span>Non-Road</span>
+                                      <span className="font-medium">+{weight}%</span>
+                                    </div>
+                                  );
+                                })()}
+                                <div className="flex justify-between border-t border-gray-200 pt-1 mt-1">
+                                  <span className="font-semibold">Total Parameter Weight</span>
+                                  <span className="font-bold text-blue-600">+{parameterWeightPercent}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         {calculationResult.breakdown && (
                           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
