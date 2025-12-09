@@ -66,6 +66,10 @@ export interface Lot extends BaseEntity {
   mouzaCode: string;
   areaTypeId?: string;
   basePriceIncreaseLot?: number;
+  // API response fields
+  lotGenId?: number;
+  lotCode?: string;
+  lotName?: string;
 }
 
 export interface Village extends BaseEntity {

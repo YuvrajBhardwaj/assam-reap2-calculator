@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { masterDataApi } from './http';
-import { District, Circle, Mouza, Village, LandClass } from '@/types/masterData';
+import { District, Circle, Mouza, Village, LandClass, Lot } from '@/types/masterData';
 
 export interface GeoLocation {
   lat: number;
@@ -95,7 +95,41 @@ export async function getMouzasByDistrictAndCircle(districtCode?: string, circle
 }
 
 
-// 4. Fetch village details by district and circle and mouza and lot
+// 3. Fetch lot details by district, circle, and mouza
+export async function getLotsByDistrictAndCircleAndMouza(
+  districtCode?: string,
+  circleCode?: string,
+  mouzaCode?: string
+): Promise<Lot[]> {
+  try {
+    const params: any = {};
+    if (districtCode) params.districtCode = districtCode;
+    if (circleCode) params.circleCode = circleCode;
+    if (mouzaCode) params.mouzaCode = mouzaCode;
+
+    const res = await masterDataApi.get('/getLotByDistrictAndCircleAndMouza', { params });
+
+    const payload = (res?.data?.data ?? res?.data) as any[];
+    const list = Array.isArray(payload) ? payload : [];
+
+    return list.map((l: any) => ({
+      id: (l.lotGenId?.toString?.() ?? l.lotCode ?? l.id ?? '').toString(),
+      code: l.lotCode ?? '',
+      name: l.lotName ?? l.name ?? '',
+      lotName: l.lotName ?? l.name ?? '',
+      isActive: l.active ?? l.isActive ?? true,
+      districtCode: l.districtCode ?? districtCode ?? '',
+      circleCode: l.circleCode ?? circleCode ?? '',
+      mouzaCode: l.mouzaCode ?? mouzaCode ?? '',
+      areaTypeId: l.areaTypeId ?? l.areaType ?? undefined,
+      basePriceIncreaseLot: l.basePriceIncreaseLot ?? null,
+    }));
+  } catch (err) {
+    console.error('Failed to fetch lots', { districtCode, circleCode, mouzaCode, err });
+    return [];
+  }
+}
+
 // 4. Fetch village details by district, circle, mouza, and lot
 export async function getVillagesByDistrictAndCircleAndMouzaAndLot(
   districtCode?: string,
@@ -220,3 +254,37 @@ export const geocodeDistrict = async (
     return null;
   }
 };
+
+// 8. Fetch plot numbers by district, circle, mouza, lot, and village
+export async function getPlotNumbersByLocation(
+  districtCode?: string,
+  circleCode?: string,
+  mouzaCode?: string,
+  lotCode?: string,
+  villageCode?: string
+): Promise<Array<{ id: string; code: string; name: string; plotNumber: string; daagNumber: string }>> {
+  try {
+    const params: any = {};
+    if (districtCode) params.districtCode = districtCode;
+    if (circleCode) params.circleCode = circleCode;
+    if (mouzaCode) params.mouzaCode = mouzaCode;
+    if (lotCode) params.lotCode = lotCode;
+    if (villageCode) params.villageCode = villageCode;
+
+    const res = await masterDataApi.get('/getPlotNumbersByLocation', { params });
+    
+    const payload = (res?.data?.data ?? res?.data) as any[];
+    const list = Array.isArray(payload) ? payload : [];
+
+    return list.map((plot: any) => ({
+      id: (plot.plotGenId?.toString?.() ?? plot.id ?? '').toString(),
+      code: plot.plotCode ?? plot.daagNumber ?? '',
+      name: plot.plotNumber ?? plot.daagNumber ?? plot.plotName ?? 'Plot ' + (plot.plotNumber ?? plot.daagNumber ?? ''),
+      plotNumber: plot.plotNumber ?? '',
+      daagNumber: plot.daagNumber ?? '',
+    }));
+  } catch (err) {
+    console.error('Failed to fetch plot numbers', { districtCode, circleCode, mouzaCode, lotCode, villageCode, err });
+    return [];
+  }
+}

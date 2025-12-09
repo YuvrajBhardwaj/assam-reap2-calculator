@@ -19,6 +19,7 @@ import { Helmet } from "react-helmet-async";
 import RoleSwitcher from '@/components/RoleSwitcher';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { UserHistoryLog } from '@/components/admin/UserHistoryLog';
+import PlotLookup from '@/components/PlotLookup';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
+      "plot-lookup",
       "master-data",
       "reports",
       "workflow",
@@ -61,6 +63,7 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
+      "plot-lookup",
       "department-dashboard",
       "workflow-dept",
 
@@ -76,6 +79,7 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
+      "plot-lookup",
       "workflow-dept",
 
       "landing",
@@ -312,6 +316,17 @@ const Index = () => {
               <Database className="h-4 w-4" /> <span>Certified Copies</span>
             </TabsTrigger>
 
+            <TabsTrigger
+              value="plot-lookup"
+              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
+                activeTab === 'plot-lookup'
+                  ? 'bg-maroon-700 text-white shadow-md scale-105'
+                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+              }`}
+            >
+              <Database className="h-4 w-4" /> <span>Plot Lookup</span>
+            </TabsTrigger>
+
             {/* Department Tabs */}
             {isDepartmentUser && (
               <>
@@ -412,6 +427,10 @@ const Index = () => {
 
           <TabsContent value="certified-copies" className="space-y-4 animate-fade-in">
             <CertifiedCopiesServices />
+          </TabsContent>
+
+          <TabsContent value="plot-lookup" className="space-y-4 animate-fade-in">
+            <PlotLookup />
           </TabsContent>
           
 
