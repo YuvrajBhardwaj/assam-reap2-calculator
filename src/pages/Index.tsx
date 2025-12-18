@@ -46,7 +46,7 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
-      "plot-lookup",
+      // "plot-lookup",
       "master-data",
       "reports",
       "workflow",
@@ -63,10 +63,10 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
-      "plot-lookup",
+      // "plot-lookup",
       "department-dashboard",
       "workflow-dept",
-
+      "plot-lookup",
       "landing",
       "upcoming-initiatives",
       "important-links",
@@ -79,7 +79,6 @@ const Index = () => {
       "stamp-duty-calculator",
       "zonal-value-database",
       "certified-copies",
-      "plot-lookup",
       "workflow-dept",
 
       "landing",
@@ -316,16 +315,18 @@ const Index = () => {
               <Database className="h-4 w-4" /> <span>Certified Copies</span>
             </TabsTrigger>
 
-            <TabsTrigger
-              value="plot-lookup"
-              className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
-                activeTab === 'plot-lookup'
-                  ? 'bg-maroon-700 text-white shadow-md scale-105'
-                  : 'bg-transparent text-gray-700 hover:bg-maroon-50'
-              }`}
-            >
-              <Database className="h-4 w-4" /> <span>Plot Lookup</span>
-            </TabsTrigger>
+            {isDepartmentUser && (
+              <TabsTrigger
+                value="plot-lookup"
+                className={`flex items-center gap-2 flex-shrink-0 truncate whitespace-nowrap rounded-lg px-4 py-2.5 font-medium transition-all duration-300 ${
+                  activeTab === 'plot-lookup'
+                    ? 'bg-maroon-700 text-white shadow-md scale-105'
+                    : 'bg-transparent text-gray-700 hover:bg-maroon-50'
+                }`}
+              >
+                <Database className="h-4 w-4" /> <span>Plot Lookup</span>
+              </TabsTrigger>
+            )}
 
             {/* Department Tabs */}
             {isDepartmentUser && (

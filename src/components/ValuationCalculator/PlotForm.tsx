@@ -1666,41 +1666,24 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
             </div>
             {/* Current Land Use / Type - Always shown */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-1">
-                <Home className="w-3 h-3 text-gray-500" />
-                Current Land Use / Type
-              </Label>
-              <Select value={currentLandUse} onValueChange={(val) => {
-                setCurrentLandUse(val);
-                setCurrentLandType(val); // Auto-populate current land type
-                const category = landCategories.find(c => String(c.id) === val);
-                // Removed console.logs for production
-                setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
-              }} disabled={true}>
-                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
-                  <SelectValue placeholder="Select Current Land Use" />
-                </SelectTrigger>
-                <SelectContent>
-                  {landCategories
-                    .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
-                    .map((category) => (
-                      <SelectItem
-                        key={String(category.id)}
-                        value={String(category.id)}
-                      >
-                        {category?.name ?? `Category ${String(category.id)}`}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {/* Show old calc (basePriceLandUse) only if No change */}
-              {!landUseChange && basePriceLandUse !== null && (
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                  <Home className="w-3 h-3 text-gray-500" />
-                  Land Use Increase: {basePriceLandUse}%
-                </p>
-              )}
-            </div>
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-gray-500" />
+                  Area Type
+                </Label>
+                <RadioGroup value={areaType} onValueChange={(value) => setAreaType(value as 'RURAL' | 'URBAN')} className="space-y-2" disabled={true}>
+                  <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="RURAL" id="rural" />
+                      <Label htmlFor="rural" className="text-sm">Rural</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="URBAN" id="urban" />
+                      <Label htmlFor="urban" className="text-sm">Urban</Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+            
           </div>
           {selectedMouzaCode && selectedVillageCode && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 pt-4 border-t border-border">
@@ -1777,23 +1760,41 @@ const PlotForm = forwardRef<PlotFormRef, PlotFormProps>(({ onCalculate, hideCalc
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-1">
-                  <Layers className="w-3 h-3 text-gray-500" />
-                  Area Type
-                </Label>
-                <RadioGroup value={areaType} onValueChange={(value) => setAreaType(value as 'RURAL' | 'URBAN')} className="space-y-2" disabled={true}>
-                  <div className="flex items-center justify-start gap-6 p-2 bg-muted/50 rounded-md">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="RURAL" id="rural" />
-                      <Label htmlFor="rural" className="text-sm">Rural</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="URBAN" id="urban" />
-                      <Label htmlFor="urban" className="text-sm">Urban</Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
+              <Label className="text-sm font-medium flex items-center gap-1">
+                <Home className="w-3 h-3 text-gray-500" />
+                Current Land Use / Type
+              </Label>
+              <Select value={currentLandUse} onValueChange={(val) => {
+                setCurrentLandUse(val);
+                setCurrentLandType(val); // Auto-populate current land type
+                const category = landCategories.find(c => String(c.id) === val);
+                // Removed console.logs for production
+                setBasePriceLandUse(category ? category.basePriceMouzaIncrease || null : null);
+              }} disabled={true}>
+                <SelectTrigger className="ring-1 ring-border focus:ring-gray-500 transition-all duration-200 focus:ring-2 focus:ring-ring">
+                  <SelectValue placeholder="Select Current Land Use" />
+                </SelectTrigger>
+                <SelectContent>
+                  {landCategories
+                    .filter(category => category && category.id !== null && category.id !== undefined && String(category.id).trim() !== '')
+                    .map((category) => (
+                      <SelectItem
+                        key={String(category.id)}
+                        value={String(category.id)}
+                      >
+                        {category?.name ?? `Category ${String(category.id)}`}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {/* Show old calc (basePriceLandUse) only if No change */}
+              {!landUseChange && basePriceLandUse !== null && (
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <Home className="w-3 h-3 text-gray-500" />
+                  Land Use Increase: {basePriceLandUse}%
+                </p>
+              )}
+            </div>
             </div>
           )}
         </CardContent>
